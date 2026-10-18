@@ -9,13 +9,13 @@
 # Everything below can be overridden from the environment.
 
 # Variant of the app to build.
-: "${ZC_BUNDLE_ID:=com.kdt.livecontainer}"   # main app; extension IDs are derived from it
+: "${ZC_BUNDLE_ID:=app.reiko.zcontainer}"    # main app; extension IDs are derived from it
 : "${ZC_EXTENSIONS:=1}"                       # 0 leaves out every .appex
 : "${ZC_DISPLAY_NAME:=}"                      # empty keeps CFBundleDisplayName from Info.plist
-: "${ZC_IPA_NAME:=LiveContainer.ipa}"         # file name of the IPA in $ZC_BUILD_DIR
+: "${ZC_IPA_NAME:=zContainer.ipa}"            # file name of the IPA in $ZC_BUILD_DIR
 : "${ZC_MIN_IOS:=17.0}"                       # deployment target of every binary we build
 # SDK version the binaries record (LC_BUILD_VERSION) and Info.plist names. iOS
-# turns on "linked on or after" behavior by it, for LiveContainer's own UI and for
+# turns on "linked on or after" behavior by it, for zContainer's own UI and for
 # every guest app that doesn't spoof its own SDK, so it stays at what the official
 # build uses (Xcode 26.2) rather than the newer SDK the headers come from.
 : "${ZC_RECORDED_SDK:=26.2}"

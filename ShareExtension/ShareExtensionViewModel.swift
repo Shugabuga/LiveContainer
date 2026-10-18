@@ -396,7 +396,7 @@ final class ShareExtensionViewModel: ObservableObject {
 
         do {
             try storeBookmark(for: fileURL)
-            guard var components = URLComponents(string: "livecontainer://install") else {
+            guard var components = URLComponents(string: "zcontainer://install") else {
                 throw ShareExtensionError("Unable to build install URL.")
             }
             components.queryItems = [
@@ -446,7 +446,7 @@ final class ShareExtensionViewModel: ObservableObject {
     }
 
     private func buildLaunchURL(for item: ShareLaunchItem, launchURLString: String?) -> URL? {
-        var schemeToLaunch = "livecontainer"
+        var schemeToLaunch = "zcontainer"
         var newLaunch = false
 
         if var runningLC = LCSharedUtils.getContainerUsingLCScheme(withFolderName: item.container.folderName) {
@@ -456,7 +456,7 @@ final class ShareExtensionViewModel: ObservableObject {
             schemeToLaunch = runningLC
         } else {
             newLaunch = true
-            schemeToLaunch = item.app.isShared ? (firstFreeInstalledLC() ?? "livecontainer") : "livecontainer"
+            schemeToLaunch = item.app.isShared ? (firstFreeInstalledLC() ?? "zcontainer") : "zcontainer"
         }
 
         if newLaunch && !item.app.isHidden && !item.app.isLocked && !item.app.isJITNeeded {

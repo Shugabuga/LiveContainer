@@ -11,8 +11,8 @@ DEVELOPMENT_TEAM[config=Release] = AAAAA11111
 DEVELOPMENT_TEAM_SUFFIX[config=Debug] = .$(DEVELOPMENT_TEAM)
 DEVELOPMENT_TEAM_SUFFIX[config=Release] =
 
-LIVECONTAINER_BUNDLE_IDENTIFIER = com.kdt.livecontainer$(DEVELOPMENT_TEAM_SUFFIX)
+LIVECONTAINER_BUNDLE_IDENTIFIER = app.reiko.zcontainer$(DEVELOPMENT_TEAM_SUFFIX)
 // The app group the app and its extensions share, named after the app the way
-// Zeus names the one it registers. LiveContainer reads the group from its own
+// Zeus names the one it registers. zContainer reads the group from its own
 // entitlements, so whatever group the installer assigns works.
 APP_GROUP = group.$(LIVECONTAINER_BUNDLE_IDENTIFIER)

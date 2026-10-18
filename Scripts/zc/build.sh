@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Builds an unsigned LiveContainer IPA on Linux, without Xcode, from this checkout.
+# Builds a zContainer IPA on Linux, without Xcode, from this checkout.
 #
 #   Scripts/zc/build.sh
-#       The stock app with all its extensions: build/zc/LiveContainer.ipa
+#       The app with all its extensions: build/zc/zContainer.ipa
 #   ZC_BUNDLE_ID=com.example.app ZC_EXTENSIONS=0 ZC_DISPLAY_NAME="My Name" \
 #   ZC_IPA_NAME=Custom.ipa Scripts/zc/build.sh
 #       Another bundle ID (extension IDs follow it), no extensions, another name.
@@ -136,7 +136,7 @@ APPROACHABLE=(-enable-upcoming-feature DisableOutwardActorInference
 # Every link records ZC_RECORDED_SDK (env.sh), the SDK of the official build.
 # Without it, binaries linked through swiftc claim the deployment target as their
 # SDK and lose the iOS 26+ design; with the real SDK (27.x) iOS would apply its
-# newer "linked on or after" rules to LiveContainer and the guest apps it runs.
+# newer "linked on or after" rules to zContainer and the guest apps it runs.
 PLATFORM=(-Xlinker -platform_version -Xlinker ios -Xlinker "$ZC_MIN_IOS" -Xlinker "$ZC_RECORDED_SDK")
 BASE_LINKFLAGS=(-target "arm64-apple-ios$ZC_MIN_IOS" -isysroot "$ZC_SDK" "--ld-path=$ZC_LD" -mlinker-version=1200
     "${PLATFORM[@]}")

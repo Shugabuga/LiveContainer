@@ -21,9 +21,9 @@ enum JITEnablerType : Int, CaseIterable, Identifiable {
     var displayName: String {
         switch self {
         case .StikJIT: "StikDebug"
-        case .StikJITLC: "StikDebug (Another LiveContainer/Multitask)"
+        case .StikJITLC: "StikDebug (Another zContainer/Multitask)"
         case .StosDebug: "StosDebug"
-        case .StosDebugLC: "StosDebug (Another LiveContainer/Multitask)"
+        case .StosDebugLC: "StosDebug (Another zContainer/Multitask)"
         case .JITStreamerEBLegacy: "JitStreamer-EB (Relaunch)"
         case .SideJITServer: "SideJITServer/JITStreamer 2.0"
         }
@@ -282,26 +282,13 @@ struct LCSettingsView: View {
                 }
                 
                 Section {
-                    HStack {
-                        Image("GitHub")
-                        Button("LiveContainer/LiveContainer") {
-                            openGitHub()
-                        }
+                    // Credits LiveContainer and its authors, and shows the notices
+                    // and source link the AGPL asks a modified version to show.
+                    NavigationLink {
+                        LCAboutView()
+                    } label: {
+                        Text("lc.about.title".loc)
                     }
-                    HStack {
-                        Image("Twitter")
-                        Button("khanhduytran0") {
-                            openTwitter()
-                        }
-                    }
-                    HStack {
-                        Image("GitHub")
-                        Button("Huge_Black") {
-                            openGitHub2()
-                        }
-                    }
-                } header: {
-                    Text("lc.settings.about".loc)
                 } footer: {
                     Text("lc.settings.warning".loc)
                 }
@@ -431,18 +418,6 @@ struct LCSettingsView: View {
         }
     }
     
-    func openGitHub() {
-        UIApplication.shared.open(URL(string: "https://github.com/LiveContainer/LiveContainer")!)
-    }
-    
-    func openGitHub2() {
-        UIApplication.shared.open(URL(string: "https://github.com/hugeBlack")!)
-    }
-    
-    func openTwitter() {
-        UIApplication.shared.open(URL(string: "https://twitter.com/khanhduytran0")!)
-    }
-
     func clearNotifications() {
         let notificationCenter = UNUserNotificationCenter.current()
         notificationCenter.removeAllDeliveredNotifications()

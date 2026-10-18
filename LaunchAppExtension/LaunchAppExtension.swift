@@ -16,7 +16,7 @@ private struct LaunchAppExtensionError: LocalizedError {
 
 struct LaunchAppExtension: AppIntent {
     static var title: LocalizedStringResource { "Launch App" }
-    static var description: IntentDescription { "This action directly launches an app in normal mode in LiveContainer. To get the launch URL, open LiveContainer, hold the app, tap \"Add to Home Screen\" -> \"Copy Launch URL\"" }
+    static var description: IntentDescription { "This action directly launches an app in normal mode in zContainer. To get the launch URL, open zContainer, hold the app, tap \"Add to Home Screen\" -> \"Copy Launch URL\"" }
     @Parameter(title: "Launch URL")
     var launchURL: URL
     
@@ -69,7 +69,7 @@ struct LaunchAppExtension: AppIntent {
                 LaunchAppExtension.ext = ext
             } catch {
                 NSLog("Failed to start extension \(error)")
-                throw LaunchAppExtensionError("Failed to start extension \(error). To use the Launch App shortcut, reinstall LiveContainer with LaunchAppExtension and ShareExtension installed. If you use Impactor, choose \"Only Register Main Bundle\". For other sideloaders, select keep all extensions, i.e. DO NOT Remove any extension.")
+                throw LaunchAppExtensionError("Failed to start extension \(error). To use the Launch App shortcut, reinstall zContainer with LaunchAppExtension and ShareExtension installed. If you use Impactor, choose \"Only Register Main Bundle\". For other sideloaders, select keep all extensions, i.e. DO NOT Remove any extension.")
             }
             
         }
@@ -81,26 +81,26 @@ struct LaunchAppExtension: AppIntent {
     func perform() async throws -> some IntentResult {
         // sanitize url
         let normalizedLaunchScheme = launchURL.scheme?.lowercased()
-        var isLiveContainerURL = normalizedLaunchScheme == "livecontainer"
-        let preferredScheme = isLiveContainerURL ? nil : (normalizedLaunchScheme == "livecontainer1" ? "livecontainer" : normalizedLaunchScheme)
+        var isLiveContainerURL = normalizedLaunchScheme == "zcontainer"
+        let preferredScheme = isLiveContainerURL ? nil : (normalizedLaunchScheme == "zcontainer1" ? "zcontainer" : normalizedLaunchScheme)
         
         if let preferredScheme, let schemes = LCSharedUtils.lcUnorderedUrlSchemes() {
             isLiveContainerURL = schemes.contains(preferredScheme)
         }
         
         if !isLiveContainerURL {
-            throw LaunchAppExtensionError("Not a livecontainer URL!")
+            throw LaunchAppExtensionError("Not a zContainer URL!")
         }
         
         guard
             let appGroupId = LCSharedUtils.appGroupID(),
             let lcSharedDefaults = UserDefaults(suiteName: appGroupId)
         else {
-            throw LaunchAppExtensionError("lcSharedDefaults failed to initialize, because no app group was found. Did you sign LiveContainer correctly?")
+            throw LaunchAppExtensionError("lcSharedDefaults failed to initialize, because no app group was found. Did you sign zContainer correctly?")
         }
         
         if launchURL.host != "livecontainer-launch" {
-            throw LaunchAppExtensionError("Not a livecontainer launch URL!")
+            throw LaunchAppExtensionError("Not a zContainer launch URL!")
         }
 
         var bundleId: String? = nil
@@ -192,8 +192,8 @@ struct LaunchAppExtension: AppIntent {
                 schemeToLaunch = firstFreeInstalledLC(preferredScheme: preferredScheme)
                 allowClassicMode = schemeToLaunch != nil
             } else {
-                schemeToLaunch = "livecontainer"
-                allowClassicMode = !LCSharedUtils.isLCScheme(inUse: "livecontainer")
+                schemeToLaunch = "zcontainer"
+                allowClassicMode = !LCSharedUtils.isLCScheme(inUse: "zcontainer")
             }
         }
 

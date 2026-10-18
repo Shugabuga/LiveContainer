@@ -1,110 +1,87 @@
 <div align="center">
-   <img width="217" height="217" src="./screenshots/livecontainer_icon.png" alt="Logo">
+  <img width="180" height="180" src="./Scripts/zc/art/icon-preview.png" alt="zContainer icon">
+  <h1><b>zContainer</b></h1>
+  <p><i>Runs iOS apps inside one app, without installing them.</i></p>
 </div>
-   
 
-<div align="center">
-  <h1><b>LiveContainer</b></h1>
-  <p><i>An app launcher that runs iOS apps without actually installing them! </i></p>
-</div>
-<h6 align="center">
+zContainer is a modified version of [LiveContainer](https://github.com/LiveContainer/LiveContainer) 3.8.11 (commit 9108ae6), changed for [Zeus](https://getzeus.app) since October 18, 2026. It runs apps inside itself, so they all share its one App ID: with a free developer account, you can use more apps than the 3 app limit allows. LiveContainer does the actual work, and all credit for it goes to its authors (see [Credits](#credits)).
 
-Crowdin Project: [![Crowdin](https://badges.crowdin.net/livecontainer/localized.svg)](https://crowdin.com/project/livecontainer) &nbsp;| &nbsp; Documentation:[livecontainer.github.io](https://livecontainer.github.io/docs/intro)
+> [!NOTE]
+> zContainer is not made or supported by the LiveContainer project. Please report problems with zContainer to [zContainer's issues](https://github.com/getzeusapp/LiveContainer/issues), not to LiveContainer.
 
-# LiveContainer
+## Installing
 
-- LiveContainer is an app launcher (not emulator or hypervisor) that allows you to run iOS apps inside it.
-- Allows you to install unlimited apps (3 app/10 app id free developer account limit does not apply here) with only one app & app id. You can also have multiple versions of an app installed with multiple data containers.
-- (Below iOS 26) When JIT is available, codesign is entirely bypassed, no need to sign your apps before installing. Otherwise, your app will be signed with the same certificate used by LiveContainer.
+zContainer is installed with [Zeus](https://getzeus.app). When you allow it, Zeus puts the certificate it signs zContainer with inside the app, and zContainer takes it in on launch, so apps run JIT-less without any setup. Installed another way, import the certificate that signed it in Settings.
 
-> [!CAUTION]
-> **Important Notice Regarding Third-Party Builds of LiveContainer**
->
-> We have recently noticed the appearance of certain closed-source third-party builds of LiveContainer. Please be aware that all your apps are installed within LiveContainer, which means these third-party builds **have full access to your data, including sensitive information such as keychain items and login credentials**. 
-> 
-> Furthermore, please note that we do not provide any support for issues of these third-party builds.
+Requirements: iOS or iPadOS 17 or later. Multitasking needs the app extensions.
 
+For how to use it (installing apps, Home Screen shortcuts, multitasking, JIT, tweaks, containers, hiding apps), LiveContainer's [documentation](https://livecontainer.github.io/docs/intro) and [FAQ](https://livecontainer.github.io/docs/faq) apply to zContainer too.
 
-# Installation
-**This fork (zContainer) is installed with [Zeus](https://getzeus.app).** When you allow it, Zeus puts the certificate it signs the app with inside the app, and the app takes it in on launch, so JIT-less mode works without any setup. Installed another way, import the certificate that signed it in Settings.
+## What changed from LiveContainer
 
-If you encounter any issue please [read LiveContainer's FAQ here](https://livecontainer.github.io/docs/faq)
+- zContainer has its own name, icon, bundle ID (`app.reiko.zcontainer`), URL scheme (`zcontainer`) and keychain groups (`app.reiko.zcontainer.shared` and `.1` to `.127`), so it can be installed next to LiveContainer. Its app group is named after its bundle ID.
+- It takes in the certificate Zeus includes when signing it (`LiveContainer/LCZeusCertificate.m`).
+- SideStore and AltStore support, the built-in SideStore and the installer for more LiveContainers are removed.
+- It builds on Linux (see [Building](#building)).
+- Settings > About zContainer credits LiveContainer and its authors, links to this source code and shows the license notices.
 
-## Requirements
-
-- iOS/iPadOS 17+
-   + Multitasking requires the app extensions
-
-# Features & Guides
-
-### Installing Apps
-- Open LiveContainer, tap the plus icon in the upper right hand corner and select IPA files to install.
-- Choose the app you want to open in the next launch.
-- You can long-press the app to manage it.
-
-### [Add Apps to Home Screen](https://livecontainer.github.io/docs/guides/add-to-home-screen)
-
-### [Multitasking](https://livecontainer.github.io/docs/guides/multitask)
-You can now launch multiple apps simultaneously in in-app virtual windows. These windows can be resized, scaled, and even displayed using the native Picture-in-Picture (PiP) feature. On iPads, apps can run in native window mode, displaying each app in a separate system window. And if you wish, you can choose to run apps in multitasking mode by default in settings.
-
-To use multitasking, hold its banner and tap **"Multitask"**. You can also make Multitask the default launch mode in settings.
-
->[!Note]
->1. To use multitasking, install the app with its app extensions.  
->2. If you want to enable JIT for multitasked apps, you’ll need a JIT enabler that supports attaching by PID. (StikDebug)
-
-### [JIT Support](https://livecontainer.github.io/docs/guides/jit-support)
-### [Installing external tweaks](https://livecontainer.github.io/docs/guides/tweaks)
-### [Multiple Containers/External Containers](https://livecontainer.github.io/docs/guides/containers-and-external-data)
-### [Hiding Apps](https://livecontainer.github.io/docs/guides/lock-app)
-
-### Fix File Picker & Local Notification
-Some apps may experience issues with their file pickers or not be able to apply for notification permission in LiveContainer. To resolve this, enable "Fix File Picker" & "Fix Local Notifications" accordingly in the app-specific settings.
-
-### "Open In App" Support
-- You can simply share a URL or a file to app simply by using iOS's native share sheet. In share sheet, select LiveContainer, and LiveContainer will ask you which app you'd like to open that URL/file in.
-- What's more, you also can tap the link icon in the top-right corner of the "Apps" tab and input the URL. LiveContainer will detect the appropriate app and ask if you want to launch it.
-
-## Compatibility
-Unfortunately, not all apps work in LiveContainer, so we have a [compatibility list](https://github.com/LiveContainer/LiveContainer/labels/compatibility) to tell if there is apps that have issues. If they aren't on this list, then it's likely going run. However, if it doesn't work, please make an [issue](https://github.com/LiveContainer/LiveContainer/issues/new/choose) about it.
+Internal names (the `LiveContainerShared` and `LiveContainerSwiftUI` modules, the `LC` classes and the `lc.` string keys) stay as they are, so changes from LiveContainer keep merging cleanly.
 
 ## Building
-Open Xcode, edit `DEVELOPMENT_TEAM[config=Debug]` in `xcconfigs/Global.xcconfig` to your team id and compile.
 
-## Project structure
-### Main executable
+On Linux, without Xcode:
+
+```sh
+git submodule update --init --recursive
+Scripts/zc/build.sh
+```
+
+This builds `build/zc/zContainer.ipa`. [Scripts/zc/README.md](Scripts/zc/README.md) lists what the build needs and its settings. The Xcode project builds too: set `DEVELOPMENT_TEAM` in `xcconfigs/Global.xcconfig` to your team ID.
+
+The icon is drawn in `Scripts/zc/art/AppIcon.svg`. `Scripts/zc/art/render-icon.sh` renders it into the asset catalog.
+
+## Source code and license
+
+zContainer is licensed under the [GNU Affero General Public License v3.0](LICENSE), like LiveContainer. Its complete source code, build scripts included, is at <https://github.com/getzeusapp/LiveContainer>. <!-- A placeholder until the public repository is set up; Settings > About links to it too (LCAboutLinks.swift). --> It comes with no warranty.
+
+## How it works
+
+zContainer runs LiveContainer's runtime as it is. The rest of this section is from LiveContainer's README.
+
+### Project structure
+#### Main executable
 - Core of LiveContainer
 - Contains the logic of setting up guest environment and loading guest app.
 - If no app is selected, it loads LiveContainerSwiftUI.
 
-### LiveContainerSwiftUI
+#### LiveContainerSwiftUI
 - SwiftUI rewrite of LiveContainerUI (by @hugeBlack)
 - Language file `Localizable.xcstrings` is in here for multilingual support. To help us translate LiveContainer, please visit [our crowdin project](https://crowdin.com/project/livecontainer)
 
-### MultitaskSupport
+#### MultitaskSupport
 - Contains the implementation of multitasking feature.
 - Based on [FrontBoardAppLauncher](https://github.com/khanhduytran0/FrontBoardAppLauncher)
 
-### TweakLoader
+#### TweakLoader
 - A simple tweak injector, which loads CydiaSubstrate and loads tweaks.
 - Injected to every app you install in LiveContainer.
 
-### ZSign
+#### ZSign
 - The app signer shipped with LiveContainer.
 - Originally made by [zhlynn](https://github.com/zhlynn/zsign).
 - LiveContainer uses [Feather's](https://github.com/khcrysalis/Feather) version of ZSign modified by khcrysalis.
 - Changes are made to meet LiveContainer's needs.
 
-## How does it work?
+### How guest apps run
 
-### Patching guest executable
+#### Patching guest executable
 - Patch `__PAGEZERO` segment:
   + Change `vmaddr` to `0xFFFFC000` (`0x100000000 - 0x4000`)
   + Change `vmsize` to `0x4000`
 - Change `MH_EXECUTE` to `MH_DYLIB`.
 - Inject a load command to load `TweakLoader.dylib`
 
-### Patching `@executable_path`
+#### Patching `@executable_path`
 - Hook `dyld4::APIs::_NSGetExecutablePath`
 - Call `_NSGetExecutablePath`
 - Replace `config.process.mainExecutablePath`
@@ -117,24 +94,24 @@ Open Xcode, edit `DEVELOPMENT_TEAM[config=Debug]` in `xcconfigs/Global.xcconfig`
 >- Call `_NSGetExecutablePath` with an invalid buffer pointer input -> SIGSEGV
 >- Do some [magic stuff](https://github.com/khanhduytran0/LiveContainer/blob/5ef1e6a/main.m#L74-L115) to overwrite the contents of executable_path.
 
-### Patching `NSBundle.mainBundle`
+#### Patching `NSBundle.mainBundle`
 - This property is overwritten with the guest app's bundle.
 
-### Bypassing Library Validation
+#### Bypassing Library Validation
 - JIT is optional to bypass codesigning. In JIT-less mode, all executables are signed so this does not apply.
 - Derived from [Restoring Dyld Memory Loading](https://blog.xpnsec.com/restoring-dyld-memory-loading)
 
-### dlopening the executable
+#### dlopening the executable
 - Call `dlopen` with the guest app's executable
 - TweakLoader loads all tweaks in the selected folder
 - Find the entry point
 - Jump to the entry point
 - The guest app's entry point calls `UIApplicationMain` and start up like any other iOS apps.
 
-### Multi-Account support & Keychain Semi-Separation
+#### Multi-Account support & Keychain Semi-Separation
 [128 keychain access groups](./entitlements.xml) are created and LiveContainer allocates them randomly to each container of the same app. So you can create 128 container with different keychain access groups.
 
-## Limitations
+### Limitations
 - Entitlements from the guest app are not applied to the host app. This isn't a big deal since sideloaded apps requires only basic entitlements.
 - App Permissions are globally applied.
 - Guest app containers are not sandboxed. This means one guest app can access other guest apps' data.
@@ -143,17 +120,15 @@ Open Xcode, edit `DEVELOPMENT_TEAM[config=Debug]` in `xcconfigs/Global.xcconfig`
 - Remote push notification will not work
 - Querying custom URL schemes might not work(?)
 
-## TODO
-- Use ChOma instead of custom MachO parser
-
-## License
-[GNU Affero General Public License v3.0](https://github.com/LiveContainer/LiveContainer/blob/main/LICENSE)
-
 ## Credits
+
+zContainer exists because of LiveContainer, made by [Duy Tran (khanhduytran0)](https://github.com/khanhduytran0), [Huge_Black (hugeBlack)](https://github.com/hugeBlack) and [its contributors](https://github.com/LiveContainer/LiveContainer/graphs/contributors).
+
+LiveContainer's credits:
 - [xpn's blogpost: Restoring Dyld Memory Loading](https://blog.xpnsec.com/restoring-dyld-memory-loading)
 - [LinusHenze's CFastFind](https://github.com/pinauten/PatchfinderUtils/blob/master/Sources/CFastFind/CFastFind.c): [MIT license](https://github.com/pinauten/PatchfinderUtils/blob/master/LICENSE)
 - [litehook](https://github.com/opa334/litehook): [MIT license](https://github.com/opa334/litehook/blob/main/LICENSE)
-- @haxi0 & @m1337v for icon
+- @haxi0 & @m1337v for LiveContainer's icon
 - @Vishram1123 for the initial shortcut implementation.
 - @hugeBlack for SwiftUI contribution
 - @Staubgeborener for automatic AltStore/SideStore source updater
@@ -161,3 +136,8 @@ Open Xcode, edit `DEVELOPMENT_TEAM[config=Debug]` in `xcconfigs/Global.xcconfig`
 - @slds1 for dynamic color feature
 - @Vishram1123 for iOS 26+ JIT Script Support
 - @StephenDev0 for AltStore source support
+
+zContainer also ships:
+- [OpenSSL](https://www.openssl.org): [Apache License 2.0](https://www.openssl.org/source/license.html)
+- [ElleKit](https://github.com/evelyneee/ellekit)'s CydiaSubstrate, by Évelyne Bélanger: BSD license (its `LICENSE` is in `Resources/Frameworks/CydiaSubstrate.framework`)
+- [zsign](https://github.com/zhlynn/zsign) by zhlynn, in [Feather](https://github.com/khcrysalis/Feather)'s version by khcrysalis

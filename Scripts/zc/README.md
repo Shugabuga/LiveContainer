@@ -1,7 +1,7 @@
 # Building on Linux
 
-These scripts build a LiveContainer IPA on Linux without Xcode, matching the
-one the official CI builds with Xcode. They follow the Release configuration of
+These scripts build the zContainer IPA on Linux without Xcode, matching what
+LiveContainer's official CI builds with Xcode. They follow the Release configuration of
 `LiveContainer.xcodeproj` and read `project.pbxproj` for bundle IDs, versions,
 entitlements and Info.plist settings, so the Xcode project stays the reference.
 
@@ -21,26 +21,31 @@ entitlements and Info.plist settings, so the Xcode project stays the reference.
 Scripts/zc/build.sh
 ```
 
-builds `build/zc/LiveContainer.ipa` with every extension. Settings come from the
+builds `build/zc/zContainer.ipa` with every extension. Settings come from the
 environment (all of them are listed in `env.sh`):
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `ZC_BUNDLE_ID` | `com.kdt.livecontainer` | Main app bundle ID; extension IDs are derived from it |
+| `ZC_BUNDLE_ID` | `app.reiko.zcontainer` | Main app bundle ID; the extension IDs and the app group are derived from it |
 | `ZC_EXTENSIONS` | `1` | `0` leaves out every `.appex` |
 | `ZC_DISPLAY_NAME` | (from Info.plist) | Home Screen name |
-| `ZC_IPA_NAME` | `LiveContainer.ipa` | Output file in `build/zc/` |
+| `ZC_IPA_NAME` | `zContainer.ipa` | Output file in `build/zc/` |
 | `ZC_MIN_IOS` | `17.0` | Deployment target of every binary |
 | `ZC_RECORDED_SDK` | `26.2` | SDK version the binaries and Info.plists record (see below) |
 | `ZC_ADHOC_SIGN` | `1` | `0` leaves the IPA unsigned |
 | `ZC_JOBS` | number of CPUs | Parallel compile jobs |
 
-For example, a build without extensions under another bundle ID:
+For example, a test build without extensions under an App ID it borrows:
 
 ```sh
-ZC_BUNDLE_ID=com.example.app ZC_EXTENSIONS=0 ZC_DISPLAY_NAME="Test" \
-ZC_IPA_NAME=Test.ipa Scripts/zc/build.sh
+ZC_BUNDLE_ID=com.rileytestut.Delta ZC_EXTENSIONS=0 ZC_DISPLAY_NAME="zContainer Test" \
+ZC_IPA_NAME=zContainer-Test.ipa Scripts/zc/build.sh
 ```
+
+`ZC_BUNDLE_ID` sets the app's bundle ID, its extensions' (`<ID>.LiveProcess` and
+so on) and its app group (`group.<ID>`). The URL scheme (`zcontainer`) and the 128
+keychain groups (`<team>.app.reiko.zcontainer.shared` and `.1` to `.127`) stay the
+same for every build, as LiveContainer's do.
 
 Like the official IPA, the build is ad-hoc signed the way Xcode signs an archive
 without a signing identity: each binary has a certificate-less signature, and the
@@ -80,8 +85,11 @@ Objects, logs and the staged app are kept in `build/zc/<name>/`.
   version, embedded dependencies, the libraries loaded at launch, extension entry
   points, symbols looked up by name, signatures and entitlements), the
   Info.plists (including the ZeusCompanion marker), the App Intents metadata and
-  the string tables, and that nothing of SideStore or AltStore is left in the
-  bundle. `build.sh` runs it on every build.
+  the string tables, that nothing of SideStore or AltStore is left in the bundle,
+  and zContainer's identity: the `zcontainer` scheme first and no `livecontainer`
+  scheme, the name, the keychain groups and app group, and no user-facing string
+  that still says LiveContainer (the About page's credits, `lc.about.*`, and links
+  to LiveContainer's own pages aside). `build.sh` runs it on every build.
 - `verify_sig.py`: checks every code signature and CodeResources seal against the
   files they cover. `build.sh` runs it on every signed build.
 - `sign-adhoc.sh` and `tools/zsign-adhoc.cpp`: re-sign a copy of an IPA with
@@ -95,6 +103,10 @@ Objects, logs and the staged app are kept in `build/zc/<name>/`.
   code changes. After updating the metadata, run
   `sha256sum LaunchAppExtension/*.swift > Scripts/zc/gen/LaunchAppExtension/sources.sha256`.
 - `macho.py`: the small Mach-O reader the other scripts share.
+- `art/AppIcon.svg`: the app icon, drawn as a full-bleed square (iOS masks it).
+  `art/render-icon.sh` renders it into the asset catalog's icons (with the dark,
+  tinted and grey variants) and into `art/icon-preview.png`, the icon masked the
+  way iOS shows it. The build resizes the asset catalog's icon into loose PNGs.
 
 ## Differences from an Xcode build
 

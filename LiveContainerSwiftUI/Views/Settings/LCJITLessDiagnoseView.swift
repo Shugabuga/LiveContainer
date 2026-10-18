@@ -81,7 +81,7 @@ struct LCEntitlementView : View {
                         .font(.system(.subheadline, design: .monospaced))
                 }
             }
-            .navigationTitle(isLiveProcess ? "LiveProcess Entitlements" : "LiveContainer Entitlements")
+            .navigationTitle(isLiveProcess ? "LiveProcess Entitlements" : "zContainer Entitlements")
             .navigationBarTitleDisplayMode(.inline)
         } else {
             Text("lc.common.loading".loc)
@@ -133,10 +133,10 @@ struct LCEntitlementView : View {
             }
             if let keyChainAccessGroups = entitlementDict["keychain-access-groups"] as? Array<String> {
                 var notFound = true
-                if keyChainAccessGroups.contains("\(entitlementTeamId).com.kdt.livecontainer.shared") {
+                if keyChainAccessGroups.contains("\(entitlementTeamId).app.reiko.zcontainer.shared") {
                     notFound = false
                     for i in 1..<SharedModel.keychainAccessGroupCount {
-                        if !keyChainAccessGroups.contains("\(entitlementTeamId).com.kdt.livecontainer.shared.\(i)") {
+                        if !keyChainAccessGroups.contains("\(entitlementTeamId).app.reiko.zcontainer.shared.\(i)") {
                             notFound = true
                             continue
                         }
@@ -208,7 +208,7 @@ struct LCJITLessDiagnoseView : View {
                     NavigationLink {
                         LCEntitlementView(isLiveProcess: false)
                     } label: {
-                        Text("LiveContainer Entitlements".loc)
+                        Text("zContainer Entitlements".loc)
                     }
                     if sharedModel.multiLCStatus == 0 {
                         NavigationLink {

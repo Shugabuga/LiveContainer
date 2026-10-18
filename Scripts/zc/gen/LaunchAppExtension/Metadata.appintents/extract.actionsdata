@@ -12,7 +12,7 @@
       "descriptionMetadata" : {
         "descriptionText" : {
           "alternatives" : [],
-          "key" : "This action directly launches an app in normal mode in LiveContainer. To get the launch URL, open LiveContainer, hold the app, tap \"Add to Home Screen\" -> \"Copy Launch URL\""
+          "key" : "This action directly launches an app in normal mode in zContainer. To get the launch URL, open zContainer, hold the app, tap \"Add to Home Screen\" -> \"Copy Launch URL\""
         },
         "searchKeywords" : []
       },

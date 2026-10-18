@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Checks a built LiveContainer.app (or an .ipa holding one) without Apple tools.
-build.sh runs it on every build; run it by hand on an IPA with the same settings
-the build used, e.g.
+"""Checks a built zContainer app (Payload/LiveContainer.app, or an .ipa holding
+one) without Apple tools. build.sh runs it on every build; run it by hand on an
+IPA with the same settings the build used, e.g.
 
     ZC_BUNDLE_ID=com.example.app ZC_EXTENSIONS=0 Scripts/zc/check.py build/zc/X.ipa
 
@@ -27,7 +27,14 @@ What it checks:
   for before it hands over its certificate;
 - LaunchAppExtension's Metadata.appintents parses;
 - the compiled string tables parse, every language has every key, and none of
-  them mentions SideStore or AltStore.
+  them mentions SideStore or AltStore;
+- zContainer's identity: the zcontainer URL scheme comes first and no
+  livecontainer scheme is declared or queried, the queried schemes are only
+  zcontainer and zeus, the name is zContainer, the keychain groups are
+  <team>.app.reiko.zcontainer.shared and .1 to .127 and the app group is named
+  after the bundle ID, and no user-facing string (string tables, InfoPlist.strings,
+  Info.plist values, the Shortcuts action) says LiveContainer, except the About
+  page's credits (lc.about.*) and links to LiveContainer's own pages.
 
 verify_sig.py checks the signatures themselves.
 """
@@ -79,9 +86,46 @@ EXPORTS = {
 # app (ZContainer.isMarked in Zeus); LCZeusCertificate reads that file.
 ZEUS_COMPANION = {'Kind': 'zContainer', 'Protocol': 1}
 STORES = re.compile(r'(?i)side-?store|alt-?store')
+# zContainer's identity. The keychain groups don't follow the bundle ID: they are
+# the same for every build, as LiveContainer's are, so a test build under another
+# App ID still finds them.
+SCHEME = 'zcontainer'
+QUERIED_SCHEMES = ['zcontainer', 'zeus']  # its own (canOpenURL on itself) and Zeus's
+NAME = 'zContainer'
+KEYCHAIN_GROUP = 'app.reiko.zcontainer.shared'
+KEYCHAIN_GROUP_COUNT = 128
+# The old name, outside URLs and links to LiveContainer's own pages, which may
+# keep it (a link to LiveContainer's FAQ is still called that).
+OLD_NAME = re.compile(r'(?i)live\s?container')
+UPSTREAM_LINK = re.compile(r'\[[^\]]*\]\s*\(https?://(?:github\.com/(?:LiveContainer|khanhduytran0)/LiveContainer|'
+                           r'livecontainer\.github\.io)[^)\s]*\)')
+URL = re.compile(r'[a-z][a-z0-9+.-]*://[^\s)\]"]+', re.I)
+CREDIT_KEYS = 'lc.about.'  # Settings > About zContainer credits LiveContainer by name
 REQUIRED_KEYS = ['CFBundleIdentifier', 'CFBundleExecutable', 'CFBundlePackageType', 'CFBundleInfoDictionaryVersion',
                  'CFBundleShortVersionString', 'CFBundleVersion', 'CFBundleSupportedPlatforms', 'MinimumOSVersion',
                  'UIDeviceFamily']
+
+
+# Info.plist keys people see: the Home Screen name, and the name iOS falls back
+# to and says. Usage descriptions are checked too.
+VISIBLE_KEYS = ('CFBundleDisplayName', 'CFBundleName', 'CFBundleSpokenName')
+
+
+def says_old_name(value):
+    """Whether a user-facing value (a string, or a plural dictionary) still says
+    LiveContainer, leaving out URLs and links to LiveContainer's own pages."""
+    return any(OLD_NAME.search(URL.sub('', UPSTREAM_LINK.sub('', text))) for text in strings_in(value))
+
+
+def strings_in(value):
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, dict):
+        for v in value.values():
+            yield from strings_in(v)
+    elif isinstance(value, list):
+        for v in value:
+            yield from strings_in(v)
 
 
 class Checker:
@@ -89,6 +133,7 @@ class Checker:
         self.app, self.args = app, args
         self.failures = 0
         self.repo = os.environ.get('ZC_REPO') or os.path.abspath(os.path.join(HERE, '..', '..'))
+        self.old_names = []  # user-facing strings that still say LiveContainer
         self.signer = codesign.Signer(self.repo, args.bundle_id)
 
     def ok(self, message):
@@ -286,13 +331,17 @@ class Checker:
                         self.ok(f'{rel}: all {len(wanted)} permission strings from project.pbxproj')
             if bundle == '':
                 app_info = info
+            if not bundle.endswith('.framework'):  # frameworks keep their module names
+                self.old_names += [f'{rel}: {k}' for k, v in info.items()
+                                   if (k in VISIBLE_KEYS or k.endswith('UsageDescription')) and says_old_name(v)]
             self.expect(not problems, f'{rel}: {info.get("CFBundleIdentifier")} {info.get("CFBundleShortVersionString")}'
                         f' ({info.get("CFBundleVersion")})', ', '.join(problems))
         if app_info is None:
             return self.fail('Info.plist: missing')
+        self.app_info = app_info
         self.expect(app_info.get('CFBundleIdentifier') == self.args.bundle_id, f'app bundle ID {self.args.bundle_id}',
                     str(app_info.get('CFBundleIdentifier')))
-        name = self.args.display_name or 'LiveContainer'
+        name = self.args.display_name or NAME
         self.expect(app_info.get('CFBundleDisplayName') == name, f'display name "{name}"',
                     str(app_info.get('CFBundleDisplayName')))
         self.expect(str(app_info.get('LCVersionInfo', '')).startswith('Release ('), f'LCVersionInfo "{app_info.get("LCVersionInfo")}"')
@@ -309,12 +358,50 @@ class Checker:
         if os.path.isdir(intents):
             try:
                 with open(os.path.join(intents, 'extract.actionsdata'), encoding='utf-8') as f:
-                    actions = sorted(json.load(f)['actions'])
+                    metadata = json.load(f)
+                actions = sorted(metadata['actions'])
+                self.old_names += [f'LaunchAppExtension Metadata.appintents: "{text[:40]}"'
+                                   for text in strings_in(metadata) if says_old_name(text)]
                 with open(os.path.join(intents, 'version.json'), encoding='utf-8') as f:
                     version = json.load(f)['version']
                 self.ok(f'LaunchAppExtension Metadata.appintents: version {version}, actions {actions}')
             except (OSError, ValueError, KeyError) as e:
                 self.fail(f'LaunchAppExtension Metadata.appintents does not parse ({e})')
+
+    def identity(self):
+        """zContainer's own URL scheme, name, keychain groups and app group, and no
+        user-facing string left that says LiveContainer."""
+        print('identity')
+        info = getattr(self, 'app_info', None)
+        if info is None:
+            return self.fail('no main Info.plist to check')
+        schemes = [s for t in info.get('CFBundleURLTypes', []) for s in t.get('CFBundleURLSchemes', [])]
+        queried = info.get('LSApplicationQueriesSchemes', [])
+        # LiveContainer reads its own scheme as the first one; Zeus adds its scheme after it.
+        self.expect(schemes[:1] == [SCHEME], f'first URL scheme {SCHEME}://', ', '.join(schemes))
+        old = [s for s in schemes + queried if OLD_NAME.search(s)]
+        self.expect(not old, 'no livecontainer URL scheme declared or queried', ', '.join(old))
+        self.expect(queried == QUERIED_SCHEMES, f'queried schemes {", ".join(QUERIED_SCHEMES)}', ', '.join(queried))
+        self.expect(info.get('CFBundleName') == NAME, f'CFBundleName "{NAME}"', str(info.get('CFBundleName')))
+        wanted_groups = [KEYCHAIN_GROUP] + [f'{KEYCHAIN_GROUP}.{i}' for i in range(1, KEYCHAIN_GROUP_COUNT)]
+        app_group = f'group.{self.args.bundle_id}'
+        for target in sorted(self.signer.targets):
+            entitlements = self.signer.entitlements(target)
+            if entitlements is None:
+                continue
+            groups = entitlements.get('keychain-access-groups')
+            if groups is not None:
+                teams = {g.split('.', 1)[0] for g in groups}
+                suffixes = [g.split('.', 1)[1] for g in groups]
+                self.expect(len(teams) == 1 and suffixes == wanted_groups,
+                            f'{target}: {len(groups)} keychain groups <team>.{KEYCHAIN_GROUP}, .1 to .{KEYCHAIN_GROUP_COUNT - 1}',
+                            ', '.join(sorted(set(suffixes) ^ set(wanted_groups))[:5]))
+            app_groups = entitlements.get('com.apple.security.application-groups')
+            if app_groups is not None:
+                self.expect(app_groups == [app_group], f'{target}: app group {app_group}', ', '.join(app_groups))
+        self.expect(not self.old_names, 'no user-facing string says LiveContainer (credits and links to it aside)',
+                    ', '.join(self.old_names[:10]) + (f' and {len(self.old_names) - 10} more'
+                                                      if len(self.old_names) > 10 else ''))
 
     def template_keys(self, bundle):
         """Keys the target's own Info.plist file sets (upstream's choices, kept as
@@ -345,12 +432,18 @@ class Checker:
                     tables[entry[:-6]] |= set(plurals)
                     table = {**table, **plurals}
                 stores += [f'{entry}: {k}' for k, v in table.items() if STORES.search(k + repr(v))]
+                self.old_names += [f'{entry}/Localizable: {k}' for k, v in table.items()
+                                   if not k.startswith(CREDIT_KEYS) and says_old_name(v)]
         if not self.expect('en' in tables, 'en.lproj/Localizable.strings'):
             return
         short = {lang: len(tables['en'] - keys) for lang, keys in tables.items() if tables['en'] - keys}
         self.expect(not short, f'{len(tables)} languages, each with all {len(tables["en"])} keys', str(short))
         self.expect(not stores, 'no string mentions SideStore or AltStore', ', '.join(stores[:10]))
         infoplist = [e for e in os.listdir(self.app) if os.path.isfile(os.path.join(self.app, e, 'InfoPlist.strings'))]
+        for entry in infoplist:
+            with open(os.path.join(self.app, entry, 'InfoPlist.strings'), 'rb') as f:
+                table = plistlib.load(f)
+            self.old_names += [f'{entry}/InfoPlist: {k}' for k, v in table.items() if says_old_name(v)]
         self.ok(f'{len(infoplist)} InfoPlist.strings')
 
 
@@ -358,7 +451,7 @@ def main():
     env = os.environ
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('path', help='LiveContainer.app or an .ipa')
-    parser.add_argument('--bundle-id', default=env.get('ZC_BUNDLE_ID', 'com.kdt.livecontainer'))
+    parser.add_argument('--bundle-id', default=env.get('ZC_BUNDLE_ID', 'app.reiko.zcontainer'))
     parser.add_argument('--extensions', default=env.get('ZC_EXTENSIONS', '1'), choices=['0', '1'])
     parser.add_argument('--display-name', default=env.get('ZC_DISPLAY_NAME', ''))
     parser.add_argument('--min-ios', default=env.get('ZC_MIN_IOS', '17.0'))
@@ -385,6 +478,7 @@ def main():
         checker.binaries()
         checker.plists()
         checker.strings()
+        checker.identity()
     finally:
         if tmp:
             shutil.rmtree(tmp)
