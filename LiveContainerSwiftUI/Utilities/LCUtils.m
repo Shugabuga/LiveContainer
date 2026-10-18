@@ -38,7 +38,13 @@
         return liveProcessBundle.bundleIdentifier;
     }
     
-    // in LC2, attempt to guess LC1's LiveProcess extension
+    // in LC2, attempt to guess LC1's LiveProcess extension. Only zContainer's own
+    // copies guess: a build under another App ID (the test build) has its own app
+    // group, so zContainer's extension couldn't find the apps it was asked to run.
+    NSString *ownBundleID = NSBundle.mainBundle.bundleIdentifier;
+    if(![ownBundleID isEqualToString:@"app.reiko.zcontainer"] && ![ownBundleID hasPrefix:@"app.reiko.zcontainer."]) {
+        return nil;
+    }
     NSString *bundleID = [NSString stringWithFormat:@"app.reiko.zcontainer.%@.LiveProcess", LCSharedUtils.teamIdentifier];
     if([NSExtension extensionWithIdentifier:bundleID error:nil]) {
         return bundleID;

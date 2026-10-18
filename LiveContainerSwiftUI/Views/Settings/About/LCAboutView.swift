@@ -3,8 +3,8 @@
 //  LiveContainerSwiftUI
 //
 //  Settings > About zContainer: who made LiveContainer, which zContainer is
-//  built on, where zContainer's source is, and the notices the AGPL asks a
-//  modified version to show.
+//  built on, where zContainer's source is, the notices the AGPL asks a
+//  modified version to show, and the license texts that come with the app.
 //
 
 import SwiftUI
@@ -34,8 +34,16 @@ struct LCAboutView: View {
             Section {
                 LCAboutLinkRow(title: "lc.about.sourceCode".loc, detail: LCAboutLinks.display(LCAboutLinks.source),
                                url: LCAboutLinks.source)
-                LCAboutLinkRow(title: "GNU Affero General Public License v3.0", detail: "lc.about.licenseDetail".loc,
-                               url: LCAboutLinks.license)
+                NavigationLink {
+                    LCLicenseView(license: .zContainer)
+                } label: {
+                    LCAboutRowLabel(title: LCLicense.zContainer.licenseName, detail: "lc.about.licenseDetail".loc)
+                }
+                NavigationLink {
+                    LCLicensesView()
+                } label: {
+                    LCAboutRowLabel(title: "lc.about.licenses".loc, detail: "lc.about.licensesDetail".loc)
+                }
             } header: {
                 Text("lc.about.legal".loc)
             } footer: {

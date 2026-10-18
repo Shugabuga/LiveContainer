@@ -28,9 +28,11 @@ What it checks:
 - LaunchAppExtension's Metadata.appintents parses;
 - the compiled string tables parse, every language has every key, and none of
   them mentions SideStore or AltStore;
-- zContainer's identity: the zcontainer URL scheme comes first and no
-  livecontainer scheme is declared or queried, the queried schemes are only
-  zcontainer and zeus, the name is zContainer, the keychain groups are
+- the license texts the About page shows (LCLicense.swift) are in Licenses/;
+- zContainer's identity: the build's URL scheme (ZC_URL_SCHEME, zcontainer by
+  default) comes first and no livecontainer scheme is declared or queried, the
+  queried schemes are only that one and zeus, the name is zContainer (the share
+  extension's too, which the share sheet shows), the keychain groups are
   <team>.app.reiko.zcontainer.shared and .1 to .127 and the app group is named
   after the bundle ID, and no user-facing string (string tables, InfoPlist.strings,
   Info.plist values, the Shortcuts action) says LiveContainer, except the About
@@ -86,11 +88,15 @@ EXPORTS = {
 # app (ZContainer.isMarked in Zeus); LCZeusCertificate reads that file.
 ZEUS_COMPANION = {'Kind': 'zContainer', 'Protocol': 1}
 STORES = re.compile(r'(?i)side-?store|alt-?store')
+# The About page's license texts: LCLicense.swift names each file, which the
+# build copies into Licenses/.
+LICENSE_LIST = 'LiveContainerSwiftUI/Views/Settings/About/LCLicense.swift'
+LICENSE_FILE = re.compile(r'fileName:\s*"([^"]+)"')
 # zContainer's identity. The keychain groups don't follow the bundle ID: they are
 # the same for every build, as LiveContainer's are, so a test build under another
-# App ID still finds them.
-SCHEME = 'zcontainer'
-QUERIED_SCHEMES = ['zcontainer', 'zeus']  # its own (canOpenURL on itself) and Zeus's
+# App ID still finds them. The URL scheme is ZC_URL_SCHEME (--url-scheme), and the
+# app queries it (canOpenURL on itself) and Zeus's.
+OTHER_QUERIED_SCHEMES = ['zeus']
 NAME = 'zContainer'
 KEYCHAIN_GROUP = 'app.reiko.zcontainer.shared'
 KEYCHAIN_GROUP_COUNT = 128
@@ -190,6 +196,11 @@ class Checker:
             if STORES.search(repr(self.signer.entitlements(target))):
                 stores.append(f'{target} entitlements')
         self.expect(not stores, 'nothing of SideStore or AltStore', ', '.join(stores))
+        with open(os.path.join(self.repo, LICENSE_LIST), encoding='utf-8') as f:
+            licenses = LICENSE_FILE.findall(f.read())
+        lacking = [n for n in licenses if not os.path.isfile(os.path.join(self.app, 'Licenses', n))]
+        self.expect(licenses and not lacking, f'{len(licenses)} license texts in Licenses/ for the About page',
+                    ', '.join(lacking) or f'none named in {LICENSE_LIST}')
 
     def main_executables(self):
         """{relative path of a bundle's executable: target name} for every code bundle."""
@@ -321,6 +332,10 @@ class Checker:
                     problems.append(f'CFBundleIdentifier={info.get("CFBundleIdentifier")}')
                 if 'NSExtension' not in info and 'EXAppExtensionAttributes' not in info:
                     problems.append('no NSExtension')
+                if name == 'ShareExtension' and info.get('CFBundleDisplayName') != (self.args.display_name or NAME):
+                    # The share sheet names the app by its share extension's display name.
+                    problems.append(f'CFBundleDisplayName={info.get("CFBundleDisplayName")}, '
+                                    f'expected {self.args.display_name or NAME}')
                 if name == 'LiveProcess':
                     settings = pbxproj.Project(repo).settings('LiveProcess')
                     wanted = [k[len('INFOPLIST_KEY_'):] for k in settings.keys()
@@ -378,10 +393,12 @@ class Checker:
         schemes = [s for t in info.get('CFBundleURLTypes', []) for s in t.get('CFBundleURLSchemes', [])]
         queried = info.get('LSApplicationQueriesSchemes', [])
         # LiveContainer reads its own scheme as the first one; Zeus adds its scheme after it.
-        self.expect(schemes[:1] == [SCHEME], f'first URL scheme {SCHEME}://', ', '.join(schemes))
+        scheme = self.args.url_scheme
+        self.expect(schemes[:1] == [scheme], f'first URL scheme {scheme}://', ', '.join(schemes))
         old = [s for s in schemes + queried if OLD_NAME.search(s)]
         self.expect(not old, 'no livecontainer URL scheme declared or queried', ', '.join(old))
-        self.expect(queried == QUERIED_SCHEMES, f'queried schemes {", ".join(QUERIED_SCHEMES)}', ', '.join(queried))
+        wanted = [scheme] + OTHER_QUERIED_SCHEMES
+        self.expect(queried == wanted, f'queried schemes {", ".join(wanted)}', ', '.join(queried))
         self.expect(info.get('CFBundleName') == NAME, f'CFBundleName "{NAME}"', str(info.get('CFBundleName')))
         wanted_groups = [KEYCHAIN_GROUP] + [f'{KEYCHAIN_GROUP}.{i}' for i in range(1, KEYCHAIN_GROUP_COUNT)]
         app_group = f'group.{self.args.bundle_id}'
@@ -454,6 +471,7 @@ def main():
     parser.add_argument('--bundle-id', default=env.get('ZC_BUNDLE_ID', 'app.reiko.zcontainer'))
     parser.add_argument('--extensions', default=env.get('ZC_EXTENSIONS', '1'), choices=['0', '1'])
     parser.add_argument('--display-name', default=env.get('ZC_DISPLAY_NAME', ''))
+    parser.add_argument('--url-scheme', default=env.get('ZC_URL_SCHEME') or 'zcontainer')
     parser.add_argument('--min-ios', default=env.get('ZC_MIN_IOS', '17.0'))
     parser.add_argument('--sdk', default=env.get('ZC_RECORDED_SDK', '26.2'), help='SDK version the binaries record')
     parser.add_argument('--signing', choices=['adhoc', 'none', 'other'],

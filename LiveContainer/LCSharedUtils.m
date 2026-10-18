@@ -377,8 +377,39 @@ NSString* FBSOpenApplicationOptionKeyPayloadURL = @"__PayloadURL";
     return infoDict[@"LCDataUUID"];
 }
 
+// The first URL scheme in the app's own Info.plist, read from the host app when
+// this runs in one of its extensions (LiveProcess, the share and launch
+// extensions), which sit two folders down in PlugIns. It is "zcontainer" unless
+// a build sets another (ZC_URL_SCHEME in the Linux build), so a test build can
+// sit next to zContainer without taking its links. Every link zContainer makes
+// for itself, or checks as its own, uses this rather than a literal scheme.
++ (NSString *)hostAppUrlScheme {
+    static NSString *scheme = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        // lcMainBundle keeps the app's bundle after a guest app takes over
+        // NSBundle.mainBundle; extensions that don't run LiveContainerMain leave it nil.
+        NSBundle *bundle = lcMainBundle ?: NSBundle.mainBundle;
+        if([bundle.bundlePath.pathExtension isEqualToString:@"appex"]) {
+            NSURL *appURL = bundle.bundleURL.URLByDeletingLastPathComponent.URLByDeletingLastPathComponent;
+            bundle = [NSBundle bundleWithURL:appURL] ?: bundle;
+        }
+        id urlTypes = bundle.infoDictionary[@"CFBundleURLTypes"];
+        if([urlTypes isKindOfClass:NSArray.class] && [urlTypes count] > 0 && [urlTypes[0] isKindOfClass:NSDictionary.class]) {
+            id schemes = urlTypes[0][@"CFBundleURLSchemes"];
+            if([schemes isKindOfClass:NSArray.class] && [schemes count] > 0 && [schemes[0] isKindOfClass:NSString.class]) {
+                scheme = schemes[0];
+            }
+        }
+        if(scheme.length == 0) {
+            scheme = @"zcontainer";
+        }
+    });
+    return scheme;
+}
+
 + (NSArray<NSString*>*)lcUnorderedUrlSchemes {
-    NSArray<NSString *> *defaultSchemes = @[@"zcontainer"];
+    NSArray<NSString *> *defaultSchemes = @[self.hostAppUrlScheme];
     return defaultSchemes;
 }
 

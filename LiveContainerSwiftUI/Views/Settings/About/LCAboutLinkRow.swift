@@ -16,15 +16,7 @@ struct LCAboutLinkRow: View {
     var body: some View {
         Link(destination: url) {
             HStack {
-                VStack(alignment: .leading) {
-                    Text(title)
-                        .foregroundStyle(.primary)
-                    if let detail {
-                        Text(detail)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
-                }
+                LCAboutRowLabel(title: title, detail: detail)
                 Spacer()
                 Image(systemName: "arrow.up.right")
                     .font(.footnote)

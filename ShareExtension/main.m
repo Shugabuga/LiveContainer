@@ -5,6 +5,7 @@
 //  Created by s s on 2026/2/17.
 //
 #import "LCShareExtensionLauncher.h"
+#import "../LiveContainer/LCSharedUtils.h"
 #import "../LiveContainer/utils.h"
 #import "../LiveContainer/UIKitPrivate.h"
 
@@ -28,7 +29,7 @@ static Class _LSOpenConfigurationClass;
 
     NSString* bundleIdToLaunch = nil;
     NSString* scheme = url.scheme;
-    if([scheme isEqualToString:@"zcontainer"]) {
+    if([scheme isEqualToString:LCSharedUtils.hostAppUrlScheme]) {
         bundleIdToLaunch = NSBundle.mainBundle.bundleIdentifier.stringByDeletingPathExtension;
     } else {
         bundleIdToLaunch = [NSUserDefaults.lcSharedDefaults stringForKey:[NSString stringWithFormat:@"LCBundleID.%@", scheme]];

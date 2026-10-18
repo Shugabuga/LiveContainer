@@ -571,7 +571,7 @@ static LCControlAppURLHandling LCHandleControlAppURL(NSURL *url, NSString** modi
     BOOL openSelf = canAppOpenItself(url);
     BOOL redirectToHost = shouldRedirectOpenURLToHost(url);;
     if(openSelf || redirectToHost) {
-        NSString* schemeToUse = openSelf ? NSUserDefaults.lcAppUrlScheme : @"zcontainer";
+        NSString* schemeToUse = openSelf ? NSUserDefaults.lcAppUrlScheme : [NSClassFromString(@"LCSharedUtils") hostAppUrlScheme];
         NSData *data = [url.absoluteString dataUsingEncoding:NSUTF8StringEncoding];
         NSString *encodedUrl = [data base64EncodedStringWithOptions:0];
         NSString* finalUrlStr = [NSString stringWithFormat:@"%@://open-url?url=%@", schemeToUse, encodedUrl];
@@ -652,7 +652,7 @@ static LCControlAppURLHandling LCHandleControlAppURL(NSURL *url, NSString** modi
     BOOL openSelf = canAppOpenItself(url);
     BOOL redirectToHost = shouldRedirectOpenURLToHost(url);
     if(openSelf || redirectToHost) {
-        NSString* schemeToUse = openSelf ? NSUserDefaults.lcAppUrlScheme : @"zcontainer";
+        NSString* schemeToUse = openSelf ? NSUserDefaults.lcAppUrlScheme : [NSClassFromString(@"LCSharedUtils") hostAppUrlScheme];
         NSData *data = [url.absoluteString dataUsingEncoding:NSUTF8StringEncoding];
         NSString *encodedUrl = [data base64EncodedStringWithOptions:0];
         NSString* finalUrlStr = [NSString stringWithFormat:@"%@://open-url?url=%@", schemeToUse, encodedUrl];

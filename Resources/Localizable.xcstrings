@@ -73,6 +73,18 @@
         }
       }
     },
+    "lc.about.licenseMissing" : {
+      "comment" : "About page, in place of a license's text when it couldn't be read; opens the license online.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This license couldn't be loaded. Read it online."
+          }
+        }
+      }
+    },
     "lc.about.licenseNotice" : {
       "comment" : "About page legal notice the AGPL requires (copyright, no warranty, license). Keep its meaning exact.",
       "extractionState" : "manual",
@@ -81,6 +93,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Copyright © LiveContainer contributors. Changes for zContainer copyright © 2026 the zContainer authors.\n\nzContainer is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, version 3. It is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the license for details. The complete source code of this version, build scripts included, is at the link above."
+          }
+        }
+      }
+    },
+    "lc.about.licenses" : {
+      "comment" : "About page row, and the title of the page listing the licenses of the open source software inside zContainer.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Licenses"
+          }
+        }
+      }
+    },
+    "lc.about.licensesDetail" : {
+      "comment" : "About page, under the Licenses row.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The open source software inside zContainer"
+          }
+        }
+      }
+    },
+    "lc.about.licensesFooter" : {
+      "comment" : "Under the list on the Licenses page.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "zContainer includes this open source software. Its licenses ask for their full text to come with the app."
           }
         }
       }

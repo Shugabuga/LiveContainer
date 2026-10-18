@@ -14,13 +14,17 @@ resource steps Xcode would:
 - No asset catalog compiler exists on Linux, so the app icon and images become loose
   PNG files. Asset catalog colors are skipped (the code falls back to system colors).
 - The prebuilt OpenSSL and CydiaSubstrate frameworks, without headers.
+- The license texts the About page shows, in Licenses/, as the Xcode target's Run
+  Script copies them.
+- ZC_URL_SCHEME as the main app's first URL scheme, and ZC_DISPLAY_NAME as the
+  name of the app and of its share extension, which the share sheet shows.
 - LaunchAppExtension's Metadata.appintents, which Xcode extracts from the
   extension's App Intents code and no Linux tool can; it is kept by hand in
   gen/LaunchAppExtension (build.sh stops when that code changes).
 
 Settings come from the environment (see env.sh): ZC_REPO, ZC_BUNDLE_ID,
-ZC_DISPLAY_NAME, ZC_MIN_IOS, ZC_SDK, ZC_SDK_VERSION, ZC_RECORDED_SDK, ZC_OPENSSL,
-ZC_VERSION_INFO.
+ZC_DISPLAY_NAME, ZC_URL_SCHEME, ZC_MIN_IOS, ZC_SDK, ZC_SDK_VERSION,
+ZC_RECORDED_SDK, ZC_OPENSSL, ZC_VERSION_INFO.
 
 Usage: assemble.py <path to LiveContainer.app>
 """
@@ -45,6 +49,18 @@ GEN = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'gen')
 PROJECT = pbxproj.Project(REPO)
 # The app's bundle ID comes from this xcconfig variable; extensions append to it.
 OVERRIDES = {'LIVECONTAINER_BUNDLE_IDENTIFIER': ENV['ZC_BUNDLE_ID']}
+URL_SCHEME = ENV.get('ZC_URL_SCHEME') or 'zcontainer'
+# The license texts the About page shows (LCLicense.swift), named as the app's
+# Licenses folder holds them, from each project's own LICENSE file. The Xcode
+# target's Run Script copies the same files, and every .txt in Resources/Licenses
+# (the licenses the source doesn't otherwise hold) after them.
+LICENSES = {
+    'zContainer.txt': 'LICENSE',
+    'OpenSSL.txt': 'OpenSSL/LICENSE.txt',
+    'ElleKit.txt': 'Resources/Frameworks/CydiaSubstrate.framework/LICENSE',
+    'litehook.txt': 'litehook/LICENSE',
+}
+LICENSES_FOLDER = 'Resources/Licenses'
 PACKAGE_TYPES = {
     'com.apple.product-type.application': 'APPL',
     'com.apple.product-type.framework': 'FMWK',
@@ -177,10 +193,26 @@ def main_app_plist(app):
     info['LCVersionInfo'] = ENV.get('ZC_VERSION_INFO') or 'Release (unknown/unknown)'
     if ENV.get('ZC_DISPLAY_NAME'):
         info['CFBundleDisplayName'] = ENV['ZC_DISPLAY_NAME']
+    set_url_scheme(info)
     write_plist(os.path.join(app, 'Info.plist'), info)
     with open(os.path.join(app, 'PkgInfo'), 'w') as f:
         f.write('APPL????')
-    note(f'Info.plist: {info["CFBundleIdentifier"]}, "{info.get("CFBundleDisplayName")}", {info["LCVersionInfo"]}')
+    note(f'Info.plist: {info["CFBundleIdentifier"]}, "{info.get("CFBundleDisplayName")}", {URL_SCHEME}://, '
+         f'{info["LCVersionInfo"]}')
+
+
+def set_url_scheme(info):
+    """ZC_URL_SCHEME in place of the scheme the Info.plist declares first, which
+    the app reads as its own (LCSharedUtils.hostAppUrlScheme), and in the
+    queried schemes, where the app asks about itself."""
+    types = info.get('CFBundleURLTypes') or [{}]
+    schemes = types[0].get('CFBundleURLSchemes') or []
+    if not schemes:
+        fail('Info.plist: the first CFBundleURLTypes entry declares no URL scheme')
+    old = schemes[0]
+    schemes[0] = URL_SCHEME
+    info['LSApplicationQueriesSchemes'] = [URL_SCHEME if s == old else s
+                                           for s in info.get('LSApplicationQueriesSchemes', [])]
 
 
 def nested_bundles(app):
@@ -206,6 +238,24 @@ def copy_prebuilt(app):
         shutil.rmtree(dst, ignore_errors=True)
         shutil.copytree(src, dst, ignore=shutil.ignore_patterns('Headers', 'PrivateHeaders', 'Modules', '_CodeSignature'))
         note(f'Frameworks/{os.path.basename(src)} (prebuilt)')
+
+
+# License texts
+
+def copy_licenses(app):
+    dst = os.path.join(app, 'Licenses')
+    os.makedirs(dst, exist_ok=True)
+    sources = dict(LICENSES)
+    folder = os.path.join(REPO, LICENSES_FOLDER)
+    for entry in sorted(os.listdir(folder)):
+        if entry.endswith('.txt'):
+            sources[entry] = os.path.join(LICENSES_FOLDER, entry)
+    for name, src in sources.items():
+        path = os.path.join(REPO, src)
+        if not os.path.isfile(path):
+            fail(f'{src} is missing (the license text for Licenses/{name})')
+        shutil.copyfile(path, os.path.join(dst, name))
+    note(f'Licenses/: {", ".join(sorted(sources))}')
 
 
 # String catalog
@@ -389,6 +439,8 @@ def main():
     copy_prebuilt(app)
     for target_name, bundle in nested_bundles(app):
         info = make_info_plist(target_name, bundle)
+        if target_name == 'ShareExtension' and ENV.get('ZC_DISPLAY_NAME'):
+            info['CFBundleDisplayName'] = ENV['ZC_DISPLAY_NAME']  # the share sheet names the app by it
         write_plist(os.path.join(bundle, 'Info.plist'), info)
         note(f'{os.path.relpath(bundle, app)}: {info["CFBundleIdentifier"]}')
         intents = os.path.join(GEN, target_name, 'Metadata.appintents')
@@ -396,6 +448,7 @@ def main():
             shutil.copytree(intents, os.path.join(bundle, 'Metadata.appintents'), dirs_exist_ok=True)
             note(f'{os.path.relpath(bundle, app)}/Metadata.appintents (from Scripts/zc/gen/{target_name})')
     copy_resources(app)
+    copy_licenses(app)
     main_app_plist(app)
     check_no_variables(app)
 

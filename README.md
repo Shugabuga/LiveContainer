@@ -23,7 +23,7 @@ For how to use it (installing apps, Home Screen shortcuts, multitasking, JIT, tw
 - It takes in the certificate Zeus includes when signing it (`LiveContainer/LCZeusCertificate.m`).
 - SideStore and AltStore support, the built-in SideStore and the installer for more LiveContainers are removed.
 - It builds on Linux (see [Building](#building)).
-- Settings > About zContainer credits LiveContainer and its authors, links to this source code and shows the license notices.
+- Settings > About zContainer credits LiveContainer and its authors, links to this source code, shows the license notices, and has the full text of zContainer's license and of the license of each open source project inside it.
 
 Internal names (the `LiveContainerShared` and `LiveContainerSwiftUI` modules, the `LC` classes and the `lc.` string keys) stay as they are, so changes from LiveContainer keep merging cleanly.
 
@@ -137,7 +137,7 @@ LiveContainer's credits:
 - @Vishram1123 for iOS 26+ JIT Script Support
 - @StephenDev0 for AltStore source support
 
-zContainer also ships:
+zContainer also ships the following. The app carries the text of each license (Settings > About zContainer > Licenses, from each project's `LICENSE` file or from `Resources/Licenses`).
 - [OpenSSL](https://www.openssl.org): [Apache License 2.0](https://www.openssl.org/source/license.html)
 - [ElleKit](https://github.com/evelyneee/ellekit)'s CydiaSubstrate, by Évelyne Bélanger: BSD license (its `LICENSE` is in `Resources/Frameworks/CydiaSubstrate.framework`)
-- [zsign](https://github.com/zhlynn/zsign) by zhlynn, in [Feather](https://github.com/khcrysalis/Feather)'s version by khcrysalis
+- [zsign](https://github.com/zhlynn/zsign) by zhlynn (BSD 3-Clause License when LiveContainer took it, MIT since 2025), in [Feather](https://github.com/khcrysalis/Feather)'s version by khcrysalis (GPL 3.0)

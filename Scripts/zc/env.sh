@@ -12,6 +12,10 @@
 : "${ZC_BUNDLE_ID:=app.reiko.zcontainer}"    # main app; extension IDs are derived from it
 : "${ZC_EXTENSIONS:=1}"                       # 0 leaves out every .appex
 : "${ZC_DISPLAY_NAME:=}"                      # empty keeps CFBundleDisplayName from Info.plist
+# URL scheme the app declares first and builds its own links with. Zeus opens
+# zContainer by "zcontainer", so only a build that must sit next to zContainer on
+# one iPhone takes another (for example zcontainer-test).
+: "${ZC_URL_SCHEME:=zcontainer}"
 : "${ZC_IPA_NAME:=zContainer.ipa}"            # file name of the IPA in $ZC_BUILD_DIR
 : "${ZC_MIN_IOS:=17.0}"                       # deployment target of every binary we build
 # SDK version the binaries record (LC_BUILD_VERSION) and Info.plist names. iOS
@@ -71,8 +75,10 @@ command -v magick >/dev/null || command -v convert >/dev/null || zc_die "ImageMa
 [[ "$(printf '%s\n' "$ZC_RECORDED_SDK" "$ZC_SDK_VERSION" | sort -V | tail -n 1)" == "$ZC_SDK_VERSION" ]] ||
     zc_die "ZC_RECORDED_SDK $ZC_RECORDED_SDK is newer than the SDK in use ($ZC_SDK_VERSION)"
 [[ "$ZC_BUNDLE_ID" =~ ^[A-Za-z0-9.-]+$ ]] || zc_die "ZC_BUNDLE_ID '$ZC_BUNDLE_ID' is not a valid bundle ID"
+[[ "$ZC_URL_SCHEME" =~ ^[a-z][a-z0-9.+-]*$ && "$ZC_URL_SCHEME" != *livecontainer* && "$ZC_URL_SCHEME" != zeus ]] ||
+    zc_die "ZC_URL_SCHEME '$ZC_URL_SCHEME' must be a lowercase URL scheme, and not LiveContainer's or Zeus's"
 [[ "$ZC_IPA_NAME" =~ ^[A-Za-z0-9._+-]+\.ipa$ && ! "$ZC_IPA_NAME" =~ ^(cache|tools|adhoc)\.ipa$ ]] ||
     zc_die "ZC_IPA_NAME '$ZC_IPA_NAME' must be a plain file name ending in .ipa"
 
-export ZC_BUNDLE_ID ZC_EXTENSIONS ZC_DISPLAY_NAME ZC_IPA_NAME ZC_MIN_IOS ZC_RECORDED_SDK ZC_ADHOC_SIGN \
+export ZC_BUNDLE_ID ZC_EXTENSIONS ZC_DISPLAY_NAME ZC_URL_SCHEME ZC_IPA_NAME ZC_MIN_IOS ZC_RECORDED_SDK ZC_ADHOC_SIGN \
     ZC_REPO ZC_BUILD_DIR ZC_SDK ZC_SDK_VERSION ZC_OPENSSL

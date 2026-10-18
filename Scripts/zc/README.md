@@ -28,7 +28,8 @@ environment (all of them are listed in `env.sh`):
 | --- | --- | --- |
 | `ZC_BUNDLE_ID` | `app.reiko.zcontainer` | Main app bundle ID; the extension IDs and the app group are derived from it |
 | `ZC_EXTENSIONS` | `1` | `0` leaves out every `.appex` |
-| `ZC_DISPLAY_NAME` | (from Info.plist) | Home Screen name |
+| `ZC_DISPLAY_NAME` | (from Info.plist) | Home Screen name, and the share extension's (the name the share sheet shows) |
+| `ZC_URL_SCHEME` | `zcontainer` | URL scheme the app declares first and makes its own links with |
 | `ZC_IPA_NAME` | `zContainer.ipa` | Output file in `build/zc/` |
 | `ZC_MIN_IOS` | `17.0` | Deployment target of every binary |
 | `ZC_RECORDED_SDK` | `26.2` | SDK version the binaries and Info.plists record (see below) |
@@ -43,9 +44,19 @@ ZC_IPA_NAME=zContainer-Test.ipa Scripts/zc/build.sh
 ```
 
 `ZC_BUNDLE_ID` sets the app's bundle ID, its extensions' (`<ID>.LiveProcess` and
-so on) and its app group (`group.<ID>`). The URL scheme (`zcontainer`) and the 128
-keychain groups (`<team>.app.reiko.zcontainer.shared` and `.1` to `.127`) stay the
-same for every build, as LiveContainer's do.
+so on) and its app group (`group.<ID>`). The 128 keychain groups
+(`<team>.app.reiko.zcontainer.shared` and `.1` to `.127`) stay the same for every
+build, as LiveContainer's do. So does the URL scheme, `zcontainer`, unless
+`ZC_URL_SCHEME` names another: the app reads its scheme from its own Info.plist
+(`LCSharedUtils.hostAppUrlScheme`) for every link it makes or takes as its own.
+
+Don't install a test build and zContainer on one iPhone together. Both answer to
+`zcontainer://`, so iOS may hand either one Zeus's install links, web clips, the
+Launch App shortcut, or the links LiveProcess sends back to its app. To keep both,
+give the test build a scheme of its own, for example `ZC_URL_SCHEME=zcontainer-test`;
+Zeus only opens `zcontainer://`, so its hand-off then reaches zContainer alone. A
+build under another App ID never borrows zContainer's LiveProcess extension, whose
+app group isn't its own, so a test build without extensions has no multitasking.
 
 Like the official IPA, the build is ad-hoc signed the way Xcode signs an archive
 without a signing identity: each binary has a certificate-less signature, and the
@@ -68,8 +79,11 @@ Objects, logs and the staged app are kept in `build/zc/<name>/`.
 - `build.sh`: compiles each product from its source folders in parallel, links,
   strips like an Xcode archive, then calls the scripts below and zips the IPA.
 - `assemble.py`: Info.plists, resources, the string catalog (`.strings` and
-  `.stringsdict` per language, English filling gaps), loose icon PNGs and the
-  prebuilt OpenSSL and CydiaSubstrate frameworks.
+  `.stringsdict` per language, English filling gaps), loose icon PNGs, the
+  prebuilt OpenSSL and CydiaSubstrate frameworks, and the license texts the About
+  page shows (`Licenses/`, copied as the Xcode target's Run Script copies them:
+  from each project's `LICENSE` file, and from `Resources/Licenses` for zsign,
+  Feather and CFastFind, whose licenses the source doesn't otherwise hold).
 - `pbxproj.py`: reads the Xcode project. `pbxproj.py check` compares it with
   `pbxproj-snapshot.txt`; `build.sh` stops when they differ, since a project change
   this build doesn't copy would only show up as a crash on a device. After looking
@@ -86,8 +100,9 @@ Objects, logs and the staged app are kept in `build/zc/<name>/`.
   points, symbols looked up by name, signatures and entitlements), the
   Info.plists (including the ZeusCompanion marker), the App Intents metadata and
   the string tables, that nothing of SideStore or AltStore is left in the bundle,
-  and zContainer's identity: the `zcontainer` scheme first and no `livecontainer`
-  scheme, the name, the keychain groups and app group, and no user-facing string
+  the license texts the About page names, and zContainer's identity: the build's
+  scheme (`ZC_URL_SCHEME`) first and no `livecontainer` scheme, the name (the
+  share extension's too), the keychain groups and app group, and no user-facing string
   that still says LiveContainer (the About page's credits, `lc.about.*`, and links
   to LiveContainer's own pages aside). `build.sh` runs it on every build.
 - `verify_sig.py`: checks every code signature and CodeResources seal against the

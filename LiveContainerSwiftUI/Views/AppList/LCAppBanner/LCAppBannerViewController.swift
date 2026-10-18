@@ -296,10 +296,11 @@ final class LCAppBannerViewController: UIViewController, UIContextMenuInteractio
             return
         }
 
+        let ownScheme: String = LCSharedUtils.hostAppUrlScheme()
         if let folderName = configuration.model.uiSelectedContainer?.folderName {
-            UIPasteboard.general.string = "zcontainer://livecontainer-launch?bundle-name=\(relativeBundlePath)&container-folder-name=\(folderName)"
+            UIPasteboard.general.string = "\(ownScheme)://livecontainer-launch?bundle-name=\(relativeBundlePath)&container-folder-name=\(folderName)"
         } else {
-            UIPasteboard.general.string = "zcontainer://livecontainer-launch?bundle-name=\(relativeBundlePath)"
+            UIPasteboard.general.string = "\(ownScheme)://livecontainer-launch?bundle-name=\(relativeBundlePath)"
         }
     }
 

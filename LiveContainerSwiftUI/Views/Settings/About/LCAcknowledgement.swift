@@ -20,7 +20,7 @@ struct LCAcknowledgement: Identifiable {
                           url: URL(string: "https://www.openssl.org")!),
         LCAcknowledgement(name: "ElleKit", detail: "Évelyne Bélanger, BSD License",
                           url: URL(string: "https://github.com/evelyneee/ellekit")!),
-        LCAcknowledgement(name: "zsign", detail: "zhlynn, with Feather's changes by khcrysalis",
+        LCAcknowledgement(name: "zsign", detail: "zhlynn, BSD License, with Feather's changes by khcrysalis, GPL 3.0",
                           url: URL(string: "https://github.com/zhlynn/zsign")!),
         LCAcknowledgement(name: "litehook", detail: "Lars Fröder (opa334), MIT License",
                           url: URL(string: "https://github.com/opa334/litehook")!),

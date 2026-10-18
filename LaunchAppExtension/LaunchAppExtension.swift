@@ -81,8 +81,9 @@ struct LaunchAppExtension: AppIntent {
     func perform() async throws -> some IntentResult {
         // sanitize url
         let normalizedLaunchScheme = launchURL.scheme?.lowercased()
-        var isLiveContainerURL = normalizedLaunchScheme == "zcontainer"
-        let preferredScheme = isLiveContainerURL ? nil : (normalizedLaunchScheme == "zcontainer1" ? "zcontainer" : normalizedLaunchScheme)
+        let ownScheme = LCSharedUtils.hostAppUrlScheme().lowercased()
+        var isLiveContainerURL = normalizedLaunchScheme == ownScheme
+        let preferredScheme = isLiveContainerURL ? nil : (normalizedLaunchScheme == "\(ownScheme)1" ? ownScheme : normalizedLaunchScheme)
         
         if let preferredScheme, let schemes = LCSharedUtils.lcUnorderedUrlSchemes() {
             isLiveContainerURL = schemes.contains(preferredScheme)
@@ -192,8 +193,8 @@ struct LaunchAppExtension: AppIntent {
                 schemeToLaunch = firstFreeInstalledLC(preferredScheme: preferredScheme)
                 allowClassicMode = schemeToLaunch != nil
             } else {
-                schemeToLaunch = "zcontainer"
-                allowClassicMode = !LCSharedUtils.isLCScheme(inUse: "zcontainer")
+                schemeToLaunch = ownScheme
+                allowClassicMode = !LCSharedUtils.isLCScheme(inUse: ownScheme)
             }
         }
 
