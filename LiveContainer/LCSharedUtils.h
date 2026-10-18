@@ -5,7 +5,6 @@
 + (NSString *)appGroupID;
 + (NSURL*) appGroupPath;
 + (BOOL)hasAppGroup;
-+ (NSUserDefaults *)sharedDefaultsFallingBackTo:(NSUserDefaults *)standardDefaults;
 + (NSString *)certificatePassword;
 + (BOOL)launchToGuestAppWithClassicMode:(NSUInteger)classicMode;
 + (BOOL)launchToGuestAppWithURL:(NSURL *)url;

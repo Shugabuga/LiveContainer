@@ -8,9 +8,7 @@
 import LocalAuthentication
 
 extension LCUtils {
-    /// The defaults shared with the extensions: the app group's, or the app's own
-    /// when it has no app group (LCSharedUtils sharedDefaultsFallingBackTo:).
-    public static let appGroupUserDefault = UserDefaults.lcShared() ?? UserDefaults.standard
+    public static let appGroupUserDefault = UserDefaults.init(suiteName: LCSharedUtils.appGroupID()) ?? UserDefaults.standard
     
     public static func signTweaks(tweakFolderUrl: URL, force : Bool = false, progressHandler : ((Progress) -> Void)? = nil) async throws {
         guard LCSharedUtils.certificatePassword() != nil else {

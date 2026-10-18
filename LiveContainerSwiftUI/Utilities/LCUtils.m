@@ -22,8 +22,8 @@
 @implementation LCUtils
 #pragma mark Certificate & password
 
-// Stored with the password in the shared defaults, which are the app's own
-// when it has no app group (LCSharedUtils sharedDefaultsFallingBackTo:).
+// Stored with the password in the shared defaults: the app group's, or the
+// "Unknown" suite in the app's own preferences when it has no app group.
 + (NSData *)certificateData {
     NSUserDefaults* nud = NSUserDefaults.lcSharedDefaults ?: NSUserDefaults.standardUserDefaults;
     return [nud objectForKey:@"LCCertificateData"];

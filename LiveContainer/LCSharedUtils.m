@@ -55,6 +55,9 @@ NSString* FBSOpenApplicationOptionKeyPayloadURL = @"__PayloadURL";
 
 + (NSString *)appGroupID {
     static dispatch_once_t once;
+    // Without an app group, the shared defaults are the suite of this name, kept
+    // in the app's own preferences. LiveContainer has always used it, so an
+    // install updated in place keeps its settings and certificate.
     static NSString *appGroupID = @"Unknown";
     dispatch_once(&once, ^{
         // The app group comes from our own entitlements (Zeus registers one for
@@ -92,16 +95,6 @@ NSString* FBSOpenApplicationOptionKeyPayloadURL = @"__PayloadURL";
 
 + (BOOL)hasAppGroup {
     return self.appGroupPath != nil;
-}
-
-+ (NSUserDefaults *)sharedDefaultsFallingBackTo:(NSUserDefaults *)standardDefaults {
-    // Without an app group (an install signed without one), the shared defaults
-    // are the app's own, so the certificate and settings still persist. Only the
-    // extensions, which need the app group anyway, lose access to them.
-    if (!self.hasAppGroup) {
-        return standardDefaults;
-    }
-    return [[NSUserDefaults alloc] initWithSuiteName:self.appGroupID];
 }
 
 + (NSString *)certificatePassword {

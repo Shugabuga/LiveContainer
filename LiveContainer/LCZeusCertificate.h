@@ -28,6 +28,11 @@
 // Whether the app holds a ZeusCertificate.plist.
 + (BOOL)isBundled;
 
+// A build of this fork briefly kept the shared defaults in the standard ones when
+// the app had no app group. Moves a certificate it stored there to the shared
+// defaults, unless one is stored there already, and leaves no copy behind.
++ (void)moveCertificateOutOfStandardDefaults;
+
 @end
 
 // Keys in the shared defaults (NSUserDefaults.lcSharedDefaults), next to

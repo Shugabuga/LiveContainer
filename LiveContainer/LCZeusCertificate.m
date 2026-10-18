@@ -38,6 +38,30 @@ extern NSUserDefaults *lcUserDefaults;
     return [NSFileManager.defaultManager fileExistsAtPath:self.bundledPath];
 }
 
++ (void)moveCertificateOutOfStandardDefaults {
+    NSUserDefaults *standard = lcUserDefaults ?: NSUserDefaults.standardUserDefaults;
+    NSUserDefaults *shared = NSUserDefaults.lcSharedDefaults;
+    // LiveContainer itself never stores the certificate in the standard defaults.
+    if (!shared || ![standard objectForKey:LCCertificateDataKey]) {
+        return;
+    }
+    BOOL move = ![shared objectForKey:LCCertificateDataKey];
+    for (NSString *key in @[LCCertificateDataKey, LCCertificatePasswordKey, LCCertificateUpdateDateKey,
+                            LCCertificateFromZeusKey, LCZeusCertificateSerialNumberKey, LCZeusCertificateTeamIDKey,
+                            LCZeusCertificateExpiresAtKey, LCZeusCertificateNeedsCheckKey,
+                            LCZeusCertificateProblemKey, LCZeusCertificateProblemDetailKey]) {
+        if (move) {
+            id value = [standard objectForKey:key];
+            if (value) {
+                [shared setObject:value forKey:key];
+            } else {
+                [shared removeObjectForKey:key];
+            }
+        }
+        [standard removeObjectForKey:key];
+    }
+}
+
 + (BOOL)importIfNeeded {
     return [self importReplacingStored:NO];
 }

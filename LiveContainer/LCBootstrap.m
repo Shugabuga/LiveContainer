@@ -39,7 +39,7 @@ bool isSharedBundle = false;
 }
 + (instancetype)lcSharedDefaults {
     if(!lcUserDefaults) {
-        lcSharedDefaults = [LCSharedUtils sharedDefaultsFallingBackTo:NSUserDefaults.standardUserDefaults];
+        lcSharedDefaults = [[NSUserDefaults alloc] initWithSuiteName: [LCSharedUtils appGroupID]];
     }
     return lcSharedDefaults;
 }
@@ -629,7 +629,7 @@ int LiveContainerMain(int argc, char *argv[]) {
     lcMainBundle = [NSBundle mainBundle];
     lcUserDefaults = NSUserDefaults.standardUserDefaults;
     
-    lcSharedDefaults = [LCSharedUtils sharedDefaultsFallingBackTo:lcUserDefaults];
+    lcSharedDefaults = [[NSUserDefaults alloc] initWithSuiteName: [LCSharedUtils appGroupID]];
     lcAppUrlScheme = NSBundle.mainBundle.infoDictionary[@"CFBundleURLTypes"][0][@"CFBundleURLSchemes"][0];
     lcAppGroupPath = [[NSFileManager.defaultManager containerURLForSecurityApplicationGroupIdentifier:[NSClassFromString(@"LCSharedUtils") appGroupID]] path];
     isLiveProcess = [lcAppUrlScheme isEqualToString:@"liveprocess"];
@@ -700,6 +700,7 @@ int LiveContainerMain(int argc, char *argv[]) {
     // Take in the certificate Zeus put inside this app, before the UI or a guest
     // app looks for one. The extensions read it from the app group instead.
     if(!isLiveProcess) {
+        [LCZeusCertificate moveCertificateOutOfStandardDefaults];
         [LCZeusCertificate importIfNeeded];
     }
 

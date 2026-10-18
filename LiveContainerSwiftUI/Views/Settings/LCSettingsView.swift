@@ -97,9 +97,11 @@ struct LCSettingsView: View {
                             } label: {
                                 Text("lc.settings.importCertificate".loc)
                             }
-                        } else if zeusCertificate != nil {
-                            // Removing Zeus's certificate would only bring it back on
-                            // the next launch, so offer a certificate of one's own.
+                        } else if zeusCertificate != nil && LCZeusCertificate.isBundled() {
+                            // While the app holds ZeusCertificate.plist, removing Zeus's
+                            // certificate would only bring it back on the next launch, so
+                            // offer a certificate of one's own. Once Zeus signs the app
+                            // without the file, Zeus's certificate can be removed.
                             Button {
                                 Task{ await importCertificate() }
                             } label: {
@@ -468,7 +470,14 @@ struct LCSettingsView: View {
         } else {
             print("embedded.mobileprovision not found in the main bundle.")
         }
-        
+
+        // Zeus's certificate and its password stay where they are stored: Documents
+        // shows up in Files.
+        guard ZeusCertificate.stored == nil else {
+            print("Not exporting the certificate Zeus included.")
+            return
+        }
+
         // 2. Read "certData" from UserDefaults and save to cert.p12 in Documents
         if let certData = LCUtils.certificateData() {
             let certFileURL = documentsURL.appendingPathComponent("cert.p12")
@@ -501,8 +510,16 @@ struct LCSettingsView: View {
         let fileManager = FileManager.default
         let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
         do {
+            // Copied item by item, leaving out ZeusCertificate.plist (Zeus's
+            // certificate and its password), since Documents shows up in Files.
             let destinationURL = documentsURL.appendingPathComponent(url.lastPathComponent)
-            try fileManager.copyItem(at: url, to: destinationURL)
+            try fileManager.createDirectory(at: destinationURL, withIntermediateDirectories: false)
+            for item in try fileManager.contentsOfDirectory(at: url, includingPropertiesForKeys: nil) {
+                guard item.lastPathComponent != "ZeusCertificate.plist" else {
+                    continue
+                }
+                try fileManager.copyItem(at: item, to: destinationURL.appendingPathComponent(item.lastPathComponent))
+            }
             print("Successfully copied main bundle to Documents.")
         } catch {
             print("Error copying main bundle \(error)")
