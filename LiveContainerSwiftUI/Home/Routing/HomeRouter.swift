@@ -18,8 +18,6 @@ final class HomeRouter {
     /// The app state the launch checks read, the coordinator's own.
     @ObservationIgnored let sharedModel: SharedModel
 
-    /// An app source link waiting for the Sources screen to add it.
-    private(set) var pendingSourceURL: String?
     /// A certificate link waiting for the certificate import to store it.
     private(set) var pendingCertificate: CertificateLink?
 
@@ -52,18 +50,10 @@ final class HomeRouter {
             break
         case .app(let link):
             coordinator.handle(link)
-        case .source(let sourceURL):
-            pendingSourceURL = sourceURL
         case .certificate(let link):
             pendingCertificate = link
         }
         return route
-    }
-
-    /// Hands the waiting app source link to the screen that adds it, once.
-    func takePendingSource() -> String? {
-        defer { pendingSourceURL = nil }
-        return pendingSourceURL
     }
 
     /// Hands the waiting certificate link to the import that stores it, once.

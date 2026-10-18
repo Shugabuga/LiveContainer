@@ -49,8 +49,6 @@ struct LCPath {
 }
 
 class SharedModel: ObservableObject {
-    @Published var selectedTab: LCTabIdentifier = .apps
-    
     @Published var isHiddenAppUnlocked = false
     @Published var developerMode = false
     // 0 = current liveContainer is the primary one,
@@ -298,17 +296,6 @@ struct JITStreamerEBMountResponse : Codable {
 }
 
 
-
-extension NSNotification {
-    static let InstallAppNotification = Notification.Name.init("InstallAppNotification")
-}
-
-public enum LCTabIdentifier: Hashable {
-    case sources
-    case apps
-    case tweaks
-    case settings
-}
 
 
 enum BatchMoveError: LocalizedError {

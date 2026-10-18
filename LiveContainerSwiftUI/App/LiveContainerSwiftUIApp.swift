@@ -11,6 +11,7 @@ struct LiveContainerSwiftUIApp : SwiftUI.App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @State private var coordinator: AppLaunchCoordinator
     @State private var router: HomeRouter
+    @State private var home: HomeScreenModel
     
     init() {
         let fm = FileManager()
@@ -101,20 +102,22 @@ struct LiveContainerSwiftUIApp : SwiftUI.App {
             UserDefaults.lcShared().set(Array(tempURLSchemes), forKey: "LCGuestURLSchemes")
         }
 
-        // Made after the apps are loaded, so the coordinator becomes their delegate.
+        // Made after the apps are loaded, so the coordinator becomes their
+        // delegate and the Home Screen places them.
         let coordinator = AppLaunchCoordinator(sharedModel: DataManager.shared.model)
         _coordinator = State(initialValue: coordinator)
         _router = State(initialValue: HomeRouter(coordinator: coordinator))
+        _home = State(initialValue: HomeScreenModel(coordinator: coordinator))
     }
     
     var body: some Scene {
         WindowGroup(id: "Main") {
-            LCTabView()
+            HomeScreenView()
                 .handlesExternalEvents(preferring: ["*"], allowing: ["*"])
                 .environmentObject(DataManager.shared.model)
-                .environmentObject(LCAppSortManager.shared)
                 .environment(coordinator)
                 .environment(router)
+                .environment(home)
         }
         
         if UIApplication.shared.supportsMultipleScenes, #available(iOS 16.1, *) {

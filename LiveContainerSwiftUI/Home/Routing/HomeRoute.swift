@@ -18,10 +18,6 @@ enum HomeRoute: Equatable {
     /// AppLaunchCoordinator does.
     case app(AppLink)
 
-    /// Adds an app source, from `source?url=<source URL>`. It waits in
-    /// HomeRouter until the Sources screen takes it.
-    case source(String)
-
     /// Stores a signing certificate, from `certificate?cert=&password=`. It
     /// waits in HomeRouter until the certificate import takes it.
     case certificate(CertificateLink)
@@ -37,12 +33,6 @@ enum HomeRoute: Equatable {
         switch url.host?.lowercased() {
         case "livecontainer-launch", "install", "open-web-page", "open-url":
             self = .home
-        case "source":
-            let queryItems = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
-            guard let sourceURL = queryItems.last(where: { $0.name == "url" && $0.value != nil })?.value else {
-                return nil
-            }
-            self = .source(sourceURL)
         case "certificate":
             guard let link = CertificateLink(url: url) else {
                 return nil

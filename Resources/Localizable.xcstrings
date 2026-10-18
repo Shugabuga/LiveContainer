@@ -31868,6 +31868,318 @@
           }
         }
       }
+    },
+    "zc.home.addApp" : {
+      "comment" : "Home Screen edit mode: the plus button at the top left that installs an app.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add App"
+          }
+        }
+      }
+    },
+    "zc.home.appSettings" : {
+      "comment" : "Home Screen icon menu: opens the app's settings in zContainer.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App Settings"
+          }
+        }
+      }
+    },
+    "zc.home.clearSearch" : {
+      "comment" : "Home Screen search: button that empties the search field.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear Text"
+          }
+        }
+      }
+    },
+    "zc.home.containerName %lld" : {
+      "comment" : "Name of a container made by Open in New Container. %lld is its number among the app's containers.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Container %lld"
+          }
+        }
+      }
+    },
+    "zc.home.deleteApp" : {
+      "comment" : "Home Screen: deletes an app that has no data.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete App"
+          }
+        }
+      }
+    },
+    "zc.home.deleteAppAndData" : {
+      "comment" : "Home Screen: deletes the app and its containers.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete App and Data"
+          }
+        }
+      }
+    },
+    "zc.home.deleteAppKeepData" : {
+      "comment" : "Home Screen: deletes the app but keeps its containers.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete App, Keep Data"
+          }
+        }
+      }
+    },
+    "zc.home.deleteKeepDataMessage" : {
+      "comment" : "Home Screen: message of the question before an app with data is deleted.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can keep its data for when you add the app again."
+          }
+        }
+      }
+    },
+    "zc.home.deleteTitle %@" : {
+      "comment" : "Home Screen: title of the question before an app is deleted. %@ is the app's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete “%@”?"
+          }
+        }
+      }
+    },
+    "zc.home.dontRequireFaceID" : {
+      "comment" : "Home Screen icon menu: unlocks a locked app, after Face ID.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Don’t Require Face ID"
+          }
+        }
+      }
+    },
+    "zc.home.dontRequirePasscode" : {
+      "comment" : "Home Screen icon menu: unlocks a locked app, after the passcode.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Don’t Require Passcode"
+          }
+        }
+      }
+    },
+    "zc.home.dontRequireTouchID" : {
+      "comment" : "Home Screen icon menu: unlocks a locked app, after Touch ID.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Don’t Require Touch ID"
+          }
+        }
+      }
+    },
+    "zc.home.editHomeScreen" : {
+      "comment" : "Home Screen icon menu: starts edit mode, where icons jiggle and can be moved.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit Home Screen"
+          }
+        }
+      }
+    },
+    "zc.home.hidden" : {
+      "comment" : "Home Screen search: section with the hidden apps, shown after Face ID.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hidden"
+          }
+        }
+      }
+    },
+    "zc.home.hideAndRequireFaceID" : {
+      "comment" : "Home Screen icon menu: locks the app behind Face ID and takes it off the Home Screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hide and Require Face ID"
+          }
+        }
+      }
+    },
+    "zc.home.hideAndRequirePasscode" : {
+      "comment" : "Home Screen icon menu: locks the app behind the passcode and takes it off the Home Screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hide and Require Passcode"
+          }
+        }
+      }
+    },
+    "zc.home.hideAndRequireTouchID" : {
+      "comment" : "Home Screen icon menu: locks the app behind Touch ID and takes it off the Home Screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hide and Require Touch ID"
+          }
+        }
+      }
+    },
+    "zc.home.installing" : {
+      "comment" : "Home Screen: name under the icon of an app being unpacked and signed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Installing…"
+          }
+        }
+      }
+    },
+    "zc.home.noHiddenApps" : {
+      "comment" : "Home Screen search: shown in the Hidden section when no app is hidden.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Hidden Apps"
+          }
+        }
+      }
+    },
+    "zc.home.openInNewContainer" : {
+      "comment" : "Home Screen icon menu: makes a new container for the app and opens the app in it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open in New Container"
+          }
+        }
+      }
+    },
+    "zc.home.pageIndicator %lld %lld" : {
+      "comment" : "Home Screen: VoiceOver value of the search pill. The first number is the page showing, the second how many pages there are.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Page %1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "zc.home.removeApp" : {
+      "comment" : "Home Screen icon menu and minus badge: asks whether to delete the app.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove App"
+          }
+        }
+      }
+    },
+    "zc.home.requireFaceID" : {
+      "comment" : "Home Screen icon menu: locks the app behind Face ID.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Require Face ID"
+          }
+        }
+      }
+    },
+    "zc.home.requirePasscode" : {
+      "comment" : "Home Screen icon menu: locks the app behind the passcode.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Require Passcode"
+          }
+        }
+      }
+    },
+    "zc.home.requireTouchID" : {
+      "comment" : "Home Screen icon menu: locks the app behind Touch ID.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Require Touch ID"
+          }
+        }
+      }
+    },
+    "zc.home.search" : {
+      "comment" : "Home Screen: the pill above the dock that opens search, and the search field's placeholder.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

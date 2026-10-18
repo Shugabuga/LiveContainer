@@ -413,7 +413,7 @@ struct LCSettingsView: View {
         }
         .navigationViewStyle(StackNavigationViewStyle())
         .onAppear() {
-            // The launch check (LCTabView) may have found a problem since.
+            // The launch check (HomeRouter) may have found a problem since.
             refreshCertificateState()
         }
     }

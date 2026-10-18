@@ -1,0 +1,35 @@
+//
+//  HomeGlass.swift
+//  LiveContainerSwiftUI
+//
+
+import SwiftUI
+
+/// The glass behind the dock, the search pill and the Home Screen's buttons:
+/// Liquid Glass on iOS 26 and later, and before that a dark fill with a light
+/// rim, which is how the glass looks over the black wallpaper.
+struct HomeGlass: ViewModifier {
+    /// The glass's outline.
+    let shape: HomeGlassShape
+    /// Whether the glass reacts to touches, as a button's does.
+    var isInteractive = false
+
+    func body(content: Content) -> some View {
+        if #available(iOS 26.0, *), SharedModel.isLiquidGlassEnabled {
+            content.glassEffect(isInteractive ? .regular.interactive() : .regular, in: shape.liquidGlassShape)
+        } else {
+            content.background {
+                shape.fallbackShape
+                    .fill(HomeDesign.fallbackGlassFill)
+                    .stroke(HomeDesign.fallbackGlassRim, lineWidth: 1)
+            }
+        }
+    }
+}
+
+extension View {
+    /// Puts the Home Screen's glass behind this view, in the given shape.
+    func homeGlass(_ shape: HomeGlassShape, isInteractive: Bool = false) -> some View {
+        modifier(HomeGlass(shape: shape, isInteractive: isInteractive))
+    }
+}

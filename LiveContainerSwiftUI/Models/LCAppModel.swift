@@ -213,8 +213,9 @@ class LCAppModel: ObservableObject, Hashable {
         hasher.combine(ObjectIdentifier(self))
     }
     
-    // You should let LCAppModel.runApp to decide whether to run in multitask mode, but you may override the multitask parameter if necessary
-    func runApp(multitask: Bool? = nil, containerFolderName : String? = nil, bundleIdOverride : String? = nil, urlStr : String? = nil, forceJIT: Bool? = nil) async throws{
+    // You should let LCAppModel.runApp to decide whether to run in multitask mode, but you may override the multitask parameter if necessary.
+    // `willLaunch` runs just before zContainer turns into the app the classic way, after signing, so the Home Screen can zoom into it.
+    func runApp(multitask: Bool? = nil, containerFolderName : String? = nil, bundleIdOverride : String? = nil, urlStr : String? = nil, forceJIT: Bool? = nil, willLaunch: (@MainActor () async -> Void)? = nil) async throws{
         if isAppRunning {
             return
         }
@@ -381,6 +382,7 @@ class LCAppModel: ObservableObject, Hashable {
                 let fileURL = FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask)[0].appendingPathComponent("preloadLibraries.txt")
                 try fileContents?.write(to: fileURL)
             }
+            await willLaunch?()
             LCSharedUtils.launchToGuestApp(withClassicMode: classicMode)
         }
         

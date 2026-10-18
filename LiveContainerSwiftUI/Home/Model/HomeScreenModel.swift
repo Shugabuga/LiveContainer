@@ -1,0 +1,257 @@
+//
+//  HomeScreenModel.swift
+//  LiveContainerSwiftUI
+//
+
+import Combine
+import SwiftUI
+
+/// The Home Screen's state: the layout of the icons, the page showing, edit
+/// mode and the icon being dragged, search, and the screens and questions
+/// that open over it. It keeps the layout in line with the installed apps and
+/// saves it whenever it changes. Opening, editing and searching live in this
+/// type's extensions; the AppLaunchCoordinator does the installing, launching
+/// and removing.
+@MainActor
+@Observable
+final class HomeScreenModel {
+    /// Launches, installs and removes apps.
+    @ObservationIgnored let coordinator: AppLaunchCoordinator
+    /// The installed apps and the hidden-app state.
+    @ObservationIgnored let sharedModel: SharedModel
+    /// Where everything sits on the current screen, which the Home Screen
+    /// view hands over whenever the screen's size changes. Dragging and the
+    /// launch zoom read it.
+    @ObservationIgnored var metrics: HomeMetrics?
+
+    /// The apps the Home Screen shows, by their Home Screen key. Hidden apps
+    /// aren't among them.
+    private(set) var apps: [String: LCAppModel] = [:]
+    /// Where the icons are, as saved.
+    var layout: HomeLayout
+
+    /// The page showing, as the paging scroll view reports it.
+    var page: Int? = 0
+    /// Whether the page dots show in place of "Search", which they do while
+    /// the pages move.
+    var showsPageDots = false
+    @ObservationIgnored var pageDotsTask: Task<Void, Never>?
+
+    /// Whether the icons jiggle and can be moved and removed.
+    var isEditing = false
+    /// The icon being dragged in edit mode, or nil.
+    var drag: HomeDrag?
+    /// Where the dragged icon's center is, on screen. Only the dragged icon's
+    /// copy reads it, so moving the finger doesn't redraw the other icons.
+    var liftedIconCenter: CGPoint = .zero
+    @ObservationIgnored var pendingTarget: HomeSlot?
+    @ObservationIgnored var reflowTask: Task<Void, Never>?
+    @ObservationIgnored var pageTurnDirection = 0
+    @ObservationIgnored var pageTurnTask: Task<Void, Never>?
+
+    /// Whether search is open over the Home Screen.
+    var isSearching = false
+    /// What the person typed into search.
+    var searchText = ""
+
+    /// The screen open over the Home Screen, such as Settings.
+    var presentedScreen: HomePresentedScreen?
+    /// Whether a screen covers the Home Screen completely, from the moment it
+    /// opens until it has closed. The status bar then follows that screen's
+    /// appearance instead of the black wallpaper's.
+    var isCoveredByScreen = false
+
+    /// The app the person asked to remove, while the question shows.
+    var pendingRemoval: LCAppModel?
+    /// Whether Files is open to pick an IPA to install.
+    var isChoosingIPA = false
+    /// Whether the question asking for an install link shows.
+    var isEnteringInstallURL = false
+    /// The install link being typed.
+    var installURL = ""
+
+    /// The app zooming open from its icon, just before zContainer turns into it.
+    var launchZoom: HomeLaunchZoom?
+    @ObservationIgnored var launchZoomContinuation: CheckedContinuation<Void, Never>?
+
+    /// Loads the saved layout, or makes the first one from LiveContainer's
+    /// custom order or the install order, and brings it in line with the apps.
+    init(coordinator: AppLaunchCoordinator) {
+        self.coordinator = coordinator
+        sharedModel = coordinator.sharedModel
+        let apps = coordinator.sharedModel.apps
+        if let saved = HomeLayoutStorage.load() {
+            layout = saved
+        } else {
+            layout = .firstLaunch(apps: apps, customOrder: HomeLayoutStorage.legacyCustomOrder())
+            HomeLayoutStorage.save(layout)
+        }
+        syncApps(apps)
+    }
+
+    /// Reports every change to the list of apps the Home Screen shows. The
+    /// Home Screen view passes each new list to `syncApps(_:)`.
+    var appsPublisher: Published<[LCAppModel]>.Publisher {
+        sharedModel.$apps
+    }
+
+    /// The layout on screen: the saved one, or while an icon is dragged, the
+    /// one with the icon where it would drop.
+    var displayedLayout: HomeLayout {
+        drag?.preview ?? layout
+    }
+
+    /// The icons on the pages and where each one shows.
+    var gridPlacements: [HomePlacement] {
+        let shown = displayedLayout
+        var placements: [HomePlacement] = []
+        for (page, items) in shown.pages.enumerated() {
+            for (index, item) in items.enumerated() where item != drag?.item {
+                placements.append(HomePlacement(item: item, slot: .page(page, index: index), isLifted: false))
+            }
+        }
+        if let drag, !drag.origin.isInDock {
+            let slot = drag.target.isInDock ? drag.origin : drag.target
+            placements.append(HomePlacement(item: drag.item, slot: slot, isLifted: true))
+        }
+        return placements
+    }
+
+    /// The icons in the dock and where each one shows.
+    var dockPlacements: [HomePlacement] {
+        let shown = displayedLayout
+        var placements: [HomePlacement] = []
+        for (index, item) in shown.dock.enumerated() where item != drag?.item {
+            placements.append(HomePlacement(item: item, slot: .dock(index), isLifted: false))
+        }
+        if let drag, drag.origin.isInDock {
+            let slot = drag.target.isInDock ? drag.target : drag.origin
+            placements.append(HomePlacement(item: drag.item, slot: slot, isLifted: true))
+        }
+        return placements
+    }
+
+    /// How many pages there are to swipe through, including the page an app
+    /// being installed will land on.
+    var pageCount: Int {
+        var count = displayedLayout.pages.count
+        if coordinator.isInstalling, let page = displayedLayout.nextFreeSlot.page {
+            count = max(count, page + 1)
+        }
+        return max(count, 1)
+    }
+
+    /// Brings the layout in line with the apps the Home Screen shows: new
+    /// apps take the next free slot, and removed or hidden apps leave theirs.
+    func syncApps(_ newApps: [LCAppModel]) {
+        var lookup: [String: LCAppModel] = [:]
+        var keys: [String] = []
+        for app in newApps {
+            guard let key = app.homeKey, lookup[key] == nil else {
+                continue
+            }
+            lookup[key] = app
+            keys.append(key)
+        }
+        apps = lookup
+
+        var updated = layout
+        updated.reconcile(withAppKeys: keys)
+        if updated != layout {
+            withAnimation(HomeDesign.reflow) {
+                layout = updated
+            }
+            HomeLayoutStorage.save(updated)
+        }
+
+        guard var drag else {
+            return
+        }
+        if updated.slot(of: drag.item) == nil {
+            cancelDrag()
+        } else {
+            drag.preview = updated.moving(drag.item, to: drag.target)
+            self.drag = drag
+        }
+    }
+
+    /// Ends edit mode, closes search and closes the screen open over the Home
+    /// Screen, so it shows what a link just started, such as an install.
+    func showHomeScreen() {
+        presentedScreen = nil
+        if isSearching {
+            closeSearch()
+        }
+        if isEditing {
+            endEditing()
+        }
+    }
+
+    /// Does what pressing Home does on iOS, one step at a time: closes the
+    /// screen open over the Home Screen, then search, then edit mode, and
+    /// otherwise goes back to the first page.
+    func goHome() {
+        if presentedScreen != nil {
+            presentedScreen = nil
+        } else if isSearching {
+            closeSearch()
+        } else if isEditing {
+            endEditing()
+        } else {
+            withAnimation(HomeDesign.reflow) {
+                page = 0
+            }
+        }
+    }
+
+    /// Follows a link zContainer was opened with: links that do something in
+    /// an app, or bring up zContainer, show the Home Screen.
+    func handle(_ route: HomeRoute) {
+        switch route {
+        case .home, .app:
+            showHomeScreen()
+        case .certificate:
+            break
+        }
+    }
+
+    // MARK: Page dots
+
+    /// Shows the page dots while the pages move, and "Search" again shortly
+    /// after they stop. iOS 18 and later report the scrolling directly.
+    func scrollPhaseChanged(isScrolling: Bool) {
+        guard pageCount > 1 else {
+            return
+        }
+        if isScrolling {
+            pageDotsTask?.cancel()
+            if !showsPageDots {
+                withAnimation(HomeDesign.modeChange) {
+                    showsPageDots = true
+                }
+            }
+        } else {
+            hidePageDotsSoon()
+        }
+    }
+
+    /// Shows the page dots for a moment after the page changes. iOS 17 can't
+    /// report scrolling, so it shows them only once a new page has settled.
+    func pageDidChange() {
+        scrollPhaseChanged(isScrolling: true)
+        hidePageDotsSoon()
+    }
+
+    private func hidePageDotsSoon() {
+        pageDotsTask?.cancel()
+        pageDotsTask = Task { [weak self] in
+            try? await Task.sleep(for: HomeDesign.pageDotsLinger)
+            guard !Task.isCancelled else {
+                return
+            }
+            withAnimation(HomeDesign.modeChange) {
+                self?.showsPageDots = false
+            }
+        }
+    }
+}

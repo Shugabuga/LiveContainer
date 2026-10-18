@@ -7,10 +7,10 @@ import SwiftUI
 
 /// Installs, launches, hides and removes the apps inside zContainer, whichever
 /// screen asks. It is the delegate of every LCAppModel, so JIT launches and the
-/// question about stopping multitasking apps work from any screen, not only
-/// while the app list is showing. It keeps what its flows need to show (errors,
-/// questions, the JIT log, install progress and the built-in browser), and the
-/// root view presents them with `appLaunchPresentations(_:)`.
+/// question about stopping multitasking apps work from any screen. It keeps
+/// what its flows need to show (errors, questions, the JIT log, install
+/// progress and the built-in browser), and the root view presents them with
+/// `appLaunchPresentations(_:)`.
 @MainActor
 @Observable
 final class AppLaunchCoordinator {
@@ -52,16 +52,12 @@ final class AppLaunchCoordinator {
     /// app's settings close them when this changes.
     private(set) var appSettingsCloseRequests = 0
 
-    @ObservationIgnored private var installRequests: Task<Void, Never>?
-
-    /// Makes the coordinator the delegate of every app already loaded, and
-    /// starts taking install requests from the Sources screen.
+    /// Makes the coordinator the delegate of every app already loaded.
     init(sharedModel: SharedModel) {
         self.sharedModel = sharedModel
         for app in sharedModel.apps + sharedModel.hiddenApps {
             app.delegate = self
         }
-        listenForInstallRequests()
     }
 
     /// Carries out an app link, as HomeRouter hands them over.
@@ -76,23 +72,17 @@ final class AppLaunchCoordinator {
         }
     }
 
-    /// Installs what the Sources screen posts as an InstallAppNotification,
-    /// whose object is `["url": URL]`, whichever screen is showing.
-    private func listenForInstallRequests() {
-        installRequests = Task { [weak self] in
-            for await notification in NotificationCenter.default.notifications(named: NSNotification.InstallAppNotification) {
-                guard let self else {
-                    return
-                }
-                guard let request = notification.object as? [String: Any], let url = request["url"] as? URL else {
-                    continue
-                }
-                Task { await self.installFromUrl(urlStr: url.absoluteString) }
-            }
+    // MARK: Installing
+
+    /// Installs from a link the person typed: an `itms-services://` link
+    /// through its manifest, anything else as the IPA's own address.
+    func install(fromAddress address: String) async {
+        if let url = URL(string: address), url.scheme?.lowercased() == "itms-services" {
+            await installFromPlist(urlStr: address)
+        } else {
+            await installFromUrl(urlStr: address)
         }
     }
-
-    // MARK: Installing
 
     /// Installs an IPA the person picked in Files, then deletes the copy the
     /// file importer made of it.
@@ -257,7 +247,7 @@ final class AppLaunchCoordinator {
     }
 
     /// Unpacks an IPA, moves its app into the Applications folder, patches and
-    /// signs it, and adds it to the app list. When an app with the same bundle
+    /// signs it, and adds it to the Home Screen. When an app with the same bundle
     /// ID is installed, it first asks whether the new app replaces it (after
     /// Face ID, when that app is hidden) and carries the replaced app's
     /// settings over. A signing problem doesn't stop the install: the app stays
@@ -420,13 +410,81 @@ final class AppLaunchCoordinator {
 
     // MARK: Removing
 
-    /// Takes an uninstalled app off the app list, after its files are gone.
+    /// Deletes an app's files and takes it off the Home Screen. With
+    /// `deletingData`, its containers go too, with their keychain items;
+    /// otherwise they stay, unused, for when the app comes back.
+    func uninstall(_ app: LCAppModel, deletingData: Bool) async {
+        let appInfo = app.appInfo
+        let containers = appInfo.containers
+        do {
+            guard let bundlePath = appInfo.bundlePath() else {
+                throw CocoaError(.fileNoSuchFile)
+            }
+            let fileManager = FileManager.default
+            try fileManager.removeItem(atPath: bundlePath)
+            removeApp(app: app)
+
+            guard deletingData else {
+                return
+            }
+            for container in containers {
+                let folderName = container.folderName
+                try fileManager.removeItem(at: LCPath.dataPath.appendingPathComponent(folderName))
+                LCUtils.removeAppKeychain(dataUUID: folderName)
+                sharedModel.appDataFolderNames.removeAll { $0 == folderName }
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    /// Takes an uninstalled app off the Home Screen, after its files are gone.
     func removeApp(app: LCAppModel) {
         sharedModel.apps.removeAll { $0 == app }
         sharedModel.hiddenApps.removeAll { $0 == app }
     }
 
     // MARK: Launching
+
+    /// Opens an app tapped on the Home Screen. When the app already runs in a
+    /// multitasking window, that window comes forward. Otherwise a locked app
+    /// asks for Face ID first, and the app runs: signed if it needs to be, then
+    /// in a multitasking window or with zContainer turning into it, as its
+    /// settings say. `willLaunch` runs just before zContainer turns into the
+    /// app, after signing, so the Home Screen can zoom into it.
+    func open(_ app: LCAppModel, willLaunch: (@MainActor () async -> Void)? = nil) async {
+        if #available(iOS 16.0, *),
+           let folderName = app.uiSelectedContainer?.folderName,
+           MultitaskManager.isUsing(container: folderName) {
+            var found = false
+            if #available(iOS 16.1, *) {
+                found = MultitaskWindowManager.openExistingAppWindow(dataUUID: folderName)
+            }
+            if !found {
+                found = MultitaskDockManager.shared.bringMultitaskViewToFront(uuid: folderName)
+            }
+            if found {
+                return
+            }
+        }
+
+        if app.appInfo.isLocked && !sharedModel.isHiddenAppUnlocked {
+            do {
+                guard try await LCUtils.authenticateUser() else {
+                    return
+                }
+            } catch {
+                errorMessage = error.localizedDescription
+                return
+            }
+        }
+
+        do {
+            try await app.runApp(willLaunch: willLaunch)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
 
     /// Launches the app installed in the folder `bundleId`, as launch links and
     /// web clips ask. A locked or hidden app needs Face ID first, and hidden
@@ -539,7 +597,7 @@ extension AppLaunchCoordinator: LCAppModelDelegate {
         appSettingsCloseRequests += 1
     }
 
-    /// Moves an app between the app list and the hidden apps after it was
+    /// Moves an app between the Home Screen and the hidden apps after it was
     /// hidden or shown. A hidden app's URL schemes stop counting as zContainer's.
     func changeAppVisibility(app: LCAppModel) {
         let schemes = app.appInfo.urlSchemes().map { Array($0) } ?? []
