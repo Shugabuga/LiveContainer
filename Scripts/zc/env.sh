@@ -14,6 +14,12 @@
 : "${ZC_DISPLAY_NAME:=}"                      # empty keeps CFBundleDisplayName from Info.plist
 : "${ZC_IPA_NAME:=LiveContainer.ipa}"         # file name of the IPA in $ZC_BUILD_DIR
 : "${ZC_MIN_IOS:=17.0}"                       # deployment target of every binary we build
+# SDK version the binaries record (LC_BUILD_VERSION) and Info.plist names. iOS
+# turns on "linked on or after" behavior by it, for LiveContainer's own UI and for
+# every guest app that doesn't spoof its own SDK, so it stays at what the official
+# build uses (Xcode 26.2) rather than the newer SDK the headers come from.
+: "${ZC_RECORDED_SDK:=26.2}"
+: "${ZC_ADHOC_SIGN:=1}"                       # 1 ad-hoc signs with entitlements like Xcode's archive; 0 leaves it unsigned
 
 ZC_SCRIPTS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 : "${ZC_REPO:=$(cd "$ZC_SCRIPTS/../.." && pwd)}"
@@ -60,9 +66,13 @@ command -v magick >/dev/null || command -v convert >/dev/null || zc_die "ImageMa
 [[ -f "$ZC_REPO/litehook/src/litehook.c" ]] ||
     zc_die "litehook submodule is not checked out (git submodule update --init --recursive)"
 [[ "$ZC_EXTENSIONS" == 0 || "$ZC_EXTENSIONS" == 1 ]] || zc_die "ZC_EXTENSIONS must be 0 or 1"
+[[ "$ZC_ADHOC_SIGN" == 0 || "$ZC_ADHOC_SIGN" == 1 ]] || zc_die "ZC_ADHOC_SIGN must be 0 or 1"
+[[ "$ZC_RECORDED_SDK" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?$ ]] || zc_die "ZC_RECORDED_SDK '$ZC_RECORDED_SDK' is not a version"
+[[ "$(printf '%s\n' "$ZC_RECORDED_SDK" "$ZC_SDK_VERSION" | sort -V | tail -n 1)" == "$ZC_SDK_VERSION" ]] ||
+    zc_die "ZC_RECORDED_SDK $ZC_RECORDED_SDK is newer than the SDK in use ($ZC_SDK_VERSION)"
 [[ "$ZC_BUNDLE_ID" =~ ^[A-Za-z0-9.-]+$ ]] || zc_die "ZC_BUNDLE_ID '$ZC_BUNDLE_ID' is not a valid bundle ID"
 [[ "$ZC_IPA_NAME" =~ ^[A-Za-z0-9._+-]+\.ipa$ && ! "$ZC_IPA_NAME" =~ ^(cache|tools|adhoc)\.ipa$ ]] ||
     zc_die "ZC_IPA_NAME '$ZC_IPA_NAME' must be a plain file name ending in .ipa"
 
-export ZC_BUNDLE_ID ZC_EXTENSIONS ZC_DISPLAY_NAME ZC_IPA_NAME ZC_MIN_IOS ZC_REPO ZC_BUILD_DIR \
-    ZC_SDK ZC_SDK_VERSION ZC_OPENSSL
+export ZC_BUNDLE_ID ZC_EXTENSIONS ZC_DISPLAY_NAME ZC_IPA_NAME ZC_MIN_IOS ZC_RECORDED_SDK ZC_ADHOC_SIGN \
+    ZC_REPO ZC_BUILD_DIR ZC_SDK ZC_SDK_VERSION ZC_OPENSSL

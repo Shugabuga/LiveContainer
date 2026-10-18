@@ -5,7 +5,8 @@ resource steps Xcode would:
 - Info.plist for the app and every framework and extension in it, with the build
   variables filled in from project.pbxproj and its xcconfig files, the
   INFOPLIST_KEY_* settings merged for targets that generate their Info.plist, and
-  the keys Xcode adds to every bundle (MinimumOSVersion, platform, device family).
+  the keys Xcode adds to every bundle (MinimumOSVersion, platform, device family,
+  required arm64, and the SDK the binaries record, ZC_RECORDED_SDK).
 - Localizable.xcstrings compiled into <lang>.lproj/Localizable.strings and
   .stringsdict, with English filling in any string a language is missing.
 - The app's resources from the Resources folder, the *.lproj folders the Xcode Run
@@ -13,9 +14,13 @@ resource steps Xcode would:
 - No asset catalog compiler exists on Linux, so the app icon and images become loose
   PNG files. Asset catalog colors are skipped (the code falls back to system colors).
 - The prebuilt OpenSSL and CydiaSubstrate frameworks, without headers.
+- LaunchAppExtension's Metadata.appintents, which Xcode extracts from the
+  extension's App Intents code and no Linux tool can; it is kept by hand in
+  gen/LaunchAppExtension (build.sh stops when that code changes).
 
 Settings come from the environment (see env.sh): ZC_REPO, ZC_BUNDLE_ID,
-ZC_DISPLAY_NAME, ZC_MIN_IOS, ZC_SDK, ZC_SDK_VERSION, ZC_OPENSSL, ZC_VERSION_INFO.
+ZC_DISPLAY_NAME, ZC_MIN_IOS, ZC_SDK, ZC_SDK_VERSION, ZC_RECORDED_SDK, ZC_OPENSSL,
+ZC_VERSION_INFO.
 
 Usage: assemble.py <path to LiveContainer.app>
 """
@@ -35,6 +40,8 @@ ENV = os.environ
 REPO = ENV['ZC_REPO']
 MIN_IOS = ENV['ZC_MIN_IOS']
 SDK_VERSION = ENV['ZC_SDK_VERSION']
+RECORDED_SDK = ENV['ZC_RECORDED_SDK']
+GEN = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'gen')
 PROJECT = pbxproj.Project(REPO)
 # The app's bundle ID comes from this xcconfig variable; extensions append to it.
 OVERRIDES = {'LIVECONTAINER_BUNDLE_IDENTIFIER': ENV['ZC_BUNDLE_ID']}
@@ -97,6 +104,11 @@ def infoplist_keys(settings):
         value = settings.get(name, '')
         if value == '':
             continue  # Xcode leaves out empty values
+        if key.endswith('Dictionary'):
+            # A build setting can't hold a dictionary, and Xcode drops these: the
+            # project sets NSLocationTemporaryUsageDescriptionDictionary to a
+            # string, where CoreLocation expects a dictionary.
+            continue
         if key.endswith('_Generation'):
             fail(f'{name} is not supported by assemble.py yet; add it')
         key = re.sub(r'_iPad$', '~ipad', re.sub(r'_iPhone$', '~iphone', key))
@@ -109,16 +121,19 @@ def infoplist_keys(settings):
 
 
 def bundle_keys(settings):
-    """Keys Xcode adds to every bundle's Info.plist when it processes it."""
+    """Keys Xcode adds to every bundle's Info.plist when it processes it. The SDK
+    keys name the SDK the binaries record (ZC_RECORDED_SDK); its build number is
+    only known when that is the SDK in use."""
     keys = {
         'CFBundleSupportedPlatforms': ['iPhoneOS'],
         'MinimumOSVersion': MIN_IOS,
         'UIDeviceFamily': [int(x) for x in settings.get('TARGETED_DEVICE_FAMILY', '1,2').split(',')],
+        'UIRequiredDeviceCapabilities': ['arm64'],
         'DTPlatformName': 'iphoneos',
-        'DTPlatformVersion': SDK_VERSION,
-        'DTSDKName': f'iphoneos{SDK_VERSION}',
+        'DTPlatformVersion': RECORDED_SDK,
+        'DTSDKName': f'iphoneos{RECORDED_SDK}',
     }
-    if SDK_BUILD:
+    if SDK_BUILD and RECORDED_SDK == SDK_VERSION:
         keys['DTSDKBuild'] = SDK_BUILD
     return keys
 
@@ -376,6 +391,10 @@ def main():
         info = make_info_plist(target_name, bundle)
         write_plist(os.path.join(bundle, 'Info.plist'), info)
         note(f'{os.path.relpath(bundle, app)}: {info["CFBundleIdentifier"]}')
+        intents = os.path.join(GEN, target_name, 'Metadata.appintents')
+        if os.path.isdir(intents):
+            shutil.copytree(intents, os.path.join(bundle, 'Metadata.appintents'), dirs_exist_ok=True)
+            note(f'{os.path.relpath(bundle, app)}/Metadata.appintents (from Scripts/zc/gen/{target_name})')
     copy_resources(app)
     main_app_plist(app)
     check_no_variables(app)

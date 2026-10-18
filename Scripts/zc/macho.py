@@ -1,5 +1,6 @@
-"""Just enough Mach-O parsing for check.py and verify_sig.py: load commands,
-the export trie and the code signature. Handles thin and fat files."""
+"""Just enough Mach-O parsing for check.py, verify_sig.py and codesign.py: load
+commands, sections, the export trie and the code signature. Handles thin and fat
+files."""
 import struct
 
 MH_MAGIC_64 = 0xfeedfacf
@@ -8,6 +9,7 @@ CPU_ARM64 = 0x0100000c
 FILETYPES = {2: 'executable', 6: 'dylib', 8: 'bundle'}
 PLATFORMS = {2: 'iOS', 1: 'macOS', 6: 'Mac Catalyst', 7: 'iOS Simulator'}
 
+LC_SEGMENT_64 = 0x19
 LC_CODE_SIGNATURE = 0x1d
 LC_ID_DYLIB = 0xd
 LC_LOAD_DYLIB = 0xc
@@ -102,6 +104,26 @@ class Image:
         return self.command(LC_MAIN) is not None
 
     @property
+    def entry_offset(self):
+        """LC_MAIN's entry point, as an offset from the start of the slice."""
+        c = self.command(LC_MAIN)
+        return struct.unpack_from('<Q', self.data, c[0] + 8)[0] if c else None
+
+    def sections(self):
+        """(segment, section, file offset, size) of every section."""
+        out = []
+        for cmd, pos, _ in self.commands:
+            if cmd != LC_SEGMENT_64:
+                continue
+            for n in range(struct.unpack_from('<I', self.data, pos + 64)[0]):
+                s = pos + 72 + n * 80
+                sect, seg = (self.data[s + i:s + i + 16].split(b'\0', 1)[0].decode() for i in (0, 16))
+                size, = struct.unpack_from('<Q', self.data, s + 40)
+                offset, = struct.unpack_from('<I', self.data, s + 48)
+                out.append((seg, sect, offset, size))
+        return out
+
+    @property
     def signature(self):
         """(offset, size) of the code signature in the file, or None."""
         c = self.command(LC_CODE_SIGNATURE)
@@ -110,8 +132,25 @@ class Image:
         dataoff, datasize = struct.unpack_from('<II', self.data, c[0] + 8)
         return self.offset + dataoff, datasize
 
+    def signature_blobs(self):
+        """{slot type: blob} from the embedded signature (empty when unsigned)."""
+        if not self.signature:
+            return {}
+        offset, size = self.signature
+        superblob = self.data[offset:offset + size]
+        blobs = {}
+        for n in range(struct.unpack_from('>I', superblob, 8)[0]):
+            kind, at = struct.unpack_from('>II', superblob, 12 + n * 8)
+            blobs[kind] = superblob[at:at + struct.unpack_from('>I', superblob, at + 4)[0]]
+        return blobs
+
     def exports(self):
         """Names in the export trie: what dlsym and the dynamic linker can see."""
+        return set(self.export_offsets())
+
+    def export_offsets(self):
+        """{name: offset from the image's start} for the export trie (None for
+        re-exports)."""
         c = self.command(LC_DYLD_EXPORTS_TRIE)
         if c:
             off, size = struct.unpack_from('<II', self.data, c[0] + 8)
@@ -121,12 +160,13 @@ class Image:
                 return set()
             off, size = struct.unpack_from('<II', self.data, c[0] + 40)
         trie = self.data[self.offset + off:self.offset + off + size]
-        names, stack = set(), [(0, '')] if trie else []
+        names, stack = {}, [(0, '')] if trie else []
         while stack:
             node, prefix = stack.pop()
             terminal_size, i = _uleb(trie, node)
             if terminal_size:
-                names.add(prefix)
+                flags, j = _uleb(trie, i)
+                names[prefix] = None if flags & 0x8 else _uleb(trie, j)[0]  # 0x8: EXPORT_SYMBOL_FLAGS_REEXPORT
             i += terminal_size
             children = trie[i]
             i += 1
@@ -150,3 +190,4 @@ def images(path):
             out.append(Image(data, offset, path))
         return out
     return [Image(data, 0, path)]
+

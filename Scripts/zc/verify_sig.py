@@ -11,7 +11,11 @@ the code, for every part that doesn't need Apple's certificate chain:
   of resources, CodeDirectory hashes of nested code), and every file in the
   bundle is either listed or covered by a nested signature.
 
-Usage: verify_sig.py <Payload folder or .app>
+With --unsigned-ok, a Mach-O without a signature passes when its bundle seals it
+as a resource, the way Xcode leaves TestJITLess.dylib (check.py says which ones
+may be unsigned).
+
+Usage: verify_sig.py [--unsigned-ok] <Payload folder or .app>
 """
 import hashlib
 import os
@@ -29,6 +33,7 @@ SLOT_NAMES = {1: 'Info.plist', 2: 'requirements', 3: 'CodeResources', 5: 'entitl
 UNSEALED = {'Info.plist', 'PkgInfo', '_CodeSignature/CodeResources'}
 
 failures = []
+unsigned_ok = False
 
 
 def fail(message):
@@ -136,7 +141,10 @@ def check_binaries(root, bundles):
             hashes = set()
             for image in macho.images(path):
                 if not image.signature:
-                    fail(f'{rel}: not signed')
+                    if unsigned_ok and owner is None:
+                        print(f'  ok    {rel}: unsigned, sealed as a resource')
+                    else:
+                        fail(f'{rel}: not signed')
                     continue
                 try:
                     sig = Signature(image, rel)
@@ -199,9 +207,14 @@ def check_resources(bundle, bundles, cdhashes):
 
 
 def main():
-    if len(sys.argv) != 2 or not os.path.isdir(sys.argv[1]):
+    global unsigned_ok
+    args = sys.argv[1:]
+    if args[:1] == ['--unsigned-ok']:
+        unsigned_ok = True
+        args = args[1:]
+    if len(args) != 1 or not os.path.isdir(args[0]):
         sys.exit(__doc__.strip())
-    root = os.path.abspath(sys.argv[1])
+    root = os.path.abspath(args[0])
     bundles = []
     for dirpath, dirs, _ in os.walk(root):
         for d in dirs:

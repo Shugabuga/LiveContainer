@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Ad-hoc signs a copy of a built IPA with zsign compiled for this machine, then
-# checks every signature with verify_sig.py. It shows that the bundle signs
-# cleanly; the ad-hoc copy can't be installed and must never be shipped.
+# Re-signs a copy of a built IPA, ad-hoc, with zsign compiled for this machine
+# (the signer Zeus uses), then checks every signature with verify_sig.py. It shows
+# that zsign replaces the build's own signatures cleanly. zsign signs without
+# entitlements here, so this copy can't be installed and must never be shipped.
 #
 #   ZC_ZSIGN_SRC=/path/to/zsign/src Scripts/zc/sign-adhoc.sh build/zc/LiveContainer.ipa
 #

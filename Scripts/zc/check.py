@@ -8,17 +8,28 @@ the build used, e.g.
 What it checks:
 - layout: the frameworks, extensions and resources that should be in the bundle
   (and none of the extensions when ZC_EXTENSIONS=0), and no headers left in it;
-- every Mach-O we build is arm64 iOS with minos ZC_MIN_IOS and sdk ZC_SDK_VERSION
-  (the prebuilt OpenSSL and CydiaSubstrate are listed but not judged);
-- every @rpath dependency is embedded, and the symbols looked up by name at run
-  time are exported (LiveContainerMain, the SwiftUI app's main, ZSigner);
+- every Mach-O we build is arm64 iOS with minos ZC_MIN_IOS and sdk
+  ZC_RECORDED_SDK (the prebuilt OpenSSL and CydiaSubstrate are listed but not
+  judged);
+- every @rpath dependency is embedded, the main executable loads only libSystem,
+  LiveContainerShared and LiveProcess don't load UIKit, every extension starts in
+  NSExtensionMain, and the symbols looked up by name at run time are exported
+  (LiveContainerMain, the SwiftUI app's main, ZSigner);
+- signing (--signing, from ZC_ADHOC_SIGN): "adhoc", the build's own signatures:
+  everything Xcode signs is signed, TestJITLess.dylib isn't, and the app and its
+  extensions carry their targets' entitlements; "none", an unsigned build;
+  "other", a copy re-signed by another tool, where every binary must be signed;
 - every Info.plist parses and has the keys iOS needs, with no $(...) left, the
-  bundle IDs expected for this variant, and LiveProcess's permission strings;
+  bundle IDs expected for this variant, the SDK the binaries record, and
+  LiveProcess's permission strings; *Dictionary keys the build adds hold
+  dictionaries;
+- LaunchAppExtension's Metadata.appintents parses;
 - the compiled string tables parse and every language has every key.
 
-Pass --signed for a signed copy, where _CodeSignature folders are expected.
+verify_sig.py checks the signatures themselves.
 """
 import argparse
+import json
 import os
 import plistlib
 import re
@@ -30,6 +41,7 @@ import zipfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.dont_write_bytecode = True  # keep __pycache__ out of the source tree
 sys.path.insert(0, HERE)
+import codesign  # noqa: E402
 import macho  # noqa: E402
 import pbxproj  # noqa: E402
 
@@ -48,7 +60,14 @@ EXTENSIONS = [
     'PlugIns/LiveProcess.appex/LiveProcess',
     'PlugIns/ShareExtension.appex/ShareExtension',
     'PlugIns/LaunchAppExtension.appex/LaunchAppExtension',
+    'PlugIns/LaunchAppExtension.appex/Metadata.appintents/extract.actionsdata',
+    'PlugIns/LaunchAppExtension.appex/Metadata.appintents/version.json',
 ]
+# Libraries a binary may load at launch. UIKit has to wait until LCBootstrap has
+# set up the guest app, and LiveProcess keeps it from loading at all.
+ONLY_LINKS = {'LiveContainer': ['/usr/lib/libSystem.B.dylib']}
+UIKIT = '/System/Library/Frameworks/UIKit.framework/UIKit'
+NO_UIKIT = ['Frameworks/LiveContainerShared.framework/LiveContainerShared', 'PlugIns/LiveProcess.appex/LiveProcess']
 EXPORTS = {
     'Frameworks/LiveContainerShared.framework/LiveContainerShared': ['_LiveContainerMain'],
     'Frameworks/LiveContainerSwiftUI.framework/LiveContainerSwiftUI': ['_main'],
@@ -63,6 +82,8 @@ class Checker:
     def __init__(self, app, args):
         self.app, self.args = app, args
         self.failures = 0
+        self.repo = os.environ.get('ZC_REPO') or os.path.abspath(os.path.join(HERE, '..', '..'))
+        self.signer = codesign.Signer(self.repo, args.bundle_id)
 
     def ok(self, message):
         print(f'  ok    {message}')
@@ -94,24 +115,75 @@ class Checker:
             present = [p for p in EXTENSIONS if os.path.exists(os.path.join(self.app, os.path.dirname(p)))]
             present += [d for d in ('PlugIns', 'Extensions') if os.path.exists(os.path.join(self.app, d))]
             self.expect(not present, 'no extensions or SideStoreSupport (ZC_EXTENSIONS=0)', ', '.join(present))
-        leftovers = []
+        leftovers, unsealed = [], []
+        signed = self.args.signing != 'none'
         for root, dirs, _ in os.walk(self.app):
             for d in dirs:
-                if d in ('Headers', 'PrivateHeaders', 'Modules') or (d == '_CodeSignature' and not self.args.signed):
+                if d in ('Headers', 'PrivateHeaders', 'Modules') or (d == '_CodeSignature' and not signed):
                     leftovers.append(os.path.relpath(os.path.join(root, d), self.app))
+            if signed and root.endswith(codesign.CODE_BUNDLE_SUFFIXES) and \
+                    not os.path.isfile(os.path.join(root, '_CodeSignature', 'CodeResources')):
+                unsealed.append(os.path.relpath(root, self.app))
         stray = [rel for rel, _ in self.files() if rel.endswith(('.o', '.log', '.swiftmodule', '.h', '.d'))]
-        self.expect(not leftovers and not stray, 'no headers, modules, signatures or build leftovers',
-                    ', '.join(leftovers + stray))
+        self.expect(not leftovers and not stray, 'no headers, modules, build leftovers'
+                    + ('' if signed else ' or signatures'), ', '.join(leftovers + stray))
+        if signed:
+            self.expect(not unsealed, 'every bundle has _CodeSignature/CodeResources', ', '.join(unsealed))
+
+    def main_executables(self):
+        """{relative path of a bundle's executable: target name} for every code bundle."""
+        out = {}
+        for root, _, _ in os.walk(self.app):
+            info_path = os.path.join(root, 'Info.plist')
+            if (root == self.app or root.endswith(codesign.CODE_BUNDLE_SUFFIXES)) and os.path.isfile(info_path):
+                with open(info_path, 'rb') as f:
+                    exe = plistlib.load(f).get('CFBundleExecutable', '')
+                target = 'LiveContainer' if root == self.app else os.path.splitext(os.path.basename(root))[0]
+                out[os.path.relpath(os.path.join(root, exe), self.app)] = target
+        return out
+
+    def signature(self, rel, image, target):
+        """Checks one slice's signature against --signing; returns a summary."""
+        blobs = image.signature_blobs()
+        if self.args.signing == 'none':
+            if blobs and not rel.startswith(PREBUILT):  # those come with their vendors' signatures
+                self.fail(f'{rel}: has a code signature in an unsigned build')
+            return None
+        if self.args.signing == 'other' or target is None:
+            unsigned = os.path.basename(rel) in self.signer.unsigned and self.args.signing == 'adhoc'
+            if unsigned and blobs:
+                self.fail(f'{rel}: signed, but Xcode leaves it unsigned (no Code Sign On Copy)')
+            elif not unsigned and not blobs:
+                self.fail(f'{rel}: not signed')
+            return 'unsigned' if unsigned else 'signed'
+        if not blobs:
+            self.fail(f'{rel}: not signed')
+            return None
+        want = self.signer.entitlements(target)
+        have = plistlib.loads(blobs[5][8:]) if 5 in blobs else None
+        if have != want:
+            if have is None or want is None:
+                detail = f'{"no" if have is None else len(have)} entitlements, expected {"none" if want is None else len(want)}'
+            else:
+                detail = ', '.join(sorted(k for k in set(have) | set(want) if have.get(k) != want.get(k)))
+            self.fail(f'{rel}: entitlements differ from {target}\'s CODE_SIGN_ENTITLEMENTS: {detail}')
+        elif want is not None and 7 not in blobs:
+            self.fail(f'{rel}: no DER entitlements')
+        return f'{len(want)} entitlements' if want is not None else 'signed'
 
     def binaries(self):
         print('Mach-O')
         frameworks = set(os.listdir(os.path.join(self.app, 'Frameworks')))
-        built = 0
+        executables = self.main_executables()
+        built = signed = with_entitlements = 0
         for rel, path in sorted(self.files()):
             if not macho.is_macho(path):
                 continue
             for image in macho.images(path):
                 bv = image.build_version
+                summary = self.signature(rel, image, executables.get(rel))
+                signed += summary not in (None, 'unsigned')
+                with_entitlements += bool(summary and summary.endswith('entitlements'))
                 if rel.startswith(PREBUILT):
                     self.ok(f'{rel}: prebuilt, {bv[0]} minos {bv[1]} sdk {bv[2]}' if bv else f'{rel}: prebuilt')
                     continue
@@ -119,22 +191,43 @@ class Checker:
                 expected = ('iOS', self.args.min_ios, self.args.sdk)
                 if image.cputype != macho.CPU_ARM64 or bv != expected:
                     self.fail(f'{rel}: cpu {image.cputype:#x}, {bv}, expected arm64 {expected}')
-                if image.signature and not self.args.signed:
-                    self.fail(f'{rel}: has a code signature in an unsigned build')
                 for dep in image.dylibs:
                     if dep.startswith('@rpath/') and dep.split('/')[1] not in frameworks:
                         self.fail(f'{rel}: links {dep}, which is not in Frameworks/')
+                if rel in ONLY_LINKS and image.dylibs != ONLY_LINKS[rel]:
+                    self.fail(f'{rel}: links {image.dylibs}, expected only {ONLY_LINKS[rel]}')
+                if rel in NO_UIKIT and UIKIT in image.dylibs:
+                    self.fail(f'{rel}: links UIKit, which must not load at launch')
                 if image.filetype == 2 and not image.has_main:
                     self.fail(f'{rel}: executable without LC_MAIN')
+                if '.appex/' in rel and image.filetype == 2 and not self.starts_in_extension_main(image):
+                    self.fail(f'{rel}: does not start in NSExtensionMain')
                 for symbol in EXPORTS.get(rel, []):
                     self.expect(symbol in image.exports(), f'{rel} exports {symbol}')
         self.expect(built > 0, f'{built} binaries built here: arm64, iOS minos {self.args.min_ios}, sdk {self.args.sdk}, '
-                    'embedded @rpath dependencies, executables have LC_MAIN')
+                    'embedded @rpath dependencies, executables have LC_MAIN, extensions start in NSExtensionMain')
+        self.ok(f'links: {", ".join(ONLY_LINKS)} loads only libSystem; {", ".join(NO_UIKIT)} do not load UIKit')
+        if self.args.signing != 'none':
+            self.ok(f'{signed} binaries signed ({self.args.signing}), {with_entitlements} with their target\'s entitlements'
+                    + (f', unsigned as in Xcode: {", ".join(sorted(self.signer.unsigned))}'
+                       if self.args.signing == 'adhoc' else ''))
+
+    @staticmethod
+    def starts_in_extension_main(image):
+        """The entry point is NSExtensionMain: either the binary's own (LiveProcess
+        defines one) or Foundation's, reached through an import stub."""
+        entry = image.entry_offset
+        if entry is None:
+            return False
+        if image.export_offsets().get('_NSExtensionMain') == entry:
+            return True
+        return any(sect in ('__stubs', '__auth_stubs') and offset <= entry < offset + size
+                   for _, sect, offset, size in image.sections())
 
     def plists(self):
         print('Info.plist')
         app_info = None
-        repo = os.environ.get('ZC_REPO') or os.path.abspath(os.path.join(HERE, '..', '..'))
+        repo = self.repo
         for rel, path in sorted(self.files()):
             if os.path.basename(rel) != 'Info.plist':
                 continue
@@ -157,6 +250,10 @@ class Checker:
                 problems.append(f'CFBundleExecutable {info.get("CFBundleExecutable")} is not a Mach-O')
             if re.search(r'\$[({][A-Za-z_]', repr(info)):
                 problems.append('unresolved $(...)')
+            if info.get('DTPlatformVersion') != self.args.sdk or info.get('DTSDKName') != f'iphoneos{self.args.sdk}':
+                problems.append(f'SDK {info.get("DTSDKName")}, expected iphoneos{self.args.sdk}')
+            problems += [f'{k} is not a dictionary' for k, v in info.items() if k.endswith('Dictionary')
+                         and not isinstance(v, dict) and k not in self.template_keys(bundle)]
             if bundle.endswith('.appex'):
                 name = os.path.basename(bundle)[:-6]
                 if info.get('CFBundleIdentifier') != f'{self.args.bundle_id}.{name}':
@@ -190,6 +287,28 @@ class Checker:
         lacking = [i for i in icons if not any(n.startswith(i) and n.endswith('.png') for n in names)]
         self.expect(icons and not lacking and 'CFBundleIconName' not in app_info,
                     f'icons {sorted(set(icons))} are loose PNGs', ', '.join(lacking))
+        intents = os.path.join(self.app, 'PlugIns', 'LaunchAppExtension.appex', 'Metadata.appintents')
+        if os.path.isdir(intents):
+            try:
+                with open(os.path.join(intents, 'extract.actionsdata'), encoding='utf-8') as f:
+                    actions = sorted(json.load(f)['actions'])
+                with open(os.path.join(intents, 'version.json'), encoding='utf-8') as f:
+                    version = json.load(f)['version']
+                self.ok(f'LaunchAppExtension Metadata.appintents: version {version}, actions {actions}')
+            except (OSError, ValueError, KeyError) as e:
+                self.fail(f'LaunchAppExtension Metadata.appintents does not parse ({e})')
+
+    def template_keys(self, bundle):
+        """Keys the target's own Info.plist file sets (upstream's choices, kept as
+        they are), as opposed to the ones the build adds."""
+        target = 'LiveContainer' if bundle == '' else os.path.splitext(os.path.basename(bundle))[0]
+        if target not in self.signer.targets:
+            return set()
+        template = self.signer.project.settings(target).get('INFOPLIST_FILE')
+        if not template:
+            return set()
+        with open(os.path.join(self.repo, template), 'rb') as f:
+            return set(plistlib.load(f))
 
     def strings(self):
         print('localization')
@@ -219,8 +338,10 @@ def main():
     parser.add_argument('--extensions', default=env.get('ZC_EXTENSIONS', '1'), choices=['0', '1'])
     parser.add_argument('--display-name', default=env.get('ZC_DISPLAY_NAME', ''))
     parser.add_argument('--min-ios', default=env.get('ZC_MIN_IOS', '17.0'))
-    parser.add_argument('--sdk', default=env.get('ZC_SDK_VERSION'), required='ZC_SDK_VERSION' not in env)
-    parser.add_argument('--signed', action='store_true', help='expect code signatures')
+    parser.add_argument('--sdk', default=env.get('ZC_RECORDED_SDK', '26.2'), help='SDK version the binaries record')
+    parser.add_argument('--signing', choices=['adhoc', 'none', 'other'],
+                        default='none' if env.get('ZC_ADHOC_SIGN') == '0' else 'adhoc',
+                        help='adhoc: the build\'s own signatures; none: unsigned; other: re-signed by another tool')
     args = parser.parse_args()
 
     tmp = None

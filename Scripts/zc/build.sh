@@ -16,8 +16,9 @@
 # doesn't copy would only show up as a crash on the device.
 #
 # Output: $ZC_BUILD_DIR/<name>.ipa, with the staged app, objects and logs in
-# $ZC_BUILD_DIR/<name>/. The binaries are unsigned; sign the IPA when installing
-# it (Zeus, xtool install or another sideloader).
+# $ZC_BUILD_DIR/<name>/. Like the official IPA it is ad-hoc signed, with each
+# target's entitlements, so a sideloader can see what to register; it still has
+# to be signed when installing it (Zeus, xtool install or another sideloader).
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/env.sh"
 cd "$ZC_REPO"
@@ -29,6 +30,16 @@ if ! "$PYTHON" "$ZC_SCRIPTS/pbxproj.py" check "$ZC_REPO"; then
     [[ "${ZC_ALLOW_PBXPROJ_DRIFT:-0}" == 1 ]] || exit 1
     echo "warning: building anyway because ZC_ALLOW_PBXPROJ_DRIFT=1" >&2
 fi
+# LaunchAppExtension's App Intents metadata (gen/LaunchAppExtension) is written by
+# hand, since only Xcode can extract it. Stop when the intent's source changed.
+INTENT_SOURCES="$ZC_SCRIPTS/gen/LaunchAppExtension/sources.sha256"
+if [[ "$ZC_EXTENSIONS" == 1 ]] && ! sha256sum LaunchAppExtension/*.swift | diff -u "$INTENT_SOURCES" - >&2; then
+    echo "error: LaunchAppExtension's Swift sources changed since gen/LaunchAppExtension/Metadata.appintents was" \
+        "written. Update it to match (or copy it from an Xcode build of this commit), then run" \
+        "sha256sum LaunchAppExtension/*.swift > Scripts/zc/gen/LaunchAppExtension/sources.sha256" >&2
+    [[ "${ZC_ALLOW_PBXPROJ_DRIFT:-0}" == 1 ]] || exit 1
+    echo "warning: building anyway because ZC_ALLOW_PBXPROJ_DRIFT=1" >&2
+fi
 
 NAME="${ZC_IPA_NAME%.ipa}"
 WORK="$ZC_BUILD_DIR/$NAME"
@@ -37,7 +48,8 @@ CACHE="$ZC_BUILD_DIR/cache"
 rm -rf "$WORK" "$ZC_BUILD_DIR/$ZC_IPA_NAME"
 mkdir -p "$WORK"/{obj,gen,include,modules,logs,failed} "$APP/Frameworks" "$CACHE"
 
-echo "Building $ZC_IPA_NAME: $ZC_BUNDLE_ID, extensions=$ZC_EXTENSIONS, iOS $ZC_MIN_IOS, SDK $ZC_SDK_VERSION, $ZC_JOBS jobs"
+echo "Building $ZC_IPA_NAME: $ZC_BUNDLE_ID, extensions=$ZC_EXTENSIONS, iOS $ZC_MIN_IOS," \
+    "SDK $ZC_SDK_VERSION (recorded as $ZC_RECORDED_SDK), ad-hoc signing=$ZC_ADHOC_SIGN, $ZC_JOBS jobs"
 
 # Which folders each product is built from. A folder holding a kind of file its
 # product doesn't compile stops the build instead of leaving the file out.
@@ -123,11 +135,14 @@ APPROACHABLE=(-enable-upcoming-feature DisableOutwardActorInference
     -enable-upcoming-feature InferSendableFromCaptures -enable-upcoming-feature NonisolatedNonsendingByDefault
     -enable-upcoming-feature MemberImportVisibility)
 
-# Every link records the real SDK version; without it binaries linked through
-# swiftc claim the deployment target as their SDK and lose the iOS 26+ design.
-PLATFORM=(-Xlinker -platform_version -Xlinker ios -Xlinker "$ZC_MIN_IOS" -Xlinker "$ZC_SDK_VERSION")
-LINKFLAGS=(-target "arm64-apple-ios$ZC_MIN_IOS" -isysroot "$ZC_SDK" "--ld-path=$ZC_LD" -mlinker-version=1200
-    -fobjc-arc -fobjc-link-runtime "${PLATFORM[@]}")
+# Every link records ZC_RECORDED_SDK (env.sh), the SDK of the official build.
+# Without it, binaries linked through swiftc claim the deployment target as their
+# SDK and lose the iOS 26+ design; with the real SDK (27.x) iOS would apply its
+# newer "linked on or after" rules to LiveContainer and the guest apps it runs.
+PLATFORM=(-Xlinker -platform_version -Xlinker ios -Xlinker "$ZC_MIN_IOS" -Xlinker "$ZC_RECORDED_SDK")
+BASE_LINKFLAGS=(-target "arm64-apple-ios$ZC_MIN_IOS" -isysroot "$ZC_SDK" "--ld-path=$ZC_LD" -mlinker-version=1200
+    "${PLATFORM[@]}")
+LINKFLAGS=("${BASE_LINKFLAGS[@]}" -fobjc-arc -fobjc-link-runtime)
 CLINK=("$CLANG" "${LINKFLAGS[@]}")
 CXXLINK=("$CLANGXX" "${LINKFLAGS[@]}" -stdlib=libc++)
 SLINK=("$SWIFTC" -target "arm64-apple-ios$ZC_MIN_IOS" -sdk "$ZC_SDK" -resource-dir "$ZC_SWIFT_RESOURCES"
@@ -234,25 +249,35 @@ mapfile -t files < <(sources LiveContainerSwiftUI m); compile LiveContainerSwift
 finish "compiled LiveContainerSwiftUI's Objective-C"
 
 # 3. Link. LiveContainerShared first, since the others link against it.
+# Only link what the code uses, as Xcode's build does: UIKit must not load before
+# LCBootstrap has set up the guest app (SDK spoofing, then the guest's own
+# libraries), and LiveProcess keeps it from loading at all (LiveProcess/main.m).
+# check.py fails the build if any of these binaries links UIKit.
 F="$APP/Frameworks"
 mkdir -p "$F/LiveContainerShared.framework" "$F/LiveContainerSwiftUI.framework"
 objects o LiveContainerShared
 job link-LiveContainerShared "${CLINK[@]}" -dynamiclib "${DYLIB_VERSIONS[@]}" "${FRAMEWORK_RPATHS[@]}" \
     -install_name @rpath/LiveContainerShared.framework/LiveContainerShared \
-    -framework Foundation -framework UIKit -framework Security "${o[@]}" "$ZC_CLANG_RT" \
+    -framework Foundation -framework Security "${o[@]}" "$ZC_CLANG_RT" \
     -o "$F/LiveContainerShared.framework/LiveContainerShared"
 finish "linked LiveContainerShared"
 
 # OTHER_LDFLAGS of the LiveContainer target: its entry point is in main.c, which
-# loads LiveContainerShared and calls LiveContainerMain.
+# loads LiveContainerShared and calls LiveContainerMain. It is plain C, linked
+# without the Objective-C flags so it loads nothing but libSystem, and it exports
+# only the header, like an executable stripped by Xcode.
 objects o LiveContainer
-job link-LiveContainer "${CLINK[@]}" -Xlinker -e -Xlinker _LiveContainerMainC \
+job link-LiveContainer "$CLANG" "${BASE_LINKFLAGS[@]}" -Xlinker -e -Xlinker _LiveContainerMainC \
+    -Xlinker -exported_symbol -Xlinker __mh_execute_header \
     -Xlinker -rpath -Xlinker @executable_path/Frameworks "${o[@]}" "$ZC_CLANG_RT" -o "$APP/LiveContainer"
 objects o LiveContainerSwiftUI
 job link-LiveContainerSwiftUI "${SLINK[@]}" -emit-library -module-name LiveContainerSwiftUI "${DYLIB_VERSIONS[@]}" \
     "${FRAMEWORK_RPATHS[@]}" -Xlinker -install_name -Xlinker @rpath/LiveContainerSwiftUI.framework/LiveContainerSwiftUI \
     -Xlinker -U -Xlinker '_OBJC_CLASS_$_RBSTarget' -F "$F" -framework LiveContainerShared -framework IOKit -larchive \
     "${o[@]}" -o "$F/LiveContainerSwiftUI.framework/LiveContainerSwiftUI"
+if [[ -f LiveContainerSwiftUI/ViewApp.intentdefinition ]]; then
+    cp LiveContainerSwiftUI/ViewApp.intentdefinition "$F/LiveContainerSwiftUI.framework/"  # a resource, as in Xcode
+fi
 objects o TweakLoader
 job link-TweakLoader "${CLINK[@]}" -dynamiclib "${DYLIB_VERSIONS[@]}" -install_name @rpath/TweakLoader.dylib \
     -Xlinker -U -Xlinker '_OBJC_CLASS_$_FBSSceneParameters' -Xlinker -U -Xlinker '_OBJC_CLASS_$_LSApplicationWorkspace' \
@@ -278,7 +303,7 @@ if has LiveProcess; then
     mkdir -p "$APP/PlugIns/LiveProcess.appex"
     objects o LiveProcess
     job link-LiveProcess "${CLINK[@]}" -fapplication-extension -Xlinker -e -Xlinker _NSExtensionMain \
-        "${EXTENSION_RPATHS[@]}" -F "$F" -framework LiveContainerShared -framework Foundation -framework UIKit \
+        "${EXTENSION_RPATHS[@]}" -F "$F" -framework LiveContainerShared -framework Foundation \
         "${o[@]}" "$ZC_CLANG_RT" -o "$APP/PlugIns/LiveProcess.appex/LiveProcess"
 fi
 if has ShareExtension; then
@@ -290,12 +315,13 @@ if has ShareExtension; then
 fi
 if has LaunchAppExtension; then
     # An ExtensionKit extension, but the Xcode project embeds it in PlugIns with
-    # the others. No Metadata.appintents: only Xcode can generate it.
+    # the others. Like every extension Xcode links, it starts in NSExtensionMain,
+    # not in the Swift @main. assemble.py adds its Metadata.appintents.
     mkdir -p "$APP/PlugIns/LaunchAppExtension.appex"
     objects o LaunchAppExtension
-    job link-LaunchAppExtension "${SLINK[@]}" -emit-executable -application-extension "${EXTENSION_RPATHS[@]}" \
-        -F "$F" -framework LiveContainerShared "${o[@]}" \
-        -o "$APP/PlugIns/LaunchAppExtension.appex/LaunchAppExtension"
+    job link-LaunchAppExtension "${SLINK[@]}" -emit-executable -application-extension \
+        -Xlinker -e -Xlinker _NSExtensionMain "${EXTENSION_RPATHS[@]}" -F "$F" -framework LiveContainerShared \
+        "${o[@]}" -o "$APP/PlugIns/LaunchAppExtension.appex/LaunchAppExtension"
 fi
 finish "linked"
 
@@ -321,9 +347,17 @@ echo "  stripped"
 export ZC_VERSION_INFO="Release ($GIT_BRANCH/$GIT_COMMIT)"
 "$PYTHON" "$ZC_SCRIPTS/assemble.py" "$APP"
 
-# 6. Check the bundle before packaging it.
-"$PYTHON" "$ZC_SCRIPTS/check.py" "$APP"
+# 6. Ad-hoc sign like Xcode's archive, so the entitlements travel with the IPA.
+if [[ "$ZC_ADHOC_SIGN" == 1 ]]; then
+    "$PYTHON" "$ZC_SCRIPTS/codesign.py" "$APP"
+fi
 
-# 7. Package.
+# 7. Check the bundle and its signatures before packaging it.
+"$PYTHON" "$ZC_SCRIPTS/check.py" "$APP"
+if [[ "$ZC_ADHOC_SIGN" == 1 ]]; then
+    "$PYTHON" "$ZC_SCRIPTS/verify_sig.py" --unsigned-ok "$APP"
+fi
+
+# 8. Package.
 (cd "$WORK" && zip -qrX -y "$ZC_BUILD_DIR/$ZC_IPA_NAME" Payload)
 echo "Built $ZC_BUILD_DIR/$ZC_IPA_NAME ($(du -h "$ZC_BUILD_DIR/$ZC_IPA_NAME" | cut -f1)) in $((SECONDS - started))s"
