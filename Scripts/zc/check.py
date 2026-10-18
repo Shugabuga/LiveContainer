@@ -7,7 +7,8 @@ the build used, e.g.
 
 What it checks:
 - layout: the frameworks, extensions and resources that should be in the bundle
-  (and none of the extensions when ZC_EXTENSIONS=0), and no headers left in it;
+  (and none of the extensions when ZC_EXTENSIONS=0), no headers left in it, and
+  nothing of SideStore or AltStore in it (file names, Info.plists, entitlements);
 - every Mach-O we build is arm64 iOS with minos ZC_MIN_IOS and sdk
   ZC_RECORDED_SDK (the prebuilt OpenSSL and CydiaSubstrate are listed but not
   judged);
@@ -22,9 +23,11 @@ What it checks:
 - every Info.plist parses and has the keys iOS needs, with no $(...) left, the
   bundle IDs expected for this variant, the SDK the binaries record, and
   LiveProcess's permission strings; *Dictionary keys the build adds hold
-  dictionaries;
+  dictionaries; the main Info.plist carries the ZeusCompanion marker Zeus looks
+  for before it hands over its certificate;
 - LaunchAppExtension's Metadata.appintents parses;
-- the compiled string tables parse and every language has every key.
+- the compiled string tables parse, every language has every key, and none of
+  them mentions SideStore or AltStore.
 
 verify_sig.py checks the signatures themselves.
 """
@@ -56,7 +59,6 @@ ALWAYS = [
     'Frameworks/TweakLoader.dylib', 'Frameworks/TestJITLess.dylib', 'Frameworks/ZSign.dylib',
 ]
 EXTENSIONS = [
-    'Frameworks/SideStoreSupport.framework/SideStoreSupport',
     'PlugIns/LiveProcess.appex/LiveProcess',
     'PlugIns/ShareExtension.appex/ShareExtension',
     'PlugIns/LaunchAppExtension.appex/LaunchAppExtension',
@@ -73,6 +75,10 @@ EXPORTS = {
     'Frameworks/LiveContainerSwiftUI.framework/LiveContainerSwiftUI': ['_main'],
     'Frameworks/ZSign.dylib': ['_OBJC_CLASS_$_ZSigner'],
 }
+# What Zeus checks in the main Info.plist before it puts its certificate in the
+# app (ZContainer.isMarked in Zeus); LCZeusCertificate reads that file.
+ZEUS_COMPANION = {'Kind': 'zContainer', 'Protocol': 1}
+STORES = re.compile(r'(?i)side-?store|alt-?store')
 REQUIRED_KEYS = ['CFBundleIdentifier', 'CFBundleExecutable', 'CFBundlePackageType', 'CFBundleInfoDictionaryVersion',
                  'CFBundleShortVersionString', 'CFBundleVersion', 'CFBundleSupportedPlatforms', 'MinimumOSVersion',
                  'UIDeviceFamily']
@@ -114,7 +120,7 @@ class Checker:
         if not want_ext:
             present = [p for p in EXTENSIONS if os.path.exists(os.path.join(self.app, os.path.dirname(p)))]
             present += [d for d in ('PlugIns', 'Extensions') if os.path.exists(os.path.join(self.app, d))]
-            self.expect(not present, 'no extensions or SideStoreSupport (ZC_EXTENSIONS=0)', ', '.join(present))
+            self.expect(not present, 'no extensions (ZC_EXTENSIONS=0)', ', '.join(present))
         leftovers, unsealed = [], []
         signed = self.args.signing != 'none'
         for root, dirs, _ in os.walk(self.app):
@@ -129,6 +135,16 @@ class Checker:
                     + ('' if signed else ' or signatures'), ', '.join(leftovers + stray))
         if signed:
             self.expect(not unsealed, 'every bundle has _CodeSignature/CodeResources', ', '.join(unsealed))
+        stores = [rel for rel, _ in self.files() if STORES.search(rel)]
+        for rel, path in self.files():
+            if os.path.basename(rel) == 'Info.plist' and not rel.startswith(PREBUILT):
+                with open(path, 'rb') as f:
+                    if STORES.search(repr(plistlib.load(f))):
+                        stores.append(rel)
+        for target in sorted(self.signer.targets):
+            if STORES.search(repr(self.signer.entitlements(target))):
+                stores.append(f'{target} entitlements')
+        self.expect(not stores, 'nothing of SideStore or AltStore', ', '.join(stores))
 
     def main_executables(self):
         """{relative path of a bundle's executable: target name} for every code bundle."""
@@ -280,6 +296,8 @@ class Checker:
         self.expect(app_info.get('CFBundleDisplayName') == name, f'display name "{name}"',
                     str(app_info.get('CFBundleDisplayName')))
         self.expect(str(app_info.get('LCVersionInfo', '')).startswith('Release ('), f'LCVersionInfo "{app_info.get("LCVersionInfo")}"')
+        self.expect(app_info.get('ZeusCompanion') == ZEUS_COMPANION, f'ZeusCompanion marker {ZEUS_COMPANION}',
+                    str(app_info.get('ZeusCompanion')))
         icons = app_info.get('CFBundleIcons', {}).get('CFBundlePrimaryIcon', {}).get('CFBundleIconFiles', [])
         icons += app_info.get('CFBundleIcons~ipad', {}).get('CFBundlePrimaryIcon', {}).get('CFBundleIconFiles', [])
         icons.append(app_info.get('CFBundleIconFile', ''))
@@ -313,19 +331,25 @@ class Checker:
     def strings(self):
         print('localization')
         tables = {}
+        stores = []
         for entry in sorted(os.listdir(self.app)):
             path = os.path.join(self.app, entry, 'Localizable.strings')
             if entry.endswith('.lproj') and os.path.isfile(path):
                 with open(path, 'rb') as f:
-                    tables[entry[:-6]] = set(plistlib.load(f))
+                    table = plistlib.load(f)
+                tables[entry[:-6]] = set(table)
                 dict_path = path + 'dict'
                 if os.path.isfile(dict_path):
                     with open(dict_path, 'rb') as f:
-                        tables[entry[:-6]] |= set(plistlib.load(f))
+                        plurals = plistlib.load(f)
+                    tables[entry[:-6]] |= set(plurals)
+                    table = {**table, **plurals}
+                stores += [f'{entry}: {k}' for k, v in table.items() if STORES.search(k + repr(v))]
         if not self.expect('en' in tables, 'en.lproj/Localizable.strings'):
             return
         short = {lang: len(tables['en'] - keys) for lang, keys in tables.items() if tables['en'] - keys}
         self.expect(not short, f'{len(tables)} languages, each with all {len(tables["en"])} keys', str(short))
+        self.expect(not stores, 'no string mentions SideStore or AltStore', ', '.join(stores[:10]))
         infoplist = [e for e in os.listdir(self.app) if os.path.isfile(os.path.join(self.app, e, 'InfoPlist.strings'))]
         self.ok(f'{len(infoplist)} InfoPlist.strings')
 

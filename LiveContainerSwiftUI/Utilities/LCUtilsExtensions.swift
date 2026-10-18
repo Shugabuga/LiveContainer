@@ -8,7 +8,9 @@
 import LocalAuthentication
 
 extension LCUtils {
-    public static let appGroupUserDefault = UserDefaults.init(suiteName: LCSharedUtils.appGroupID()) ?? UserDefaults.standard
+    /// The defaults shared with the extensions: the app group's, or the app's own
+    /// when it has no app group (LCSharedUtils sharedDefaultsFallingBackTo:).
+    public static let appGroupUserDefault = UserDefaults.lcShared() ?? UserDefaults.standard
     
     public static func signTweaks(tweakFolderUrl: URL, force : Bool = false, progressHandler : ((Progress) -> Void)? = nil) async throws {
         guard LCSharedUtils.certificatePassword() != nil else {
@@ -155,19 +157,6 @@ extension LCUtils {
         return true
     }
     
-    public static func getStoreName() -> String {
-        switch LCUtils.store() {
-        case .AltStore:
-            return "AltStore"
-        case .SideStore:
-            return "SideStore"
-        case .ADP:
-            return "ADP"
-        default:
-            return "Unknown Store"
-        }
-    }
-    
     public static func removeAppKeychain(dataUUID label: String) {
         [kSecClassGenericPassword, kSecClassInternetPassword, kSecClassCertificate, kSecClassKey, kSecClassIdentity].forEach {
           let status = SecItemDelete([
@@ -215,8 +204,8 @@ extension LCUtils {
             return true
         }
         
-        guard let groupUserDefaults = UserDefaults(suiteName: LCSharedUtils.appGroupID()),
-              let jitEnabler = JITEnablerType(rawValue: groupUserDefaults.integer(forKey: "LCJITEnablerType")) else {
+        let groupUserDefaults = LCUtils.appGroupUserDefault
+        guard let jitEnabler = JITEnablerType(rawValue: groupUserDefaults.integer(forKey: "LCJITEnablerType")) else {
             return false
         }
         
@@ -413,10 +402,6 @@ extension LCUtils {
                 onServerMessage?("JIT acquisition will continue in StikDebug.")
             }
             await UIApplication.shared.open(launchURL)
-        } else if jitEnabler == .SideStore {
-            onServerMessage?("JIT acquisition will continue in SideStore.")
-            let launchURL = URL(string: "sidestore://enable-jit?bundle-id=\(Bundle.main.bundleIdentifier!)")!
-            await UIApplication.shared.open(launchURL)
         }
         return false
     }
@@ -513,14 +498,6 @@ extension LCUtils {
                     underlying: error
                 )
             }
-        }
-    }
-    
-    static func openSideStore(delegate: LCAppModelDelegate? = nil, urlStr: String? = nil) {
-        let sideStoreApp = LCAppModel(appInfo: BuiltInSideStoreAppInfo.shared, delegate: delegate)
-        
-        Task {
-            try await sideStoreApp.runApp(bundleIdOverride: "builtinSideStore", urlStr: urlStr)
         }
     }
 }

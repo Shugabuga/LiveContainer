@@ -10,7 +10,7 @@
 
 # Variant of the app to build.
 : "${ZC_BUNDLE_ID:=com.kdt.livecontainer}"   # main app; extension IDs are derived from it
-: "${ZC_EXTENSIONS:=1}"                       # 0 leaves out every .appex and SideStoreSupport
+: "${ZC_EXTENSIONS:=1}"                       # 0 leaves out every .appex
 : "${ZC_DISPLAY_NAME:=}"                      # empty keeps CFBundleDisplayName from Info.plist
 : "${ZC_IPA_NAME:=LiveContainer.ipa}"         # file name of the IPA in $ZC_BUILD_DIR
 : "${ZC_MIN_IOS:=17.0}"                       # deployment target of every binary we build

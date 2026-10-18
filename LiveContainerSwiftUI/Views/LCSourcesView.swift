@@ -1,5 +1,5 @@
 //
-//  LCAltStoreSourcesView.swift
+//  LCSourcesView.swift
 //  LiveContainerSwiftUI
 //
 //  Created by Stephen B on 2025/2/15.
@@ -10,7 +10,7 @@ import SwiftUI
 import UIKit
 import CryptoKit
 
-struct AltStoreSourceAppVersion: Identifiable, Hashable {
+struct AppSourceAppVersion: Identifiable, Hashable {
     let id = UUID()
     let version: String
     let buildVersion: String?
@@ -20,7 +20,7 @@ struct AltStoreSourceAppVersion: Identifiable, Hashable {
     let size: Int64?
 }
 
-struct AltStoreSourceApp: Identifiable, Hashable {
+struct AppSourceApp: Identifiable, Hashable {
     let id = UUID()
     let name: String
     let bundleIdentifier: String
@@ -30,12 +30,12 @@ struct AltStoreSourceApp: Identifiable, Hashable {
     let iconURL: URL?
     let tintColor: Color?
     let screenshots: [URL]
-    let versions: [AltStoreSourceAppVersion]
-    let latestVersion: AltStoreSourceAppVersion?
+    let versions: [AppSourceAppVersion]
+    let latestVersion: AppSourceAppVersion?
     let isBeta: Bool
 }
 
-struct AltStoreSource: Identifiable, Hashable {
+struct AppSource: Identifiable, Hashable {
     let id = UUID()
     let name: String
     let identifier: String?
@@ -45,10 +45,10 @@ struct AltStoreSource: Identifiable, Hashable {
     let headerURL: URL?
     let tintColor: Color?
     let website: URL?
-    let apps: [AltStoreSourceApp]
+    let apps: [AppSourceApp]
 }
 
-private struct AltStoreSourceResponse: Decodable {
+private struct AppSourceResponse: Decodable {
     let name: String?
     let identifier: String?
     let subtitle: String?
@@ -57,10 +57,10 @@ private struct AltStoreSourceResponse: Decodable {
     let headerURL: String?
     let tintColor: String?
     let website: String?
-    let apps: [AltStoreSourceAppResponse]?
+    let apps: [AppSourceAppResponse]?
 }
 
-private struct AltStoreSourceAppResponse: Decodable {
+private struct AppSourceAppResponse: Decodable {
     let beta: Bool?
     let name: String?
     let bundleIdentifier: String?
@@ -74,7 +74,7 @@ private struct AltStoreSourceAppResponse: Decodable {
     let iconURL: String?
     let tintColor: String?
     let screenshotURLs: [String]?
-    let versions: [AltStoreSourceAppVersionResponse]?
+    let versions: [AppSourceAppVersionResponse]?
     
     enum CodingKeys: String, CodingKey {
         case beta
@@ -94,7 +94,7 @@ private struct AltStoreSourceAppResponse: Decodable {
     }
 }
 
-private struct AltStoreSourceAppVersionResponse: Decodable {
+private struct AppSourceAppVersionResponse: Decodable {
     let version: String?
     let buildVersion: String?
     let date: String?
@@ -113,15 +113,15 @@ private struct AltStoreSourceAppVersionResponse: Decodable {
 }
 
 @MainActor
-final class AltStoreSourcesViewModel: ObservableObject {
+final class AppSourcesViewModel: ObservableObject {
     struct SourceItem: Identifiable, Hashable {
         let id: URL
         let url: URL
-        var source: AltStoreSource?
+        var source: AppSource?
         var isLoading: Bool
         var error: String?
         
-        init(url: URL, isLoading: Bool = false, source: AltStoreSource? = nil, error: String? = nil) {
+        init(url: URL, isLoading: Bool = false, source: AppSource? = nil, error: String? = nil) {
             self.url = url
             self.id = url
             self.isLoading = isLoading
@@ -152,9 +152,9 @@ final class AltStoreSourcesViewModel: ObservableObject {
     
     @Published private(set) var sources: [SourceItem] = []
     @Published var isRefreshingAll = false
-    private let defaultsKey = "LCAltStoreSourceURLs"
+    private let defaultsKey = "LCSourceURLs"
 
-    private let cacheDirectoryName = "AltStoreSourceCache"
+    private let cacheDirectoryName = "SourceCache"
     
     init() {
         loadStoredSources()
@@ -207,7 +207,7 @@ final class AltStoreSourcesViewModel: ObservableObject {
         sources[index].error = nil
         let previousData = cachedData(for: url)
         do {
-            let (source, data) = try await AltStoreSourceLoader.load(from: url)
+            let (source, data) = try await AppSourceLoader.load(from: url)
             guard let sourceIndex = sources.firstIndex(where: { $0.url == url }) else {
                 return
             }
@@ -234,7 +234,7 @@ final class AltStoreSourcesViewModel: ObservableObject {
         for index in sources.indices {
             let url = sources[index].url
             if let data = cachedData(for: url),
-               let cachedSource = try? AltStoreSourceLoader.decode(from: data, baseURL: url) {
+               let cachedSource = try? AppSourceLoader.decode(from: data, baseURL: url) {
                 sources[index].source = cachedSource
             }
         }
@@ -263,7 +263,7 @@ final class AltStoreSourcesViewModel: ObservableObject {
     }
 }
 
-private extension AltStoreSourcesViewModel {
+private extension AppSourcesViewModel {
     func cachedData(for url: URL) -> Data? {
         guard let fileURL = cacheFileURL(for: url) else { return nil }
         return try? Data(contentsOf: fileURL)
@@ -314,22 +314,22 @@ private extension AltStoreSourcesViewModel {
     }
 }
 
-enum AltStoreSourceLoader {
-    static func load(from url: URL) async throws -> (AltStoreSource, Data) {
+enum AppSourceLoader {
+    static func load(from url: URL) async throws -> (AppSource, Data) {
         let (data, response) = try await URLSession.shared.data(from: url)
         if let httpResponse = response as? HTTPURLResponse,
            !(200...299).contains(httpResponse.statusCode) {
-            throw NSError(domain: "AltStoreSource", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "HTTP \(httpResponse.statusCode)"])
+            throw NSError(domain: "AppSource", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "HTTP \(httpResponse.statusCode)"])
         }
         let source = try decode(from: data, baseURL: url)
         return (source, data)
     }
     
-    static func decode(from data: Data, baseURL: URL) throws -> AltStoreSource {
+    static func decode(from data: Data, baseURL: URL) throws -> AppSource {
         try decodeSource(from: data, baseURL: baseURL)
     }
     
-    private static func decodeSource(from data: Data, baseURL: URL) throws -> AltStoreSource {
+    private static func decodeSource(from data: Data, baseURL: URL) throws -> AppSource {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .custom({ decoder in
             let container = try decoder.singleValueContainer()
@@ -345,14 +345,14 @@ enum AltStoreSourceLoader {
             throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid date format: \(rawValue)")
         })
         
-        let response = try decoder.decode(AltStoreSourceResponse.self, from: data)
+        let response = try decoder.decode(AppSourceResponse.self, from: data)
         guard let name = response.name else {
-            throw NSError(domain: "AltStoreSource", code: 0, userInfo: [NSLocalizedDescriptionKey: "lc.sources.error.malformed".loc])
+            throw NSError(domain: "AppSource", code: 0, userInfo: [NSLocalizedDescriptionKey: "lc.sources.error.malformed".loc])
         }
         let apps = (response.apps ?? []).compactMap { appResponse in
             buildApp(from: appResponse, baseURL: baseURL, fallbackTint: response.tintColor)
         }
-        return AltStoreSource(
+        return AppSource(
             name: name,
             identifier: response.identifier,
             subtitle: response.subtitle,
@@ -365,7 +365,7 @@ enum AltStoreSourceLoader {
         )
     }
     
-    private static func buildApp(from response: AltStoreSourceAppResponse, baseURL: URL, fallbackTint: String?) -> AltStoreSourceApp? {
+    private static func buildApp(from response: AppSourceAppResponse, baseURL: URL, fallbackTint: String?) -> AppSourceApp? {
         guard let name = response.name,
               let bundleIdentifier = response.bundleIdentifier else {
             return nil
@@ -374,7 +374,7 @@ enum AltStoreSourceLoader {
         let versions = buildVersions(from: response, baseURL: baseURL)
         let latest = versions.first ?? buildLegacyVersion(from: response, baseURL: baseURL)
         
-        return AltStoreSourceApp(
+        return AppSourceApp(
             name: name,
             bundleIdentifier: bundleIdentifier,
             developerName: response.developerName,
@@ -389,7 +389,7 @@ enum AltStoreSourceLoader {
         )
     }
     
-    private static func buildVersions(from response: AltStoreSourceAppResponse, baseURL: URL) -> [AltStoreSourceAppVersion] {
+    private static func buildVersions(from response: AppSourceAppResponse, baseURL: URL) -> [AppSourceAppVersion] {
         guard let versions = response.versions else { return [] }
         return versions.compactMap { version in
             guard let versionString = version.version,
@@ -397,7 +397,7 @@ enum AltStoreSourceLoader {
                   let downloadURL = url(for: downloadURLString, baseURL: baseURL) else {
                 return nil
             }
-            return AltStoreSourceAppVersion(
+            return AppSourceAppVersion(
                 version: versionString,
                 buildVersion: version.buildVersion,
                 releaseDate: parseDate(version.date),
@@ -408,13 +408,13 @@ enum AltStoreSourceLoader {
         }
     }
     
-    private static func buildLegacyVersion(from response: AltStoreSourceAppResponse, baseURL: URL) -> AltStoreSourceAppVersion? {
+    private static func buildLegacyVersion(from response: AppSourceAppResponse, baseURL: URL) -> AppSourceAppVersion? {
         guard let versionString = response.version,
               let downloadURLString = response.downloadURL,
               let downloadURL = url(for: downloadURLString, baseURL: baseURL) else {
             return nil
         }
-        return AltStoreSourceAppVersion(
+        return AppSourceAppVersion(
             version: versionString,
             buildVersion: nil,
             releaseDate: parseDate(response.versionDate),
@@ -481,9 +481,9 @@ private extension Color {
 }
 
 struct LCSourcesView: View {
-    @StateObject private var viewModel = AltStoreSourcesViewModel()
+    @StateObject private var viewModel = AppSourcesViewModel()
     @State private var errorMessage: String?
-    @State private var sourcePendingRemoval: AltStoreSourcesViewModel.SourceItem?
+    @State private var sourcePendingRemoval: AppSourcesViewModel.SourceItem?
     @ObservedObject public var searchContext: SearchContext = SearchContext()
     @State private var expandedSources: Set<URL> = []
     @State private var isManagingSources = false
@@ -511,7 +511,7 @@ struct LCSourcesView: View {
                         LazyVStack(spacing: 16) {
                             ForEach(viewModel.sources, id: \.id) { item in
                                 let apps = filteredApps(for: item)
-                                AltStoreSourceSectionView(
+                                AppSourceSectionView(
                                     item: item,
                                     filteredApps: apps,
                                     isFiltering: isFiltering,
@@ -639,7 +639,7 @@ struct LCSourcesView: View {
         }
     }
     
-    private func filteredApps(for item: AltStoreSourcesViewModel.SourceItem) -> [AltStoreSourceApp] {
+    private func filteredApps(for item: AppSourcesViewModel.SourceItem) -> [AppSourceApp] {
         guard let source = item.source else { return [] }
         let query = searchContext.debouncedQuery.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else {
@@ -676,7 +676,7 @@ struct LCSourcesView: View {
     }
     
     @MainActor
-    private func install(app: AltStoreSourceApp) {
+    private func install(app: AppSourceApp) {
         guard let downloadURL = app.latestVersion?.downloadURL else {
             errorMessage = "lc.sources.error.missingDownload".loc
             return
@@ -720,13 +720,13 @@ struct LCSourcesView: View {
 }
 
 private struct ManageSourcesSheet: View {
-    @ObservedObject var viewModel: AltStoreSourcesViewModel
+    @ObservedObject var viewModel: AppSourcesViewModel
     @Binding var isPresented: Bool
     let onAdd: (String) async -> Bool
     
     @State private var manualSourceValue = ""
     @State private var isAddingManual = false
-    @State private var sourcePendingRemoval: AltStoreSourcesViewModel.SourceItem?
+    @State private var sourcePendingRemoval: AppSourcesViewModel.SourceItem?
     @FocusState private var isManualFieldFocused: Bool
     
     var body: some View {
@@ -823,7 +823,7 @@ private struct ManageSourcesSheet: View {
         .navigationViewStyle(StackNavigationViewStyle())
     }
     
-    private func resolvedIconURL(for item: AltStoreSourcesViewModel.SourceItem) -> URL? {
+    private func resolvedIconURL(for item: AppSourcesViewModel.SourceItem) -> URL? {
         if let icon = item.primaryIconURL {
             return icon
         }
@@ -850,13 +850,13 @@ private struct ManageSourcesSheet: View {
     }
 }
 
-private struct AltStoreSourceSectionView: View {
-    let item: AltStoreSourcesViewModel.SourceItem
-    let filteredApps: [AltStoreSourceApp]
+private struct AppSourceSectionView: View {
+    let item: AppSourcesViewModel.SourceItem
+    let filteredApps: [AppSourceApp]
     let isFiltering: Bool
     let isExpanded: Bool
     let onRefresh: () -> Void
-    let onInstall: (AltStoreSourceApp) -> Void
+    let onInstall: (AppSourceApp) -> Void
     let onRemove: () -> Void
     let toggleExpanded: () -> Void
     
@@ -944,9 +944,9 @@ private struct AltStoreSourceSectionView: View {
 }
 
 private struct LCSourceAppBanner: View {
-    let app: AltStoreSourceApp
-    let source: AltStoreSource
-    let installAction: (AltStoreSourceApp) -> Void
+    let app: AppSourceApp
+    let source: AppSource
+    let installAction: (AppSourceApp) -> Void
     
     @AppStorage("dynamicColors") private var dynamicColors = true
     @Environment(\.colorScheme) var colorScheme

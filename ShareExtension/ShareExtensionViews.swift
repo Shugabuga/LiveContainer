@@ -80,16 +80,11 @@ struct ShareExtensionRootView: View {
     }
 
     private func appGridSection(title: String, apps: [ShareApp], includesHiddenUnlockButton: Bool = false) -> some View {
-        let regularApps = apps.filter { !$0.isBuiltInSideStore }
-        let sideStoreApps = apps.filter { $0.isBuiltInSideStore }
-        return VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 10) {
             Text(title)
                 .font(.headline)
             LazyVGrid(columns: columns, alignment: .leading, spacing: 12) {
-                ForEach(regularApps) { app in
-                    ShareAppGridEntry(app: app, viewModel: viewModel, extensionContext: extensionContext)
-                }
-                ForEach(sideStoreApps) { app in
+                ForEach(apps) { app in
                     ShareAppGridEntry(app: app, viewModel: viewModel, extensionContext: extensionContext)
                 }
                 if includesHiddenUnlockButton {

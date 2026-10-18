@@ -9710,107 +9710,6 @@
         }
       }
     },
-    "lc.common.ADP" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "شهادة ADP"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ADP Zertifikat"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ADP Certificate"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Certificado ADP"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Certificat ADP"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Certificato ADP"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ADP証明書"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ADP 인증서"
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Certyfikat ADP"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Certificado ADP"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Сертификат ADP"
-          }
-        },
-        "sv" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ADP certifikat"
-          }
-        },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ADP Sertifikası"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Chứng chỉ ADP"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "开发者证书"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "開發者證書"
-          }
-        }
-      }
-    },
     "lc.common.auto" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -16170,7 +16069,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Configure o modo JIT-Less (requer SideStore/AltStore) nas configurações para usar o LiveContainer.\n\n**Verifique a página de diagnóstico do modo JIT-Less nas configurações se você encontrar problemas ativando-o.**\n\nPressione o sinal de '+' para adicionar e instalar aplicativos.\n\nPressione e segure o aplicativo para alterar sua configuração, corrigir erros e adicionar aplicativos à tela de início."
+            "value" : "Configure o modo JIT-Less nas configurações para usar o LiveContainer.\n\n**Verifique a página de diagnóstico do modo JIT-Less nas configurações se você encontrar problemas ativando-o.**\n\nPressione o sinal de '+' para adicionar e instalar aplicativos.\n\nPressione e segure o aplicativo para alterar sua configuração, corrigir erros e adicionar aplicativos à tela de início."
           }
         },
         "ru" : {
@@ -17982,107 +17881,6 @@
         }
       }
     },
-    "lc.jitlessDiag.store" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "الحفظ"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Store"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Store"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tienda"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Store"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Store"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ストア"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "설치 방식"
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sklep"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Armazenar"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Магазин"
-          }
-        },
-        "sv" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Store"
-          }
-        },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mağaza"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cửa hàng"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "安装方式"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "安裝方式"
-          }
-        }
-      }
-    },
     "lc.jitlessDiag.teamId" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -18184,67 +17982,13 @@
         }
       }
     },
-    "lc.jitlessSetup.error.testLibLoadFailed %@ %@ %@" : {
+    "lc.jitlessSetup.error.testLibLoadFailed" : {
       "extractionState" : "manual",
       "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "فشل تحميل مكتبة الاختبار. هذا يعني أن الشهادة الخاصة بك قد تواجه مشكلة. يرجى محاولة: 1. إعادة فتح %@؛ 2. تحديث جميع التطبيقات في %@؛ 3. إعادة تصحيح %@ وحاول مرة أخرى."
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Die Testbibliothek konnte nicht geladen werden. Dies bedeutet, dass Ihr Zertifikat möglicherweise ein Problem aufweist. Bitte versuchen Sie es: 1. Öffnen Sie %@ erneut; 2. aktualisieren Sie alle Anwendungen in %@; 3. patchen Sie %@ erneut und versuchen Sie es erneut."
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The test library has failed to load. This means your certificate may be having issue. Please try to: 1. Reopen %@; 2. Refresh all apps in %@; 3. Re-patch %@ and try again."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La bibliothèque de test n'a pas pu être chargée. Cela signifie que votre certificat peut avoir un problème. Veuillez essayer de : 1. Rouvrir %@ ; 2. Rafraîchir toutes les applications dans %@ ; 3. Re-patcher %@ et réessayer."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "テストライブラリの読み込みが失敗しました。証明書にエラが発生する可能性があります。以下を試してください：1.%@を再開します、2.%@のすべてのアプリをリフレッシュします%、3.まだエラ発生があるとしたら、%@をリパッチしてください。"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A biblioteca de teste falhou ao carregar. Isso significa que o seu certificado pode estar tendo problemas. Por favor, tente os seguintes passos: 1. Reabra %@; 2. Atualize todos os aplicativos em %@; 3. Recorrija %@ e tente novamente."
-          }
-        },
-        "sv" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Testbiblioteket har misslyckats med att ladda. Detta innebär att ditt certifikat kan ha problem. Försök att: 1. Öppna %@; 2. Uppdatera alla appar i %@; 3. Re-patch %@ och försök igen."
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Không thể tải được thư viện test. Có nghĩa là chứng chỉ có vấn đề. Hãy thử: 1. Mở lại %@; 2. Làm mới các app trong %@; 3. Vá lại %@ và thử lại."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "无法加载测试动态链接库，这可能是由于证书出现问题。请尝试：1. 重新打开%@；2. 刷新%@；3. 如果仍有问题，请尝试重新给%@打补丁。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "無法載入測試動態連結庫，這可能是由於證書出現問題。請嘗試：1. 重新打開%@；2. 刷新%@；3. 如果仍有問題，請嘗試重新修補%@。"
+            "value" : "The test library failed to load, so the certificate may have a problem. Refresh this app in Zeus, then try again."
           }
         }
       }
@@ -22015,291 +21759,6 @@
         }
       }
     },
-    "lc.settings.importCertFromBuiltinSideStore" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "استيراد الشهادة من SideStore المُدمج"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zertifikat aus der integrierten SideStore-Version importieren"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Import Certificate From Built-in SideStore"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importar certificado desde SideStore integrado"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importer un certificat depuis le SideStore intégré"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importa Certificato da SideStore integrato"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "内蔵のSideStoreから証明書をインポート"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "내장 SideStore에서 인증서 가져오기"
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importuj certyfikat z wbudowanego SideStore"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importar Certificado da SideStore Integrada"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Импортировать сертификат из встроенного SideStore"
-          }
-        },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Yerleşik SideStore'dan Sertifika İçe Aktar"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nhập Chứng chỉ từ SideStore Tích hợp"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "从内置SideStore导入证书"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "從內建SideStore匯入證書"
-          }
-        }
-      }
-    },
-    "lc.settings.importCertFromBuiltinSideStore.certNotFounndErr" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "لم يتم العثور على الشهادة. هل سجلت الدخول إلى SideStore المُدمج؟"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zertifikat nicht gefunden. Haben Sie sich bei der integrierten SideStore-Version angemeldet?"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Certificate not found. Did you log into built-in SideStore?"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Certificado no encontrado. ¿Has iniciado sesión en SideStore?"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Certificat introuvable. Vous êtes-vous connecté au SideStore intégré ?"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Certificato non trovato. Hai eseguito l'accesso al SideStore integrato?"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "証明書が見つかりません。内蔵のSideStoreにサインインしているか確認してください。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "인증서를 찾을 수 없습니다. 내장 SideStore에 로그인 상태를 확인해주세요."
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Certyfikat nie został znaleziony. Czy zalogowałeś się do wbudowanego SideStore?"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Certificado não encontrado. Você fez 'login' na SideStore integrada?"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Сертификат не найден. Вы вошли в аккаунт во встроенном SideStore?"
-          }
-        },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sertifika bulunamadı. Yerleşik SideStore'a giriş yaptınız mı?"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Không tìm thấy chứng chỉ. Bạn đã đăng nhập vào SideStore tích hợp chưa?"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "证书未找到，你是否登录了内置SideStore？"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "未找到證書，你在內建SideStore中登入了嗎？"
-          }
-        }
-      }
-    },
-    "lc.settings.importCertFromBuiltinSideStoreDesc" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "تم اكتشاف SideStore مدمج. هل ترغب أن تَستورد شهادة منه"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Integrierter SideStore erkannt. Möchten Sie das Zertifikat daraus importieren?"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Built-in SideStore detected. Would you like to import certificate from it?"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Se detectó SideStore integrado. ¿Quieres importar el certificado desde él?"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "SideStore intégré détecté. Voulez-vous importer un certificat à partir de celui-ci ?"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rilevato SideStore incorporato. Vuoi importare il certificato da lì?"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "内蔵のSideStoreを検出しました。内蔵のSideStoreから証明書をインポートしますか？"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "내장 SideStore가 인식되었습니다. 인증서를 가져오시겠습니까?"
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Wykryto wbudowany SideStore. Czy chcesz zaimportować z niego certyfikat?"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "SideStore integrada detectada. Gostaria de importar o certificado dela?"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Обнаружен встроенный SideStore. Хотите ли вы импортировать сертификат оттуда?"
-          }
-        },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Yerleşik SideStore algılandı. Buradan sertifikayı içe aktarmak ister misiniz?"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Đã phát hiện SideStore tích hợp. Bạn có muốn nhập chứng chỉ từ đó không?"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "检测到内置SideStore，你想从中导入证书吗？"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "偵測到內建Sideload，你想要從中匯入證書嗎？"
-          }
-        }
-      }
-    },
     "lc.settings.importCertificate" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -22404,201 +21863,10 @@
     "lc.settings.importCertificateDesc" : {
       "extractionState" : "manual",
       "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "لأستعمال وضع بدون-JIT دون AltStore/SideStore، عليك أستيراد الشهادة الذي تم توقيع LiveContainer بها، هل تود المتابعة؟"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Wenn Sie den JITLess-Modus ohne AltStore/SideStore nutzen möchten, müssen Sie das Zertifikat importieren, mit dem LiveContainer signiert wurde. Fortfahren?"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "To use JITLess mode without AltStore/SideStore, you have to import the certificate used to sign LiveContainer. Continue?"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Para usar el modo JITLess sin AltStore/SideStore, debes importar el certificado usado para firmar LiveContainer. ¿Continuar?"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pour utiliser le mode sans JIT sans AltStore/SideStore, vous devez importer le certificat utilisé pour signer LiveContainer. Poursuivre ?"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Per utilizzare la modalità JITLess senza AltStore/SideStore, devi importare il certificato utilizzato per firmare LiveContainer. Vuoi Continuare?"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "AltStore/SideStoreなしでJITレスモードを使用するには、LiveContainerに署名するための証明書をインポートする必要があります。続けますか？"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "AltStore, SideStore 없이 JIT-Less 모드를 사용하려면, LiveContainer를 설치할 때 사용한 동일한 인증서가 필요합니다."
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aby używać trybu JIT-Less bez AltStore czy SideStore, trzeba zaimportować certyfikat użyty do podpisania LiveContainer. Czy chcesz kontynuować?"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Para usar o modo JIT-Less sem a AltStore/SideStore, você deve importar, especificamente, o certificado usado para assinar o LiveContainer. Deseja continuar?"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Чтобы включить режим JIT-less без AltStore/SideStore, вам потребуется указать сертификат, которым вы подписали LiveContainer. Продолжить?"
-          }
-        },
-        "sv" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "För att använda JITLess utan AltStore/SideStore måste du importera certifikatet som används för att signera LiveContainer. Vill du fortsätta?"
-          }
-        },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "AltStore/SideStore olmadan JITLess modunu kullanmak için, LiveContainer'ı imzalamak için kullanılan sertifikayı içe aktarmanız gerekir. Devam etmek istiyor musunuz?"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Để dùng chức năng JITLess không cần AltStore/SideStore, bạn phải nhập chứng chỉ được dùng để ký LiveContainer. Tiếp tục?"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "要不通过SideStore/AltStore使用免JIT模式，你需要导入用于签名LiveContainer的证书。要继续吗？"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "若不透過SideStore/AltStore使用免JIT模式，你需要匯入用於簽署LiveContainer的證書。要繼續嗎？"
-          }
-        }
-      }
-    },
-    "lc.settings.importCertificateFromStore %@" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "استيراد شهادة من %@"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zertifikat von %@ importieren"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Import Certificate From %@"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importar certificado desde %@"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importer un certificat depuis %@"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importa Certificato Da %@"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@から証明書をインポート"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@(에)서 인증서 가져오기"
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zaimportuj Certyfikat z %@"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importar Certificado De %@"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Импортировать сертификат из %@"
-          }
-        },
-        "sv" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importera certifikat från %@"
-          }
-        },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sertifikayı %@'dan içe aktar"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nhập Chứng chỉ từ %@"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "从%@导入证书"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "從%@載入證書"
+            "value" : "To use JIT-less mode with a certificate of your own, import the certificate that signed LiveContainer. Continue?"
           }
         }
       }
@@ -22700,6 +21968,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "請輸入證書的密碼"
+          }
+        }
+      }
+    },
+    "lc.settings.importOtherCertificate" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import Another Certificate"
           }
         }
       }
@@ -23632,6 +22911,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "免JIT模式診斷"
+          }
+        }
+      }
+    },
+    "lc.settings.jitLessZeusDesc" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Install this app with Zeus and allow it to use Zeus's certificate, or import the certificate that signed it."
           }
         }
       }
@@ -25241,101 +24531,6 @@
         }
       }
     },
-    "lc.settings.multiLCInstall.installWithBuiltInSideStore" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "تثبيت مع SideStore المدمج"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mit integriertem SideStore installieren"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Install with Built-in SideStore"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Instalar con SideStore integrado"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Installer avec le SideStore intégré"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Installa con SideStore integrato"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "内蔵のSideStoreでインストール"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "내장 SideStore로 설치하기"
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zainstaluj przy użyciu wbudowanego SideStore"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Instalar com SideStore Integrada"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Использовать встроенный SideStore"
-          }
-        },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Yerleşik SideStore ile yükleyin"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cài đặt bằng SideStore Tích hợp"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "使用内置SideStore安装"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "使用內建SideStore安裝"
-          }
-        }
-      }
-    },
     "lc.settings.multiLCInstall.useGameCategory" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -25427,107 +24622,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "設定類別為遊戲"
-          }
-        }
-      }
-    },
-    "lc.settings.multiLCInstallAlertDesc %@" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "سوف يقوم LiveContainer بتوليد ملف الـipa لـLiveContainer أخر. الرجاء مشاركته إلى %@ للتثبيت، هل تود المتابعه؟"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "LiveContainer wird eine IPA für einen weiteren LiveContainer generieren. Bitte teilen Sie diese mit %@, um sie zu installieren. Fortfahren?"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "LiveContainer will generate the ipa for another LiveContainer. Please share it to %@ to install it, Continue?"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "LiveContainer generará el ipa para otro LiveContainer. Compártelo con %@ para instalarlo. ¿Continuar?"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "LiveContainer va générer l'IPA pour un autre LiveContainer. Veuillez le partager à %@ pour l'installer. Continuer ?"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "LiveContainer genererà l'ipa per un altro LiveContainer. Condividilo su %@ per installarlo, Vuoi Continuare?"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "LiveContainerは別のLiveContainer用のIPAを生成します。インストールするには%@に共有してください。続けますか？"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "LiveContainer2 다운로드가 완료되면, %@(으)로 설치해주세요."
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "LiveContainer wygeneruje plik ipa dla innego LiveContainer. Proszę udostępnić go do %@ aby go zainstalować. Czy chcesz kontynuować?"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "O contêiner atual irá gerar o arquivo IPA para outro contêiner. Por favor, compartilhe-o para %@ para concluir a instalação. Deseja continuar?"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "LiveContainer создаст файл IPA для другого LiveContainer'а. Поделитесь им с %@, чтобы завершить установку. Хотите продолжить?"
-          }
-        },
-        "sv" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "LiveContainer kommer att generera ipa för en annan LiveContainer. Vänligen dela den till %@ för att installera den, Fortsätt?"
-          }
-        },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "LiveContainer, başka bir LiveContainer için ipa dosyası oluşturacaktır. Yüklemek için lütfen %@ ile paylaşın, devam etmek ister misiniz?"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "LiveContainer sẽ tạo file ipa cho LiveContainer khác. Hãy chia sẻ nó qua %@ để cài nó. Tiếp tục?"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "LiveContainer将会生成另一个LiveContainer的IPA，请将其分享至%@以安装。要继续吗？"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "LiveContainer會產生IPA來安裝另一個LiveContainer。如要安裝請分享至%@。"
           }
         }
       }
@@ -26751,107 +25845,6 @@
         }
       }
     },
-    "lc.settings.refreshCertificateFromStore %@" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "حدث الشهادة من %@"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zertifikat von %@ aktualisieren"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Refresh Certificate from %@"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Actualizar certificado desde %@"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rafraîchir le certificat depuis %@"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aggiorna il certificato da %@"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@から証明書をリフレッシュ"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@에서 인증서 재설치"
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Odśwież certyfikat od %@"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recarregar o Certificado de %@"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Обновить сертификат от %@"
-          }
-        },
-        "sv" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Uppdatera certifikat från %@"
-          }
-        },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sertifikayı %@'dan yenile"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Làm mới Chứng chỉ từ %@"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "刷新来自%@的证书"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "從%@重新整理證書"
-          }
-        }
-      }
-    },
     "lc.settings.removeCertificate" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -28056,103 +27049,13 @@
         }
       }
     },
-    "lc.settings.unsupportedInstallMethod" : {
+    "lc.settings.useZeusCertificate" : {
       "extractionState" : "manual",
       "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "طريقة التثبيت غير مدعومة. الرجاء أستعمال AltStore أو SideStore لأعداد هذه الميزة."
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nicht unterstützte Installationsmethode. Bitte verwenden Sie AltStore oder SideStore, um diese Funktion einzurichten."
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Unsupported installation method. Please use AltStore or SideStore to setup this feature."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Método de instalación no compatible. Usa AltStore o SideStore para configurar esta función."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Méthode d'installation non prise en charge. Veuillez utiliser AltStore ou SideStore pour configurer cette fonctionnalité."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Metodo di installazione non supportato. Si prega di utilizzare AltStore o SideStore per configurare questa funzione."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "対応していないインストール方法です。この機能を設定するには、AltStoreまたはSideStoreを使用してください。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "지원하지 않는 방법입니다. 해당 방법을 사용하려면 AltStore 또는 SideStore를 사용해주세요."
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Metoda instalacji nie jest wspierana. Proszę użyć AltStore lub SideStore, aby skonfigurować tę funkcję."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Método de instalação não suportado. Por favor, use AltStore ou SideStore para configurar este recurso."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Неподдерживаемый способ установки. Используйте AltStore или SideStore для установки данной функции."
-          }
-        },
-        "sv" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Installationsmetod stöds inte. Använd AltStore eller SideStore för att använda denna funktion."
-          }
-        },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Desteklenmeyen kurulum yöntemi. Bu özelliği kurmak için lütfen AltStore veya SideStore kullanın."
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Không hỗ trợ phương pháp cài đặt này. Vui lòng dùng AltStore hay SideStore để thiết lập tính năng này."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "安装方式不受支持。请使用SideStore或AltStore安装来使用此功能。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "安裝方式不受支援。請使用SideStore或AltStore安裝來使用此功能。"
+            "value" : "Use the Certificate from Zeus"
           }
         }
       }
@@ -28254,6 +27157,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "請勿將LiveContainer用於盜版。"
+          }
+        }
+      }
+    },
+    "lc.settings.zeusCertificate" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Certificate from Zeus"
           }
         }
       }
@@ -32671,6 +31585,94 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "執行程式"
+          }
+        }
+      }
+    },
+    "lc.zeusCertificate.expired %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Expired %@"
+          }
+        }
+      }
+    },
+    "lc.zeusCertificate.expires %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Expires %@"
+          }
+        }
+      }
+    },
+    "lc.zeusCertificate.problem.check %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The certificate Zeus included didn't pass the JIT-less check: %@"
+          }
+        }
+      }
+    },
+    "lc.zeusCertificate.problem.password" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The certificate Zeus included doesn't open with its password. Install this app again with Zeus."
+          }
+        }
+      }
+    },
+    "lc.zeusCertificate.problem.protocol" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zeus included its certificate in a format this version doesn't know. Update this app, then install it again with Zeus."
+          }
+        }
+      }
+    },
+    "lc.zeusCertificate.problem.team %@ %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The certificate Zeus included belongs to team %1$@, but team %2$@ signed this app, so it can't sign the apps inside. Install this app again with Zeus."
+          }
+        }
+      }
+    },
+    "lc.zeusCertificate.problem.unreadable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The certificate Zeus included can't be read. Install this app again with Zeus."
+          }
+        }
+      }
+    },
+    "lc.zeusCertificate.team %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Team %@"
           }
         }
       }

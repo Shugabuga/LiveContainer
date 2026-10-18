@@ -15,7 +15,6 @@ enum JITEnablerType : Int, CaseIterable, Identifiable {
     case StikJIT = 1
     case JITStreamerEBLegacy = 2
     case StikJITLC = 3
-    case SideStore = 4
     case StosDebug = 5
     case StosDebugLC = 6
     
@@ -25,7 +24,6 @@ enum JITEnablerType : Int, CaseIterable, Identifiable {
         case .StikJITLC: "StikDebug (Another LiveContainer/Multitask)"
         case .StosDebug: "StosDebug"
         case .StosDebugLC: "StosDebug (Another LiveContainer/Multitask)"
-        case .SideStore: "SideStore"
         case .JITStreamerEBLegacy: "JitStreamer-EB (Relaunch)"
         case .SideJITServer: "SideJITServer/JITStreamer 2.0"
         }
@@ -39,9 +37,10 @@ struct LCSettingsView: View {
     @State var successInfo = ""
 
     @State private var certificateDataFound = false
+    @State private var zeusCertificate: ZeusCertificate?
+    @State private var zeusCertificateProblem: String?
     
     @StateObject private var certificateImportAlert = YesNoHelper()
-    @StateObject private var certificateImportFromBuiltInSideStoreAlert = YesNoHelper()
     @StateObject private var certificateRemoveAlert = YesNoHelper()
     @StateObject private var certificateImportFileAlert = AlertHelper<URL>()
     @StateObject private var certificateImportPasswordAlert = InputHelper()
@@ -58,8 +57,6 @@ struct LCSettingsView: View {
     @AppStorage("LCDeviceUDID", store: LCUtils.appGroupUserDefault) var deviceUDID: String = ""
     @AppStorage("LCJITEnablerType", store: LCUtils.appGroupUserDefault) var JITEnabler: JITEnablerType = .SideJITServer
     
-    @State var store : Store = .Unknown
-    
     @AppStorage("LCLoadTweaksToSelf") var injectToLCItelf = false
     @AppStorage("LCIgnoreJITOnLaunch") var ignoreJITOnLaunch = false
     @AppStorage("LCSelected32BitEmulator", store: LCUtils.appGroupUserDefault) var selected32BitEmulator : String = ""
@@ -70,13 +67,10 @@ struct LCSettingsView: View {
     
     @EnvironmentObject private var sharedModel : SharedModel
     
-    @State private var isViewAppeared = false
-    
-    let storeName = LCUtils.getStoreName()
-    
     init() {
         _certificateDataFound = State(initialValue: LCSharedUtils.certificatePassword() != nil)
-        _store = State(initialValue: LCUtils.store())
+        _zeusCertificate = State(initialValue: ZeusCertificate.stored)
+        _zeusCertificateProblem = State(initialValue: ZeusCertificate.problem)
     }
     
     var body: some View {
@@ -84,11 +78,32 @@ struct LCSettingsView: View {
             Form {
                 if sharedModel.multiLCStatus != 2 {
                     Section{
+                        if let zeusCertificate, certificateDataFound {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("lc.settings.zeusCertificate".loc)
+                                Text(zeusCertificate.summary)
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        if let zeusCertificateProblem {
+                            Text(zeusCertificateProblem)
+                                .font(.footnote)
+                                .foregroundStyle(.red)
+                        }
                         if !certificateDataFound {
                             Button {
                                 Task{ await importCertificate() }
                             } label: {
                                 Text("lc.settings.importCertificate".loc)
+                            }
+                        } else if zeusCertificate != nil {
+                            // Removing Zeus's certificate would only bring it back on
+                            // the next launch, so offer a certificate of one's own.
+                            Button {
+                                Task{ await importCertificate() }
+                            } label: {
+                                Text("lc.settings.importOtherCertificate".loc)
                             }
                         } else {
                             Button {
@@ -97,15 +112,11 @@ struct LCSettingsView: View {
                                 Text("lc.settings.removeCertificate".loc)
                             }
                         }
-                        if store == .AltStore || store == .SideStore {
+                        if zeusCertificate == nil && LCZeusCertificate.isBundled() {
                             Button {
-                                Task{ await importCertificateFromSideStore() }
+                                Task{ await useZeusCertificate() }
                             } label: {
-                                if certificateDataFound {
-                                    Text("lc.settings.refreshCertificateFromStore %@".localizeWithFormat(storeName))
-                                } else {
-                                    Text("lc.settings.importCertificateFromStore %@".localizeWithFormat(storeName))
-                                }
+                                Text("lc.settings.useZeusCertificate".loc)
                             }
                         }
                         
@@ -118,32 +129,17 @@ struct LCSettingsView: View {
                     } header: {
                         Text("lc.settings.jitLess".loc)
                     } footer: {
-                        Text("lc.settings.jitLessDesc".loc)
+                        Text(certificateDataFound ? "lc.settings.jitLessDesc".loc : "lc.settings.jitLessZeusDesc".loc)
                     }
-                }
-                if (store != .Unknown && store != .ADP) || LCUtils.isAppGroupAltStoreLike() {
+                } else {
                     Section{
+                        Text("lc.settings.multiLCIsSecond".loc)
+                            .foregroundStyle(.secondary)
                         NavigationLink {
-                            LCMultiLCManagementView()
+                            LCJITLessDiagnoseView()
                         } label: {
-                            if sharedModel.multiLCStatus == 0 {
-                                Text("lc.settings.multiLC".loc)
-                            } else if sharedModel.multiLCStatus == 2 {
-                                Text("lc.settings.multiLCIsSecond".loc)
-                            }
-                            
+                            Text("lc.settings.jitlessDiagnose".loc)
                         }
-                        .disabled(sharedModel.multiLCStatus == 2)
-                        
-                        if(sharedModel.multiLCStatus == 2) {
-                            NavigationLink {
-                                LCJITLessDiagnoseView()
-                            } label: {
-                                Text("lc.settings.jitlessDiagnose".loc)
-                            }
-                        }
-                    } footer: {
-                        Text("lc.settings.multiLCDesc".loc)
                     }
                 }
                 
@@ -350,11 +346,6 @@ struct LCSettingsView: View {
                             Text("Export Dyld")
                         }
                         Button {
-                            Task { await nukeSideStore() }
-                        } label: {
-                            Text("Nuke SideStore")
-                        }
-                        Button {
                             exportMainBundle()
                         } label: {
                             Text("Export Main Bundle")
@@ -412,18 +403,6 @@ struct LCSettingsView: View {
             } message: {
                 Text("lc.settings.removeCertificateDesc".loc)
             }
-            .alert("lc.settings.importCertFromBuiltinSideStore".loc, isPresented: $certificateImportFromBuiltInSideStoreAlert.show) {
-                Button {
-                    certificateImportFromBuiltInSideStoreAlert.close(result: true)
-                } label: {
-                    Text("lc.common.ok".loc)
-                }
-                Button("lc.common.cancel".loc, role: .cancel) {
-                    certificateImportFromBuiltInSideStoreAlert.close(result: false)
-                }
-            } message: {
-                Text("lc.settings.importCertFromBuiltinSideStoreDesc".loc)
-            }
             .betterFileImporter(isPresented: $certificateImportFileAlert.show, types: [.p12], multiple: false, callback: { fileUrls in
                 certificateImportFileAlert.close(result: fileUrls[0])
             }, onDismiss: {
@@ -445,17 +424,8 @@ struct LCSettingsView: View {
         }
         .navigationViewStyle(StackNavigationViewStyle())
         .onAppear() {
-            if !isViewAppeared {
-                guard sharedModel.selectedTab == .settings, let link = sharedModel.deepLink else { return }
-                sharedModel.deepLink = nil
-                handleURL(url: link)
-                isViewAppeared = true
-            }
-        }
-        .onChange(of: sharedModel.deepLink) { link in
-            guard sharedModel.selectedTab == .settings, let link else { return }
-            sharedModel.deepLink = nil
-            handleURL(url: link)
+            // The launch check (LCTabView) may have found a problem since.
+            refreshCertificateState()
         }
     }
     
@@ -577,86 +547,28 @@ struct LCSettingsView: View {
         LCUtils.appGroupUserDefault.set(certificateData, forKey: "LCCertificateData")
         LCUtils.appGroupUserDefault.set(certificatePassword, forKey: "LCCertificatePassword")
         LCUtils.appGroupUserDefault.set(NSDate.now, forKey: "LCCertificateUpdateDate")
-        certificateDataFound = true
+        ZeusCertificate.forgetStored()
+        refreshCertificateState()
 
         UserDefaults.standard.set(LCSharedUtils.appGroupID(), forKey: "LCAppGroupID")
     }
     
-    func importCertificateFromSideStore() async {
-        if UserDefaults.sideStoreExist() {
-            if let ans = await certificateImportFromBuiltInSideStoreAlert.open(), ans {
-                let query: [String: Any] = [
-                    kSecClass as String: kSecClassGenericPassword,
-                    kSecAttrAccount as String: "signingCertificate",
-                    kSecReturnData as String: true,
-                    kSecMatchLimit as String: kSecMatchLimitOne,
-                    kSecAttrService as String: "com.kdt.livecontainer",
-                    kSecAttrSynchronizable as String: kSecAttrSynchronizableAny
-                ]
-                
-                var item: CFTypeRef?
-                let status = SecItemCopyMatching(query as CFDictionary, &item)
-                
-                guard status == errSecSuccess else {
-                    if status == errSecItemNotFound {
-                        errorInfo = "lc.settings.importCertFromBuiltinSideStore.certNotFounndErr".loc
-                        errorShow = true
-                    } else {
-                        errorInfo = "Keychain read error: \(status)"
-                        errorShow = true
-                    }
-                    return
-                }
-                
-                guard let data = item as? Data else {
-                    errorInfo = "Failed to decode certificate data"
-                    errorShow = true
-                    return
-                }
-                
-                let passwordQuery: [String: Any] = [
-                    kSecClass as String: kSecClassGenericPassword,
-                    kSecAttrAccount as String: "signingCertificatePassword",
-                    kSecReturnData as String: true,
-                    kSecMatchLimit as String: kSecMatchLimitOne,
-                    kSecAttrService as String: "com.kdt.livecontainer",
-                    kSecAttrSynchronizable as String: kSecAttrSynchronizableAny
-                ]
-                
-                var passwordItem: CFTypeRef?
-                let passwordStatus = SecItemCopyMatching(passwordQuery as CFDictionary, &passwordItem)
-                var password = ""
-                if passwordStatus == errSecSuccess,
-                   let passwordData = passwordItem as? Data,
-                   let pwd = String(data: passwordData, encoding: .utf8) {
-                    password = pwd
-                }
-                
-                onSideStoreCertificateCallback(certificateData: data, password: password)
-                
-                return
-            }
-        }
-        
-        let storeScheme : String
-        if store == .AltStore {
-            storeScheme = "altstore-classic"
-        } else {
-            storeScheme = "sidestore"
-        }
-        
-        guard let url = URL(string: "\(storeScheme.lowercased())://certificate?callback_template=livecontainer%3A%2F%2Fcertificate%3Fcert%3D%24%28BASE64_CERT%29%26password%3D%24%28PASSWORD%29") else {
-            errorInfo = "Failed to initialize certificate import URL."
+    /// Puts back the certificate Zeus included, replacing one imported by hand,
+    /// and checks it like the launch does.
+    func useZeusCertificate() async {
+        _ = LCZeusCertificate.importReplacingStoredCertificate()
+        let problem = await ZeusCertificate.checkIfNeeded()
+        refreshCertificateState()
+        if let problem {
+            errorInfo = problem
             errorShow = true
-            return
         }
-        await UIApplication.shared.open(url)
     }
-    func onSideStoreCertificateCallback(certificateData: Data, password: String) {
-        LCUtils.appGroupUserDefault.set(certificateData, forKey: "LCCertificateData")
-        LCUtils.appGroupUserDefault.set(password, forKey: "LCCertificatePassword")
-        LCUtils.appGroupUserDefault.set(NSDate.now, forKey: "LCCertificateUpdateDate")
-        certificateDataFound = true
+    
+    func refreshCertificateState() {
+        certificateDataFound = LCSharedUtils.certificatePassword() != nil
+        zeusCertificate = ZeusCertificate.stored
+        zeusCertificateProblem = ZeusCertificate.problem
     }
     
     func removeCertificate() async {
@@ -667,23 +579,10 @@ struct LCSettingsView: View {
         LCUtils.appGroupUserDefault.set(nil, forKey: "LCCertificateData")
         LCUtils.appGroupUserDefault.set(nil, forKey: "LCCertificatePassword")
         LCUtils.appGroupUserDefault.set(nil, forKey: "LCCertificateUpdateDate")
-        certificateDataFound = false
+        ZeusCertificate.forgetStored()
+        refreshCertificateState()
 
         UserDefaults.standard.set(nil, forKey: "LCAppGroupID")
-    }
-    
-    func nukeSideStore() async {
-        guard let doRemove = await certificateRemoveAlert.open(), doRemove else {
-            return
-        }
-        do {
-            let fm = FileManager.default
-            let sidestoreAppGroupURL = LCPath.lcGroupDocPath.deletingLastPathComponent()
-            try fm.removeItem(at: sidestoreAppGroupURL.appendingPathComponent("Database"))
-            try fm.removeItem(at: sidestoreAppGroupURL.appendingPathComponent("Apps"))
-        } catch {
-            print("wtf \(error)")
-        }
     }
     
     func exportDyld() {
@@ -696,21 +595,6 @@ struct LCSettingsView: View {
             print("Successfully copied dyld to Documents.")
         } catch {
             print("Error copying dyld \(error)")
-        }
-    }
-    
-    func handleURL(url: URL) {
-        if url.host == "certificate" {
-            if let components = URLComponents(url: url, resolvingAgainstBaseURL: false) {
-                let queryItems = components.queryItems?.reduce(into: [String: String]()) { $0[$1.name.lowercased()] = $1.value } ?? [:]
-                guard let encodedCert = queryItems["cert"]?.removingPercentEncoding,
-                      let password = queryItems["password"],
-                      let certData = Data(base64Encoded: encodedCert)
-                else { return }
-                
-                onSideStoreCertificateCallback(certificateData: certData, password: password)
-                
-            }
         }
     }
 }

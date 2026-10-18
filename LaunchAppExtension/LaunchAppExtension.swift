@@ -69,7 +69,7 @@ struct LaunchAppExtension: AppIntent {
                 LaunchAppExtension.ext = ext
             } catch {
                 NSLog("Failed to start extension \(error)")
-                throw LaunchAppExtensionError("Failed to start extension \(error). To use the Launch App shortcut, reinstall LiveContainer with LaunchAppExtension and ShareExtension installed. If you use SideStore, choose \"Keep App Extensions (Use Main Profile)\". If you use Impactor, choose \"Only Register Main Bundle\". For other sideloaders, select keep all extensions, i.e. DO NOT Remove any extension.")
+                throw LaunchAppExtensionError("Failed to start extension \(error). To use the Launch App shortcut, reinstall LiveContainer with LaunchAppExtension and ShareExtension installed. If you use Impactor, choose \"Only Register Main Bundle\". For other sideloaders, select keep all extensions, i.e. DO NOT Remove any extension.")
             }
             
         }
@@ -88,7 +88,7 @@ struct LaunchAppExtension: AppIntent {
             isLiveContainerURL = schemes.contains(preferredScheme)
         }
         
-        if !isLiveContainerURL && normalizedLaunchScheme != "sidestore" {
+        if !isLiveContainerURL {
             throw LaunchAppExtensionError("Not a livecontainer URL!")
         }
         
@@ -97,14 +97,6 @@ struct LaunchAppExtension: AppIntent {
             let lcSharedDefaults = UserDefaults(suiteName: appGroupId)
         else {
             throw LaunchAppExtensionError("lcSharedDefaults failed to initialize, because no app group was found. Did you sign LiveContainer correctly?")
-        }
-        
-        if normalizedLaunchScheme == "sidestore" {
-            lcSharedDefaults.set("livecontainer", forKey: "LCLaunchExtensionScheme")
-            lcSharedDefaults.set("builtinSideStore", forKey: "LCLaunchExtensionBundleID")
-            lcSharedDefaults.set(Date.now, forKey: "LCLaunchExtensionLaunchDate")
-            try await openURL(launchOptions: ["url": launchURL])
-            return .result()
         }
         
         if launchURL.host != "livecontainer-launch" {

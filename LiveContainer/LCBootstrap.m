@@ -1,6 +1,7 @@
 #import "FoundationPrivate.h"
 #import "LCMachOUtils.h"
 #import "LCSharedUtils.h"
+#import "LCZeusCertificate.h"
 #import "UIKitPrivate.h"
 #import "utils.h"
 
@@ -31,8 +32,6 @@ NSString* lcGuestAppId;
 NSString* lcLaunchURL;
 bool isLiveProcess = false;
 bool isSharedBundle = false;
-bool isSideStore = false;
-bool sideStoreExist = false;
 
 @implementation NSUserDefaults(LiveContainer)
 + (instancetype)lcUserDefaults {
@@ -40,7 +39,7 @@ bool sideStoreExist = false;
 }
 + (instancetype)lcSharedDefaults {
     if(!lcUserDefaults) {
-        lcSharedDefaults = [[NSUserDefaults alloc] initWithSuiteName: [LCSharedUtils appGroupID]];
+        lcSharedDefaults = [LCSharedUtils sharedDefaultsFallingBackTo:NSUserDefaults.standardUserDefaults];
     }
     return lcSharedDefaults;
 }
@@ -66,12 +65,6 @@ bool sideStoreExist = false;
 }
 + (bool)isSharedApp {
     return isSharedBundle;
-}
-+ (bool)isSideStore {
-    return isSideStore;
-}
-+ (bool)sideStoreExist {
-    return sideStoreExist;
 }
 
 + (NSString*)lcGuestAppId {
@@ -253,10 +246,10 @@ static NSString* invokeAppMain(NSString *selectedApp, NSString *selectedContaine
     if([[lcUserDefaults objectForKey:@"LCWaitForDebugger"] boolValue]) {
         sleep(100);
     }
-    if (!LCSharedUtils.certificatePassword && !isSideStore) {
+    if (!LCSharedUtils.certificatePassword) {
 #if !TARGET_OS_SIMULATOR
         if(@available(iOS 26.0 ,*))  {
-            return @"JITLess mode is required since iOS 26. Please set it up in settings. \nPlease go to LiveContainer settings -> tap \"Import Certificate from SideStore\" / \"Import Certificate\"";
+            return @"JIT-less mode is required since iOS 26, and it needs the certificate that signed this app. Install this app with Zeus and let it use Zeus's certificate, or import a certificate in Settings.";
         }
 #endif
         // First of all, let's check if we have JIT
@@ -274,15 +267,7 @@ static NSString* invokeAppMain(NSString *selectedApp, NSString *selectedContaine
     
     NSURL *appGroupFolder = nil;
     
-    NSString *bundlePath = 0;
-    if(!isSideStore) {
-        bundlePath = [NSString stringWithFormat:@"%@/Applications/%@", docPath, selectedApp];
-    } else if (isLiveProcess) {
-        bundlePath = [[NSBundle.mainBundle.bundleURL.URLByDeletingLastPathComponent.URLByDeletingLastPathComponent URLByAppendingPathComponent:@"Frameworks/SideStoreApp.framework"] path];
-    } else {
-        bundlePath = [[NSBundle.mainBundle.bundleURL URLByAppendingPathComponent:@"Frameworks/SideStoreApp.framework"] path];
-    }
-    
+    NSString *bundlePath = [NSString stringWithFormat:@"%@/Applications/%@", docPath, selectedApp];
 
     guestAppInfo = [NSDictionary dictionaryWithContentsOfFile:[NSString stringWithFormat:@"%@/LCAppInfo.plist", bundlePath]];
 
@@ -335,7 +320,7 @@ static NSString* invokeAppMain(NSString *selectedApp, NSString *selectedContaine
         return @"Container not found!";
     }
     
-    if(isLiveProcess && !isSideStore) {
+    if(isLiveProcess) {
         lcAppUrlScheme = [lcUserDefaults stringForKey:@"hostUrlScheme"];
         [lcUserDefaults removeObjectForKey:@"hostUrlScheme"];
     }
@@ -417,14 +402,7 @@ static NSString* invokeAppMain(NSString *selectedApp, NSString *selectedContaine
         }
     }
     
-    if(isSideStore) {
-        if(isLiveProcess) {
-            newHomePath = [lcUserDefaults stringForKey:@"specifiedSideStoreContainerPath"];;
-            [lcUserDefaults removeObjectForKey:@"specifiedSideStoreContainerPath"];
-        } else {
-            newHomePath = [docPath stringByAppendingPathComponent:@"SideStore"];
-        }
-    } else if (bookmarkURL) {
+    if (bookmarkURL) {
         newHomePath = bookmarkURL.path;
     } else if(isSharedBundle) {
         newHomePath = [NSString stringWithFormat:@"%@/Data/Application/%@", appGroupFolder.path, dataUUID];
@@ -511,18 +489,16 @@ static NSString* invokeAppMain(NSString *selectedApp, NSString *selectedContaine
     
     // hook NSUserDefault before running libraries' initializers
     NUDGuestHooksInit();
-    if(!isSideStore) {
-        SecItemGuestHooksInit();
-        NSFMGuestHooksInit();
-        initDead10ccFix();
-    }
+    SecItemGuestHooksInit();
+    NSFMGuestHooksInit();
+    initDead10ccFix();
     if(isLiveProcess) {
         NSURLSCGuestHooksInit();
     }
     // ignore setting handler from guest app
     litehook_rebind_symbol(LITEHOOK_REBIND_GLOBAL, NSSetUncaughtExceptionHandler, hook_do_nothing, nil);
     
-    BOOL hookDlopen = !isSideStore && !isSharedBundle && LCSharedUtils.certificatePassword && isLiveProcess;
+    BOOL hookDlopen = !isSharedBundle && LCSharedUtils.certificatePassword && isLiveProcess;
     DyldHooksInit([guestAppInfo[@"hideLiveContainer"] boolValue], hookDlopen, [guestAppInfo[@"spoofSDKVersion"] unsignedIntValue]);
     
     if([guestContainerInfo[@"spoofIdentifierForVendor"] boolValue]) {
@@ -605,19 +581,6 @@ static NSString* invokeAppMain(NSString *selectedApp, NSString *selectedContaine
         }
     }
     
-    if(isSideStore) {
-        tweakLoaderLoaded = true;
-        dlopen([lcMainBundle.bundlePath stringByAppendingPathComponent:@"Frameworks/TweakLoader.dylib"].UTF8String, RTLD_LAZY|RTLD_GLOBAL);
-    }
-    
-    if(sideStoreExist) {
-        if (!isLiveProcess && (isSideStore || ![guestAppInfo[@"dontInjectTweakLoader"] boolValue])) {
-            dlopen([lcMainBundle.bundlePath stringByAppendingPathComponent:@"Frameworks/SideStoreSupport.framework/SideStoreSupport"].UTF8String, RTLD_LAZY);
-        } else if (isLiveProcess && isSideStore) {
-            dlopen([lcMainBundle.bundlePath stringByAppendingPathComponent:@"../../Frameworks/SideStoreSupport.framework/SideStoreSupport"].UTF8String, RTLD_LAZY);
-        }
-    }
-    
     // Fix dynamic properties of some apps
     [NSUserDefaults performSelector:@selector(initialize)];
 
@@ -666,7 +629,7 @@ int LiveContainerMain(int argc, char *argv[]) {
     lcMainBundle = [NSBundle mainBundle];
     lcUserDefaults = NSUserDefaults.standardUserDefaults;
     
-    lcSharedDefaults = [[NSUserDefaults alloc] initWithSuiteName: [LCSharedUtils appGroupID]];
+    lcSharedDefaults = [LCSharedUtils sharedDefaultsFallingBackTo:lcUserDefaults];
     lcAppUrlScheme = NSBundle.mainBundle.infoDictionary[@"CFBundleURLTypes"][0][@"CFBundleURLSchemes"][0];
     lcAppGroupPath = [[NSFileManager.defaultManager containerURLForSecurityApplicationGroupIdentifier:[NSClassFromString(@"LCSharedUtils") appGroupID]] path];
     isLiveProcess = [lcAppUrlScheme isEqualToString:@"liveprocess"];
@@ -734,21 +697,13 @@ int LiveContainerMain(int argc, char *argv[]) {
         [lcUserDefaults removeObjectForKey:@"selectedContainer"];
     }
     
-    if(isLiveProcess) {
-        sideStoreExist = [NSFileManager.defaultManager fileExistsAtPath:[lcMainBundle.bundlePath stringByAppendingPathComponent:@"../../Frameworks/SideStoreApp.framework"]];
-    } else {
-        sideStoreExist = [NSFileManager.defaultManager fileExistsAtPath:[lcMainBundle.bundlePath stringByAppendingPathComponent:@"Frameworks/SideStoreApp.framework"]];
+    // Take in the certificate Zeus put inside this app, before the UI or a guest
+    // app looks for one. The extensions read it from the app group instead.
+    if(!isLiveProcess) {
+        [LCZeusCertificate importIfNeeded];
     }
 
-    if([lcUserDefaults boolForKey:@"LCOpenSideStore"] || [selectedApp isEqualToString:@"builtinSideStore"]) {
-        if(sideStoreExist) {
-            isSideStore = true;
-        } else {
-            [lcUserDefaults setBool:NO forKey:@"LCOpenSideStore"];
-        }
-    }
-    
-    if(selectedApp && !isSideStore && !selectedContainer) {
+    if(selectedApp && !selectedContainer) {
         selectedContainer = [LCSharedUtils findDefaultContainerWithBundleId:selectedApp];
     }
     NSString* runningLC = [LCSharedUtils getContainerUsingLCSchemeWithFolderName:selectedContainer];
@@ -798,7 +753,7 @@ int LiveContainerMain(int argc, char *argv[]) {
 
     }
     NSSetUncaughtExceptionHandler(&exceptionHandler);
-    if (selectedApp || isSideStore) {
+    if (selectedApp) {
         [lcUserDefaults removeObjectForKey:@"selected"];
         [lcUserDefaults removeObjectForKey:@"selectedContainer"];
         if(launchUrl) {
@@ -850,10 +805,6 @@ int LiveContainerMain(int argc, char *argv[]) {
     void *LiveContainerSwiftUIHandle = dlopen("@executable_path/Frameworks/LiveContainerSwiftUI.framework/LiveContainerSwiftUI", RTLD_LAZY);
     NSCAssert(LiveContainerSwiftUIHandle, @"%s", dlerror());
     
-    if(sideStoreExist) {
-        void* sideStoreHandle = dlopen("@executable_path/Frameworks/SideStoreSupport.framework/SideStoreSupport", RTLD_LAZY);
-    }
-
     if ([lcUserDefaults boolForKey:@"LCLoadTweaksToSelf"]) {
         NSString *tweakFolder = nil;
         if (isSharedBundle) {

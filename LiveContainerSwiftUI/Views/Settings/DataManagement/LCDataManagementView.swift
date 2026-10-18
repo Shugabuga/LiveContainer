@@ -301,10 +301,7 @@ struct LCDataManagementView : View {
 
         let fm = FileManager.default
 
-        var allApps = sharedModel.apps + sharedModel.hiddenApps
-        if UserDefaults.sideStoreExist() {
-            allApps.append(LCAppModel(appInfo: BuiltInSideStoreAppInfo.shared))
-        }
+        let allApps = sharedModel.apps + sharedModel.hiddenApps
         
         var cleanedCount = 0
 

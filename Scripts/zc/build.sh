@@ -59,19 +59,18 @@ declare -A FOLDERS=(
     [TweakLoader]="TweakLoader"
     [TestJITLess]="TestJITLess"
     [ZSign]="ZSign"
-    [SideStoreSupport]="SideStoreSupport"
     [LiveProcess]="LiveProcess"
     [ShareExtension]="ShareExtension"
     [LaunchAppExtension]="LaunchAppExtension"
 )
 declare -A KINDS=(
     [LiveContainerShared]="m c" [LiveContainerSwiftUI]="swift m" [TweakLoader]="m" [TestJITLess]="m"
-    [ZSign]="cpp mm" [SideStoreSupport]="swift m" [LiveProcess]="m" [ShareExtension]="swift m"
+    [ZSign]="cpp mm" [LiveProcess]="m" [ShareExtension]="swift m"
     [LaunchAppExtension]="swift m"
 )
 PRODUCTS=(LiveContainerShared LiveContainerSwiftUI TweakLoader TestJITLess ZSign)
 if [[ "$ZC_EXTENSIONS" == 1 ]]; then
-    PRODUCTS+=(SideStoreSupport LiveProcess ShareExtension LaunchAppExtension)
+    PRODUCTS+=(LiveProcess ShareExtension LaunchAppExtension)
 fi
 
 # sources <product> <extension>: that product's files of one kind, sorted.
@@ -90,7 +89,7 @@ for product in "${!FOLDERS[@]}"; do
     done < <(find "${dirs[@]}" -type f \( -name '*.swift' -o -name '*.m' -o -name '*.mm' -o -name '*.c' \
         -o -name '*.cpp' -o -name '*.cc' -o -name '*.s' -o -name '*.S' \) ! -path LiveContainer/main.c)
     unsupported="$(find "${dirs[@]}" \( -name '*.storyboard' -o -name '*.xib' -o -name '*.xcassets' -o -name '*.xcstrings' \
-        -o -name '*.xcdatamodeld' -o -name '*.metal' -o -name '*.intentdefinition' \) ! -path LiveContainerSwiftUI/ViewApp.intentdefinition)"
+        -o -name '*.xcdatamodeld' -o -name '*.metal' -o -name '*.intentdefinition' \))"
     [[ -z "$unsupported" ]] || zc_die "the Linux build can't compile these resources yet: $unsupported"
 done
 
@@ -100,7 +99,7 @@ done
 INCLUDES=(-I "$WORK/gen" -I "$WORK/include")
 while IFS= read -r dir; do
     INCLUDES+=(-I "$ZC_REPO/$dir")
-done < <(find LiveContainer LiveContainerSwiftUI MultitaskSupport TweakLoader TestJITLess ZSign SideStoreSupport \
+done < <(find LiveContainer LiveContainerSwiftUI MultitaskSupport TweakLoader TestJITLess ZSign \
     LiveProcess ShareExtension LaunchAppExtension litehook/src litehook/external -name '*.h' -printf '%h\n' | LC_ALL=C sort -u)
 ln -sfn "$ZC_OPENSSL/OpenSSL.framework/Headers" "$WORK/include/openssl"
 XCC=()
@@ -109,8 +108,7 @@ for flag in "${INCLUDES[@]}"; do XCC+=(-Xcc "$flag"); done
 # Compiler flags (Release: -Os, NS_BLOCK_ASSERTIONS). compile() adds ARC and weak
 # references for Objective-C files.
 CFLAGS=(-target "arm64-apple-ios$ZC_MIN_IOS" -isysroot "$ZC_SDK" -Os -g0 -std=gnu17
-    -fmodules "-fmodules-cache-path=$CACHE/clang-modules" -DNS_BLOCK_ASSERTIONS=1
-    -Wno-error=incompatible-pointer-types "${INCLUDES[@]}")  # SideStoreSupport/XPCClient.m needs the -Wno
+    -fmodules "-fmodules-cache-path=$CACHE/clang-modules" -DNS_BLOCK_ASSERTIONS=1 "${INCLUDES[@]}")
 SHARED_CFLAGS=("${CFLAGS[@]}" -fcommon)                  # OTHER_CFLAGS of LiveContainerShared
 VERSION_DEFINES=(-DCONFIG_TYPE='"Release"' -DCONFIG_BRANCH="\"$GIT_BRANCH\"" -DCONFIG_COMMIT="\"$GIT_COMMIT\"")
 UI_CFLAGS=("${CFLAGS[@]}" "${VERSION_DEFINES[@]}")       # OTHER_CFLAGS of LiveContainerSwiftUI
@@ -129,7 +127,7 @@ SWIFTFLAGS=(-target "arm64-apple-ios$ZC_MIN_IOS" -sdk "$ZC_SDK" -resource-dir "$
     -load-plugin-executable "$ZC_MACROS#AppIntentsMacros"
     "${XCC[@]}")
 # SWIFT_APPROACHABLE_CONCURRENCY and SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY,
-# set on SideStoreSupport, ShareExtension and LaunchAppExtension.
+# set on ShareExtension and LaunchAppExtension.
 APPROACHABLE=(-enable-upcoming-feature DisableOutwardActorInference
     -enable-upcoming-feature GlobalActorIsolatedTypesUsability -enable-upcoming-feature InferIsolatedConformances
     -enable-upcoming-feature InferSendableFromCaptures -enable-upcoming-feature NonisolatedNonsendingByDefault
@@ -218,9 +216,6 @@ has() { [[ " ${PRODUCTS[*]} " == *" $1 "* ]]; }
 
 # 1. Everything that doesn't need a generated Swift header, with the Swift modules.
 mapfile -t ui_swift < <(sources LiveContainerSwiftUI swift)
-if [[ -f LiveContainerSwiftUI/ViewApp.intentdefinition ]]; then
-    ui_swift+=("$ZC_SCRIPTS/gen/ViewAppIntent.swift")   # what Xcode generates from it
-fi
 swift_module LiveContainerSwiftUI LiveContainerSwiftUI/LiveContainerSwiftUI-Bridging-Header.h -- "${ui_swift[@]}"
 mapfile -t files < <(sources LiveContainerShared m; sources LiveContainerShared c)
 compile LiveContainerShared SHARED_CFLAGS "${files[@]}" litehook/src/litehook.c
@@ -228,11 +223,6 @@ compile LiveContainer CFLAGS LiveContainer/main.c
 mapfile -t files < <(sources TweakLoader m); compile TweakLoader CFLAGS "${files[@]}"
 mapfile -t files < <(sources TestJITLess m); compile TestJITLess CFLAGS "${files[@]}"
 mapfile -t files < <(sources ZSign cpp; sources ZSign mm); compile ZSign CXXFLAGS "${files[@]}"
-if has SideStoreSupport; then
-    mapfile -t files < <(sources SideStoreSupport swift)
-    swift_module SideStoreSupport SideStoreSupport/SideStore-Bridging-Header.h "${APPROACHABLE[@]}" -- "${files[@]}"
-    mapfile -t files < <(sources SideStoreSupport m); compile SideStoreSupport CFLAGS "${files[@]}"
-fi
 if has LiveProcess; then
     mapfile -t files < <(sources LiveProcess m); compile LiveProcess EXT_CFLAGS "${files[@]}"
 fi
@@ -275,9 +265,6 @@ job link-LiveContainerSwiftUI "${SLINK[@]}" -emit-library -module-name LiveConta
     "${FRAMEWORK_RPATHS[@]}" -Xlinker -install_name -Xlinker @rpath/LiveContainerSwiftUI.framework/LiveContainerSwiftUI \
     -Xlinker -U -Xlinker '_OBJC_CLASS_$_RBSTarget' -F "$F" -framework LiveContainerShared -framework IOKit -larchive \
     "${o[@]}" -o "$F/LiveContainerSwiftUI.framework/LiveContainerSwiftUI"
-if [[ -f LiveContainerSwiftUI/ViewApp.intentdefinition ]]; then
-    cp LiveContainerSwiftUI/ViewApp.intentdefinition "$F/LiveContainerSwiftUI.framework/"  # a resource, as in Xcode
-fi
 objects o TweakLoader
 job link-TweakLoader "${CLINK[@]}" -dynamiclib "${DYLIB_VERSIONS[@]}" -install_name @rpath/TweakLoader.dylib \
     -Xlinker -U -Xlinker '_OBJC_CLASS_$_FBSSceneParameters' -Xlinker -U -Xlinker '_OBJC_CLASS_$_LSApplicationWorkspace' \
@@ -290,14 +277,6 @@ objects o ZSign
 job link-ZSign "${CXXLINK[@]}" -dynamiclib "${DYLIB_VERSIONS[@]}" \
     -install_name @rpath/ZSign.dylib -F "$ZC_OPENSSL" -framework OpenSSL -framework Foundation \
     "${o[@]}" "$ZC_CLANG_RT" -o "$F/ZSign.dylib"
-if has SideStoreSupport; then
-    mkdir -p "$F/SideStoreSupport.framework"
-    objects o SideStoreSupport
-    job link-SideStoreSupport "${SLINK[@]}" -emit-library -module-name SideStoreSupport "${DYLIB_VERSIONS[@]}" \
-        "${FRAMEWORK_RPATHS[@]}" -Xlinker -install_name -Xlinker @rpath/SideStoreSupport.framework/SideStoreSupport \
-        -F "$F" -framework LiveContainerShared "${o[@]}" \
-        -o "$F/SideStoreSupport.framework/SideStoreSupport"
-fi
 if has LiveProcess; then
     # DEAD_CODE_STRIPPING = NO in the Xcode project; nothing here is dead-stripped.
     mkdir -p "$APP/PlugIns/LiveProcess.appex"

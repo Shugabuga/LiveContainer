@@ -22,12 +22,8 @@ struct LCPath {
     public static let tweakPath = docPath.appendingPathComponent("Tweaks")
     
     public static let lcGroupDocPath = {
-        let fm = FileManager()
-        // it seems that Apple don't want to create one for us, so we just borrow our Store's
+        // Without an app group, shared apps live with the private ones.
         if let appGroupPathUrl = LCSharedUtils.appGroupPath() {
-            return appGroupPathUrl.appendingPathComponent("LiveContainer")
-        } else if let appGroupPathUrl =
-                    FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.SideStore.SideStore") {
             return appGroupPathUrl.appendingPathComponent("LiveContainer")
         } else {
             return docPath

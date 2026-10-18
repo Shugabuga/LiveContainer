@@ -46,8 +46,6 @@ static inline void swizzleClassMethod(Class class, SEL originalAction, SEL swizz
 + (bool)isLiveProcess;
 + (bool)isSharedApp;
 + (NSString*)lcGuestAppId;
-+ (bool)isSideStore;
-+ (bool)sideStoreExist;
 + (NSString*)lcLaunchURL;
 @end
 

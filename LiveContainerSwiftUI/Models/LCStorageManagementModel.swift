@@ -64,15 +64,11 @@ final class LCStorageManagementModel: ObservableObject {
     }
 
     nonisolated private static func calculateBreakdown(apps: [LCAppModel], hiddenApps: [LCAppModel]) async throws -> LCStorageBreakdown {
-        var allApps: [LCAppModel]
+        let allApps: [LCAppModel]
         if DataManager.shared.model.isHiddenAppUnlocked {
             allApps = apps + hiddenApps
         } else {
             allApps = apps
-        }
-        
-        if UserDefaults.sideStoreExist() {
-            allApps.append(LCAppModel(appInfo: BuiltInSideStoreAppInfo.shared))
         }
 
         // Show per-app bundle usage only when every installed app has a reliable bundle path.
@@ -92,13 +88,8 @@ final class LCStorageManagementModel: ObservableObject {
         sizesByCategory[.appBundle] = 0
         sizesByCategory[.containers] = 0
         
-        var sideStoreContainerSize: Int64 = 0
         for appItem in appItems {
-            if !(appItem.appModel.appInfo is BuiltInSideStoreAppInfo) {
-                sizesByCategory[.appBundle]! += appItem.bundleSize ?? 0
-            } else {
-                sideStoreContainerSize = appItem.containersSize
-            }
+            sizesByCategory[.appBundle]! += appItem.bundleSize ?? 0
             
             for containerDetail in appItem.containerDetails {
                 if containerDetail.isExternalContainer {
@@ -193,12 +184,7 @@ final class LCStorageManagementModel: ObservableObject {
             bundleSize = nil
         }
         
-        let totalSize: Int64
-        if input.appInfo is BuiltInSideStoreAppInfo {
-            totalSize = containersSize
-        } else {
-            totalSize = (bundleSize ?? 0) + containersSize
-        }
+        let totalSize = (bundleSize ?? 0) + containersSize
 
         return LCAppStorageItem(
             id: UUID(),

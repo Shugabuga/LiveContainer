@@ -101,6 +101,7 @@ struct LCTabView: View {
             checkAndSaveBundleId()
             checkGetTaskAllow()
             checkPrivateContainerBookmark()
+            await checkZeusCertificate()
         }
         .onReceive(pub) { out in
             if let scene1 = sceneDelegate.window?.windowScene, let scene2 = out.object as? UIWindowScene, scene1 == scene2 {
@@ -120,11 +121,6 @@ struct LCTabView: View {
                 sharedModel.selectedTab = .apps
                 break
             }
-            if url.scheme?.lowercased() == "sidestore" {
-                sharedModel.selectedTab = .apps
-                break
-            }
-            
             guard let host = url.host?.lowercased() else {
                 return
             }
@@ -132,8 +128,6 @@ struct LCTabView: View {
             switch host {
             case "livecontainer-launch", "install", "open-web-page", "open-url":
                 sharedModel.selectedTab = .apps
-            case "certificate":
-                sharedModel.selectedTab = .settings
             case "source":
                 sharedModel.selectedTab = .sources
             default:
@@ -245,6 +239,16 @@ struct LCTabView: View {
             errorShow = true
         }
         UserDefaults.standard.set(true, forKey: "LCBundleIdChecked")
+    }
+    
+    /// Checks the certificate Zeus put inside the app once after it's stored,
+    /// quietly, and shows what went wrong if something did.
+    func checkZeusCertificate() async {
+        guard let problem = await ZeusCertificate.checkIfNeeded() else {
+            return
+        }
+        errorInfo = problem
+        errorShow = true
     }
     
     func checkGetTaskAllow() {

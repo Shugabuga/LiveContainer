@@ -10,7 +10,6 @@
 #import <mach-o/dyld.h>
 #import "../LiveContainer/utils.h"
 #import "../LiveContainer/Tweaks/Tweaks.h"
-#import "../SideStoreSupport/XPCServer.h"
 
 @interface LiveProcessHandler : NSObject<NSExtensionRequestHandling>
 @end
@@ -66,37 +65,15 @@ int LiveProcessMain(int argc, char *argv[]) {
     [lcUserDefaults setObject:appInfo[@"selected"] forKey:@"selected"];
     [lcUserDefaults setObject:appInfo[@"selectedContainer"] forKey:@"selectedContainer"];
     
-    bool access = false;
     NSArray* bookmarks = appInfo[@"bookmarks"];
     NSMutableArray<NSURL *>* bookmarkedUrls = [NSMutableArray array];
     for(int i = 0; i < bookmarks.count; i++) {
         bool isStale = false;
         NSError* error = nil;
         bookmarkedUrls[i] = [NSURL URLByResolvingBookmarkData:bookmarks[i] options:0 relativeToURL:nil bookmarkDataIsStale:&isStale error:&error];
-        access = [bookmarkedUrls[i] startAccessingSecurityScopedResource];
-    }
-    
-    if ([appInfo[@"selected"] isEqualToString:@"builtinSideStore"]) {
-        if(access && bookmarkedUrls.count > 0) {
-            [lcUserDefaults setObject:bookmarkedUrls.firstObject.path forKey:@"specifiedSideStoreContainerPath"];
-        }
-        NSXPCListenerEndpoint* endpoint = appInfo[@"endpoint"];
-
-        NSXPCConnection* connection = [[NSXPCConnection alloc] initWithListenerEndpoint:endpoint];
-        connection.remoteObjectInterface = [NSXPCInterface interfaceWithProtocol:@protocol(RefreshServer)];
-        connection.interruptionHandler = ^{
-            NSLog(@"interrupted!!!");
-        };
-        
-        [connection activate];
-        
-        NSObject<RefreshServer>* proxy = [connection remoteObjectProxy];
-        LiveProcessSideStoreHandler.shared.server = proxy;
-        LiveProcessSideStoreHandler.shared.connection = connection;
-        
+        [bookmarkedUrls[i] startAccessingSecurityScopedResource];
     }
 
-    
     return LiveContainerMain(argc, argv);
 }
 

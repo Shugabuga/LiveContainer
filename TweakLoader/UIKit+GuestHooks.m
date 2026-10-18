@@ -107,7 +107,6 @@ void LCShowSwitchAppConfirmation(NSURL *url, NSString* bundleId, bool isSharedAp
     UIWindow *window = [[UIWindow alloc] initWithFrame:UIScreen.mainScreen.bounds];
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"LiveContainer" message:message preferredStyle:UIAlertControllerStyleAlert];
     UIAlertAction* okAction = [UIAlertAction actionWithTitle:@"lc.common.ok".loc style:UIAlertActionStyleDefault handler:^(UIAlertAction * action) {
-        [NSUserDefaults.lcUserDefaults setBool:NO forKey:@"LCOpenSideStore"];
         [NSClassFromString(@"LCSharedUtils") launchToGuestAppWithURL:url];
         window.windowScene = nil;
     }];
@@ -239,35 +238,6 @@ void LCOpenWebPage(NSString* webPageUrlString, NSString* originalUrl) {
     objc_setAssociatedObject(alert, @"window", window, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     
 
-}
-
-void LCOpenSideStoreURL(NSURL* sidestoreUrl) {
-    if ([NSUserDefaults.lcUserDefaults boolForKey:@"LCSwitchAppWithoutAsking"]) {
-        [NSUserDefaults.lcUserDefaults setObject:sidestoreUrl.absoluteString forKey:@"launchAppUrlScheme"];
-        [NSUserDefaults.lcUserDefaults setObject:@"builtinSideStore" forKey:@"selected"];
-        [NSClassFromString(@"LCSharedUtils") launchToGuestAppWithClassicMode:0];
-    }
-    NSString *message = [@"lc.guestTweak.appSwitchTip %@" localizeWithFormat:@"SideStore"];
-    UIWindow *window = [[UIWindow alloc] initWithFrame:UIScreen.mainScreen.bounds];
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"LiveContainer" message:message preferredStyle:UIAlertControllerStyleAlert];
-    UIAlertAction* okAction = [UIAlertAction actionWithTitle:@"lc.common.ok".loc style:UIAlertActionStyleDefault handler:^(UIAlertAction * action) {
-        [NSUserDefaults.lcUserDefaults setObject:sidestoreUrl.absoluteString forKey:@"launchAppUrlScheme"];
-        [NSUserDefaults.lcUserDefaults setObject:@"builtinSideStore" forKey:@"selected"];
-        [NSClassFromString(@"LCSharedUtils") launchToGuestAppWithClassicMode:0];
-    }];
-    [alert addAction:okAction];
-    
-    UIAlertAction* cancelAction = [UIAlertAction actionWithTitle:@"lc.common.cancel".loc style:UIAlertActionStyleCancel handler:^(UIAlertAction * action) {
-        window.windowScene = nil;
-    }];
-    [alert addAction:cancelAction];
-    window.rootViewController = [UIViewController new];
-    window.windowLevel = UIApplication.sharedApplication.windows.lastObject.windowLevel + 1;
-    window.windowScene = (id)UIApplication.sharedApplication.connectedScenes.anyObject;
-    [window makeKeyAndVisible];
-    [window.rootViewController presentViewController:alert animated:YES completion:nil];
-    objc_setAssociatedObject(alert, @"window", window, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-    
 }
 
 void authenticateUser(void (^completion)(BOOL success, NSError *error)) {
@@ -417,16 +387,6 @@ static LCControlAppURLHandling LCHandleControlAppURL(NSURL *url, NSString** modi
         return LCControlAppURLHandlingPassThrough;
     }
 
-    // pass through sidestore urls
-    if(NSUserDefaults.isSideStore && ![url.scheme isEqualToString:@"livecontainer"]) {
-        return LCControlAppURLHandlingPassThrough;
-    }
-
-    if([url.scheme isEqualToString:@"sidestore"]) {
-        LCOpenSideStoreURL(url);
-        return LCControlAppURLHandlingStop;
-    }
-
     NSString *lcScheme = NSUserDefaults.lcAppUrlScheme;
     // pass through any url that should not be handled by current lc
     if(![url.scheme isEqualToString:lcScheme]) {
@@ -465,9 +425,8 @@ static LCControlAppURLHandling LCHandleControlAppURL(NSURL *url, NSString** modi
         if(!containerFolderName) {
             containerFolderName = findDefaultContainerWithBundleId(bundleName);
         }
-        // current bundlename and container folder name matches OR sidestore is running and we are launching builtinSideStore
-        if (([bundleName isEqualToString:NSBundle.mainBundle.bundlePath.lastPathComponent] && [containerId isEqualToString:containerFolderName]) ||
-            (NSUserDefaults.isSideStore && [bundleName isEqualToString:@"builtinSideStore"])) {
+        // current bundlename and container folder name matches
+        if ([bundleName isEqualToString:NSBundle.mainBundle.bundlePath.lastPathComponent] && [containerId isEqualToString:containerFolderName]) {
             if(openUrl) {
                 if([openUrl hasPrefix:@"file:"]) {
                     resolveLaunchExtensionFileBookmark();
@@ -478,10 +437,6 @@ static LCControlAppURLHandling LCHandleControlAppURL(NSURL *url, NSString** modi
                 }
             }
         } else {
-            if([bundleName isEqualToString:@"builtinSideStore"]) {
-                LCShowSwitchAppConfirmation(url, @"SideStore", NO);
-                return LCControlAppURLHandlingStop;
-            }
             handleLiveContainerLaunch(bundleName, containerFolderName, url);
         }
         
@@ -613,11 +568,6 @@ static LCControlAppURLHandling LCHandleControlAppURL(NSURL *url, NSString** modi
 }
 
 - (void)hook_openURL:(NSURL *)url options:(NSDictionary<NSString *,id> *)options completionHandler:(void (^)(_Bool))completion {
-    if(NSUserDefaults.isSideStore && ![url.scheme isEqualToString:@"livecontainer"]) {
-        [self hook_openURL:url options:options completionHandler:completion];
-        return;
-    }
-    
     BOOL openSelf = canAppOpenItself(url);
     BOOL redirectToHost = shouldRedirectOpenURLToHost(url);;
     if(openSelf || redirectToHost) {

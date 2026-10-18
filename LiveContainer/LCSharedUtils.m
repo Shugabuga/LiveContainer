@@ -57,37 +57,9 @@ NSString* FBSOpenApplicationOptionKeyPayloadURL = @"__PayloadURL";
     static dispatch_once_t once;
     static NSString *appGroupID = @"Unknown";
     dispatch_once(&once, ^{
-        NSArray* possibleAppGroups = @[
-            [@"group.com.SideStore.SideStore." stringByAppendingString:[self teamIdentifier]],
-            [@"group.com.rileytestut.AltStore." stringByAppendingString:[self teamIdentifier]]
-        ];
-        
-        // we prefer app groups with "Apps" in it, which indicate this app group is actually used by the store.
-        for (NSString *group in possibleAppGroups) {
-            NSURL *path = [NSFileManager.defaultManager containerURLForSecurityApplicationGroupIdentifier:group];
-            if(!path) {
-                continue;
-            }
-            NSURL *bundlePath = [path URLByAppendingPathComponent:@"Apps"];
-            if ([NSFileManager.defaultManager fileExistsAtPath:bundlePath.path]) {
-                // This will fail if LiveContainer is installed in both stores, but it should never be the case
-                appGroupID = group;
-                return;
-            }
-        }
-        
-        // if no "Apps" is found, we choose a valid group
-        for (NSString *group in possibleAppGroups) {
-            NSURL *path = [NSFileManager.defaultManager containerURLForSecurityApplicationGroupIdentifier:group];
-            if(!path) {
-                continue;
-            }
-            appGroupID = group;
-            return;
-        }
-        
-        // if no possibleAppGroup is found, we detect app group from entitlement file
-        // Cache app group after importing cert so we don't have to analyze executable every launch
+        // The app group comes from our own entitlements (Zeus registers one for
+        // the app it signs). It is cached after importing a certificate so the
+        // entitlements aren't read again on every launch.
         NSString *cached = [lcUserDefaults objectForKey:@"LCAppGroupID"];
         if (cached && [NSFileManager.defaultManager containerURLForSecurityApplicationGroupIdentifier:cached]) {
             appGroupID = cached;
@@ -116,6 +88,20 @@ NSString* FBSOpenApplicationOptionKeyPayloadURL = @"__PayloadURL";
         appGroupPath = [NSFileManager.defaultManager containerURLForSecurityApplicationGroupIdentifier:[LCSharedUtils appGroupID]];
     });
     return appGroupPath;
+}
+
++ (BOOL)hasAppGroup {
+    return self.appGroupPath != nil;
+}
+
++ (NSUserDefaults *)sharedDefaultsFallingBackTo:(NSUserDefaults *)standardDefaults {
+    // Without an app group (an install signed without one), the shared defaults
+    // are the app's own, so the certificate and settings still persist. Only the
+    // extensions, which need the app group anyway, lose access to them.
+    if (!self.hasAppGroup) {
+        return standardDefaults;
+    }
+    return [[NSUserDefaults alloc] initWithSuiteName:self.appGroupID];
 }
 
 + (NSString *)certificatePassword {

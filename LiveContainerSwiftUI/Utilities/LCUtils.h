@@ -3,22 +3,9 @@
 #import "utils.h"
 @import UIKit;
 
-typedef NS_ENUM(NSInteger, Store){
-    SideStore = 0,
-    AltStore = 1,
-    ADP = 2,
-    Unknown = -1
-};
-
 void refreshFile(NSString* execPath);
 int dyld_get_program_sdk_version(void);
 uint32_t dyld_get_sdk_version(const struct mach_header* mh);
-
-@interface PKZipArchiver : NSObject
-
-- (NSData *)zippedDataForURL:(NSURL *)url;
-
-@end
 
 @interface UIDevice(private)
 @property(readonly) NSString* buildVersion;
@@ -27,7 +14,6 @@ uint32_t dyld_get_sdk_version(const struct mach_header* mh);
 @interface LCUtils : NSObject
 
 + (void)validateJITLessSetupWithCompletionHandler:(void (^)(BOOL success, NSError *error))completionHandler;
-+ (NSURL *)archiveIPAWithBundleName:(NSString*)newBundleName includingExtraInfoDict:(NSDictionary *)extraInfoDict error:(NSError **)error;
 + (NSData *)certificateData;
 + (void)launchMultitaskGuestApp:(NSString *)displayName completionHandler:(void (^)(NSNumber *pid, NSError *error))completionHandler API_AVAILABLE(ios(16.0));
 
@@ -40,17 +26,10 @@ uint32_t dyld_get_sdk_version(const struct mach_header* mh);
 + (BOOL)isTXMScriptRequired;
 + (NSString *)base64EncodedUniversalJITScript;
 
-+ (BOOL)isAppGroupAltStoreLike;
-+ (Store)store;
 + (NSString *)appUrlScheme;
-+ (NSString *)storeInstallURLScheme;
 + (NSString *)getVersionInfo;
 + (NSString *)liveProcessBundleIdentifier;
 + (NSData*)bookmarkForURL:(NSURL*) url;
-@end
-
-@interface NSUserDefaults(LiveContainer)
-+ (bool)sideStoreExist;
 @end
 
 @interface LCP12CertHelper : NSObject

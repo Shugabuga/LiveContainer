@@ -10,8 +10,7 @@
 	<true/>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.com.SideStore.SideStore</string>
-		<string>group.com.rileytestut.AltStore</string>
+		<string>group.com.kdt.livecontainer</string>
 	</array>
 	<key>get-task-allow</key>
 	<true/>

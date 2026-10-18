@@ -163,7 +163,6 @@ struct LCJITLessDiagnoseView : View {
     @State var loaded = false
     @State var appGroupId = "Unknown"
     @State var appGroupIdColor : Color = .gray
-    @State var store : Store = .SideStore
     @State var certificateDataFound = false
     @State var certificatePasswordFound = false
     @State var appGroupAccessible = false
@@ -181,8 +180,6 @@ struct LCJITLessDiagnoseView : View {
     @State var successInfo = ""
     
     @EnvironmentObject private var sharedModel : SharedModel
-    
-    let storeName = LCUtils.getStoreName()
     
     var body: some View {
         if loaded {
@@ -207,24 +204,6 @@ struct LCJITLessDiagnoseView : View {
                         Spacer()
                         Text(appGroupAccessible ? "lc.common.yes".loc : "lc.common.no".loc)
                             .foregroundStyle(appGroupAccessible ? .green : .red)
-                    }
-                    HStack {
-                        Text("lc.jitlessDiag.store".loc)
-                        Spacer()
-                        if store == .AltStore {
-                            Text("AltStore")
-                                .foregroundStyle(.gray)
-                        } else if store == .SideStore {
-                            Text("SideStore")
-                                .foregroundStyle(.gray)
-                        } else if store == .ADP {
-                            Text("lc.common.ADP".loc)
-                                .foregroundStyle(.gray)
-                        } else {
-                            Text("lc.common.unknown".loc)
-                                .foregroundStyle(.gray)
-                        }
-                        
                     }
                     NavigationLink {
                         LCEntitlementView(isLiveProcess: false)
@@ -359,21 +338,12 @@ struct LCJITLessDiagnoseView : View {
         
         if let fetchedAppGroupId = LCSharedUtils.appGroupID() {
             appGroupId = fetchedAppGroupId
-            if UserDefaults.sideStoreExist() {
-                if fetchedAppGroupId == "group.com.SideStore.SideStore." + teamId {
-                    appGroupIdColor = .green
-                } else {
-                    appGroupIdColor = .orange
-                }
-            } else {
-                appGroupIdColor = .green
-            }
+            appGroupIdColor = LCSharedUtils.hasAppGroup() ? .green : .orange
         } else {
             appGroupId = "lc.common.unknown".loc
             appGroupIdColor = .red
         }
         
-        store = LCUtils.store()
         appGroupAccessible = LCSharedUtils.appGroupPath() != nil
         certificateDataFound = LCUtils.certificateData() != nil
         certificatePasswordFound = LCSharedUtils.certificatePassword() != nil
@@ -403,7 +373,7 @@ struct LCJITLessDiagnoseView : View {
                 successInfo = "lc.jitlessSetup.success".loc
                 successShow = true
             } else {
-                errorInfo = "lc.jitlessSetup.error.testLibLoadFailed %@ %@ %@".localizeWithFormat(storeName, storeName, storeName) + "\n" + (error?.localizedDescription ?? "")
+                errorInfo = "lc.jitlessSetup.error.testLibLoadFailed".loc + "\n" + (error?.localizedDescription.loc ?? "")
                 errorShow = true
             }
             isJITLessTestInProgress = false

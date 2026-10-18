@@ -71,7 +71,6 @@
 	<string>public.app-category.education</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
-		<string>sidestore</string>
 		<string>livecontainer</string>
 		<string>livecontainer2</string>
 		<string>livecontainer3</string>
@@ -322,5 +321,12 @@
 	</array>
 	<key>UISupportsDocumentBrowser</key>
 	<true/>
+	<key>ZeusCompanion</key>
+	<dict>
+		<key>Kind</key>
+		<string>zContainer</string>
+		<key>Protocol</key>
+		<integer>1</integer>
+	</dict>
 </dict>
 </plist>

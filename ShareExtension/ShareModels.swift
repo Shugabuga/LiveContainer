@@ -64,7 +64,6 @@ struct ShareApp: Identifiable, Hashable {
     let iconURL: URL?
     let lastLaunched: Date?
     let installationDate: Date?
-    let isBuiltInSideStore: Bool
 
     var primaryContainer: ShareContainer? {
         containers.first

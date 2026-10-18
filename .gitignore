@@ -6,7 +6,6 @@ packages/
 *.xcarchive
 xcuserdata
 Resources/Frameworks/OpenSSL.framework
-apps_nightly.json
 
 # Linux build (Scripts/zc)
 /build/

@@ -27,7 +27,7 @@ environment (all of them are listed in `env.sh`):
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `ZC_BUNDLE_ID` | `com.kdt.livecontainer` | Main app bundle ID; extension IDs are derived from it |
-| `ZC_EXTENSIONS` | `1` | `0` leaves out every `.appex` and SideStoreSupport |
+| `ZC_EXTENSIONS` | `1` | `0` leaves out every `.appex` |
 | `ZC_DISPLAY_NAME` | (from Info.plist) | Home Screen name |
 | `ZC_IPA_NAME` | `LiveContainer.ipa` | Output file in `build/zc/` |
 | `ZC_MIN_IOS` | `17.0` | Deployment target of every binary |
@@ -46,9 +46,15 @@ Like the official IPA, the build is ad-hoc signed the way Xcode signs an archive
 without a signing identity: each binary has a certificate-less signature, and the
 app and its extensions carry their targets' entitlements (app groups, keychain
 groups, increased memory limit). Those can't be installed as they are; sign the
-IPA when installing it (Zeus, `xtool install` or another sideloader). xtool,
-SideStore and AltStore read the entitlements from the executables to decide what
-to register, so an unsigned build (`ZC_ADHOC_SIGN=0`) would install without them.
+IPA when installing it (Zeus, `xtool install` or another sideloader). xtool and
+other sideloaders read the entitlements from the executables to decide what to
+register, so an unsigned build (`ZC_ADHOC_SIGN=0`) would install without them.
+Zeus signs with the entitlements of the profile it makes instead.
+
+The main Info.plist carries `ZeusCompanion = {Kind: zContainer, Protocol: 1}`.
+Zeus looks for it before it puts `ZeusCertificate.plist` (its signing certificate
+as a .p12, with the password) inside the app, which `LiveContainer/LCZeusCertificate.m`
+takes in on launch.
 Objects, logs and the staged app are kept in `build/zc/<name>/`.
 
 ## Files
@@ -73,16 +79,15 @@ Objects, logs and the staged app are kept in `build/zc/<name>/`.
 - `check.py`: checks the bundle layout, every Mach-O (arm64, minimum iOS, SDK
   version, embedded dependencies, the libraries loaded at launch, extension entry
   points, symbols looked up by name, signatures and entitlements), the
-  Info.plists, the App Intents metadata and the string tables. `build.sh` runs it
-  on every build.
+  Info.plists (including the ZeusCompanion marker), the App Intents metadata and
+  the string tables, and that nothing of SideStore or AltStore is left in the
+  bundle. `build.sh` runs it on every build.
 - `verify_sig.py`: checks every code signature and CodeResources seal against the
   files they cover. `build.sh` runs it on every signed build.
 - `sign-adhoc.sh` and `tools/zsign-adhoc.cpp`: re-sign a copy of an IPA with
   zsign built for Linux (`ZC_ZSIGN_SRC` names zsign's `src/` folder), the signer
   Zeus uses, then run `verify_sig.py` on it. Only a test of re-signing: never
   install or share that copy.
-- `gen/ViewAppIntent.swift`: what Xcode generates from
-  `LiveContainerSwiftUI/ViewApp.intentdefinition`.
 - `gen/LaunchAppExtension/Metadata.appintents`: the App Intents metadata Xcode
   extracts from LaunchAppExtension's Swift code, which Shortcuts reads to list
   its "Launch App" action. No Linux tool can extract it, so it is kept by hand;
@@ -103,11 +108,5 @@ Objects, logs and the staged app are kept in `build/zc/<name>/`.
 - No asset catalog compiler: the app icon is a set of loose PNGs (no dark or
   tinted variants), and the asset catalog colors are missing, so the code's system
   color fallbacks are used.
-- The ViewApp intent code comes from `gen/ViewAppIntent.swift`, which declares
-  only what `AppDelegate.swift` uses. It matters only in the SideStore variant,
-  the one that lists the intent in `INIntentsSupported`, which this build doesn't
-  make.
 - Signatures use 4 KiB pages everywhere; Xcode uses 16 KiB for the Swift
   extensions. iOS accepts both, and installing replaces them.
-- The official CI removes SideStoreSupport from `LiveContainer.ipa` and only ships
-  it in the SideStore variant; this build keeps it unless `ZC_EXTENSIONS=0`.
