@@ -55,6 +55,10 @@ ZC_LD="$ZC_SDK_BUNDLE/toolset/bin/orig/ld64.lld"
 ZC_CLANG_RT="$(ls "$ZC_TOOLCHAIN"/clang/*/lib/darwin/libclang_rt.ios.a 2>/dev/null | sort -V | tail -n 1)"
 ZC_SWIFT_RESOURCES="$ZC_TOOLCHAIN/swift"
 ZC_MACROS="$ZC_SDK_BUNDLE/OpenAppleMacrosServer"
+# Swift's own macros (@Observable) come from the Linux toolchain's plugins; the
+# bundle has only Apple's macOS builds of them, and OpenAppleMacrosServer only
+# stands in for SwiftUI's and App Intents'.
+: "${ZC_SWIFT_PLUGINS:=$(dirname "$(readlink -f "$(command -v "$SWIFTC")")")/../lib/swift/host/plugins}"
 ZC_OPENSSL="$ZC_REPO/OpenSSL/Frameworks/iphoneos"
 
 for tool in "$CLANG" "$CLANGXX" "$SWIFTC" "$PYTHON" zip llvm-strip; do
@@ -65,6 +69,8 @@ command -v magick >/dev/null || command -v convert >/dev/null || zc_die "ImageMa
 [[ -f "$ZC_CLANG_RT" ]] || zc_die "missing libclang_rt.ios.a under $ZC_TOOLCHAIN/clang"
 [[ -d "$ZC_SWIFT_RESOURCES/iphoneos" ]] || zc_die "missing Swift resources in $ZC_SWIFT_RESOURCES"
 [[ -x "$ZC_MACROS" ]] || zc_die "missing macro plugin server $ZC_MACROS"
+[[ -f "$ZC_SWIFT_PLUGINS/libObservationMacros.so" ]] ||
+    zc_die "missing libObservationMacros.so in $ZC_SWIFT_PLUGINS (set ZC_SWIFT_PLUGINS to the toolchain's lib/swift/host/plugins)"
 [[ -f "$ZC_OPENSSL/OpenSSL.framework/OpenSSL" ]] ||
     zc_die "OpenSSL submodule is not checked out (git submodule update --init --recursive)"
 [[ -f "$ZC_REPO/litehook/src/litehook.c" ]] ||

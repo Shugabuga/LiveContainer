@@ -11,8 +11,10 @@ entitlements and Info.plist settings, so the Xcode project stays the reference.
   plus `python3`, `zip`, `llvm-strip` and ImageMagick.
 - The Darwin SDK bundle installed by [xtool](https://github.com/xtool-org/xtool)
   (`xtool setup`), by default at `~/.swiftpm/swift-sdks/darwin.artifactbundle`. It
-  provides the iPhoneOS SDK, Apple's Swift libraries, `ld64.lld` and the Swift
-  macro plugins.
+  provides the iPhoneOS SDK, Apple's Swift libraries, `ld64.lld` and the SwiftUI and
+  App Intents macro plugins. `@Observable` expands with the Linux toolchain's own
+  `libObservationMacros.so`, found next to `swiftc` (`ZC_SWIFT_PLUGINS` names
+  another folder).
 - The submodules: `git submodule update --init --recursive`.
 
 ## Building

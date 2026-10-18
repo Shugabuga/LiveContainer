@@ -123,7 +123,7 @@ SWIFTFLAGS=(-target "arm64-apple-ios$ZC_MIN_IOS" -sdk "$ZC_SDK" -resource-dir "$
     -parse-as-library  # LCBootstrap looks up the SwiftUI app's `main` by name
     -Xfrontend -enable-cross-import-overlays
     -load-plugin-executable "$ZC_MACROS#SwiftUIMacros"
-    -load-plugin-executable "$ZC_MACROS#ObservationMacros"
+    -load-plugin-library "$ZC_SWIFT_PLUGINS/libObservationMacros.so"
     -load-plugin-executable "$ZC_MACROS#AppIntentsMacros"
     "${XCC[@]}")
 # SWIFT_APPROACHABLE_CONCURRENCY and SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY,

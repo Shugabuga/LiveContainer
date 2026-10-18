@@ -24,7 +24,8 @@ What it checks:
   bundle IDs expected for this variant, the SDK the binaries record, and
   LiveProcess's permission strings; *Dictionary keys the build adds hold
   dictionaries; the main Info.plist carries the ZeusCompanion marker Zeus looks
-  for before it hands over its certificate;
+  for before it hands over its certificate, and allows local networking, which
+  Zeus's install links to http://127.0.0.1 need;
 - LaunchAppExtension's Metadata.appintents parses;
 - the compiled string tables parse, every language has every key, and none of
   them mentions SideStore or AltStore;
@@ -362,6 +363,12 @@ class Checker:
         self.expect(str(app_info.get('LCVersionInfo', '')).startswith('Release ('), f'LCVersionInfo "{app_info.get("LCVersionInfo")}"')
         self.expect(app_info.get('ZeusCompanion') == ZEUS_COMPANION, f'ZeusCompanion marker {ZEUS_COMPANION}',
                     str(app_info.get('ZeusCompanion')))
+        # Zeus hands IPAs over as zcontainer://install?url=http://127.0.0.1:<port>/..., which
+        # App Transport Security only lets through with local networking allowed.
+        ats = app_info.get('NSAppTransportSecurity', {})
+        self.expect(ats.get('NSAllowsLocalNetworking') is True,
+                    'App Transport Security allows local networking (Zeus\'s http://127.0.0.1 install links)',
+                    str(ats))
         icons = app_info.get('CFBundleIcons', {}).get('CFBundlePrimaryIcon', {}).get('CFBundleIconFiles', [])
         icons += app_info.get('CFBundleIcons~ipad', {}).get('CFBundlePrimaryIcon', {}).get('CFBundleIconFiles', [])
         icons.append(app_info.get('CFBundleIconFile', ''))

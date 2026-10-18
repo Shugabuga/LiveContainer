@@ -488,7 +488,7 @@ struct LCSourcesView: View {
     @State private var expandedSources: Set<URL> = []
     @State private var isManagingSources = false
     
-    @EnvironmentObject private var sharedModel : SharedModel
+    @Environment(HomeRouter.self) private var router
     
     @State private var isViewAppeared = false
     
@@ -612,9 +612,7 @@ struct LCSourcesView: View {
         .onAppear {
             expandedSources = []
             if !isViewAppeared {
-                guard sharedModel.selectedTab == .sources, let link = sharedModel.deepLink else { return }
-                sharedModel.deepLink = nil
-                handleURL(url: link)
+                addPendingSource()
                 isViewAppeared = true
             }
         }
@@ -622,10 +620,8 @@ struct LCSourcesView: View {
             let newSet = Set(newSources.map { $0.id })
             expandedSources = expandedSources.intersection(newSet)
         }
-        .onChange(of: sharedModel.deepLink) { link in
-            guard sharedModel.selectedTab == .sources, let link else { return }
-            sharedModel.deepLink = nil
-            handleURL(url: link)
+        .onChange(of: router.pendingSourceURL) {
+            addPendingSource()
         }
     }
     
@@ -701,21 +697,13 @@ struct LCSourcesView: View {
         }
     }
     
-    func handleURL(url : URL) {
-        if url.host == "source" {
-            if let components = URLComponents(url: url, resolvingAgainstBaseURL: false) {
-                var sourceUrl : String? = nil
-                for queryItem in components.queryItems ?? [] {
-                    if queryItem.name == "url", let installUrl1 = queryItem.value {
-                        sourceUrl = installUrl1
-                    }
-                }
-                if let sourceUrl {
-                    DataManager.shared.model.selectedTab = .sources
-                    Task { await handleAddSource(sourceUrl) }
-                }
-            }
+    /// Adds the source a `source?url=` link asked for, which HomeRouter keeps
+    /// until this screen takes it.
+    private func addPendingSource() {
+        guard let sourceURL = router.takePendingSource() else {
+            return
         }
+        Task { await handleAddSource(sourceURL) }
     }
 }
 

@@ -9,6 +9,8 @@ import SwiftUI
 @main
 struct LiveContainerSwiftUIApp : SwiftUI.App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    @State private var coordinator: AppLaunchCoordinator
+    @State private var router: HomeRouter
     
     init() {
         let fm = FileManager()
@@ -98,6 +100,11 @@ struct LiveContainerSwiftUIApp : SwiftUI.App {
         if let tempURLSchemes {
             UserDefaults.lcShared().set(Array(tempURLSchemes), forKey: "LCGuestURLSchemes")
         }
+
+        // Made after the apps are loaded, so the coordinator becomes their delegate.
+        let coordinator = AppLaunchCoordinator(sharedModel: DataManager.shared.model)
+        _coordinator = State(initialValue: coordinator)
+        _router = State(initialValue: HomeRouter(coordinator: coordinator))
     }
     
     var body: some Scene {
@@ -106,6 +113,8 @@ struct LiveContainerSwiftUIApp : SwiftUI.App {
                 .handlesExternalEvents(preferring: ["*"], allowing: ["*"])
                 .environmentObject(DataManager.shared.model)
                 .environmentObject(LCAppSortManager.shared)
+                .environment(coordinator)
+                .environment(router)
         }
         
         if UIApplication.shared.supportsMultipleScenes, #available(iOS 16.1, *) {

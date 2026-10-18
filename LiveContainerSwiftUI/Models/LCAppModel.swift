@@ -1,6 +1,10 @@
 import Foundation
 
-protocol LCAppModelDelegate {
+/// What an app needs from the screens around it: JIT launches, the question
+/// about stopping multitasking apps, and moving it when it is hidden or shown.
+/// AppLaunchCoordinator is the delegate of every app.
+@MainActor
+protocol LCAppModelDelegate: AnyObject {
     func closeNavigationView()
     func changeAppVisibility(app : LCAppModel)
     func jitLaunch(appName: String, classicMode: UInt) async
@@ -157,7 +161,7 @@ class LCAppModel: ObservableObject, Hashable {
     
     @Published var supportedLanguages : [String]?
     
-    var delegate : LCAppModelDelegate?
+    weak var delegate : LCAppModelDelegate?
     
     init(appInfo : LCAppInfo, delegate: LCAppModelDelegate? = nil) {
         self.appInfo = appInfo
@@ -489,7 +493,7 @@ class LCAppModel: ObservableObject, Hashable {
     }
     
     func toggleHidden() async {
-        delegate?.closeNavigationView()
+        await delegate?.closeNavigationView()
         if appInfo.isHidden {
             appInfo.isHidden = false
             uiIsHidden = false
@@ -497,7 +501,7 @@ class LCAppModel: ObservableObject, Hashable {
             appInfo.isHidden = true
             uiIsHidden = true
         }
-        delegate?.changeAppVisibility(app: self)
+        await delegate?.changeAppVisibility(app: self)
     }
     
     func loadSupportedLanguages() throws {
