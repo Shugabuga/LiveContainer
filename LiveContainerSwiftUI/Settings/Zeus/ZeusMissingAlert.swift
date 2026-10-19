@@ -14,7 +14,7 @@ struct ZeusMissingAlert: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .alert("zc.settings.zeus.zeusMissing".loc, isPresented: $isPresented) {
+            .alert("zc.settings.zeus.zeusMissing".deviceLoc, isPresented: $isPresented) {
                 Button("zc.settings.zeus.getZeus".loc, action: getZeus)
                 Button("lc.common.cancel".loc, role: .cancel) { }
             }

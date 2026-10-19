@@ -19,10 +19,17 @@ final class HomeScreenModel {
     @ObservationIgnored let coordinator: AppLaunchCoordinator
     /// The installed apps and the hidden-app state.
     @ObservationIgnored let sharedModel: SharedModel
-    /// Where everything sits on the current screen, which the Home Screen
-    /// view hands over whenever the screen's size changes. Dragging and the
-    /// launch zoom read it.
+    /// Where everything sits on the current screen, which the main window's
+    /// Home Screen hands over whenever the screen's size changes. Dragging and
+    /// the launch zoom read it. Views don't follow its changes; on iPad they
+    /// read `padMetrics` instead.
     @ObservationIgnored var metrics: HomeMetrics?
+    /// The same as `metrics` on iPad, where views follow it: search, so its
+    /// panels and icons fit a window as it is resized or rotated, and the
+    /// wallpaper preview until Settings has measured itself. It stays nil on
+    /// iPhone, where those views keep reading `metrics` and so keep the size
+    /// they opened with, as they always have.
+    var padMetrics: HomeMetrics?
 
     /// The apps the Home Screen shows, by their Home Screen key. Hidden apps
     /// aren't among them.

@@ -80,7 +80,7 @@ struct OnboardingConnectPage: View {
         if connection.isReadyToSign {
             connection.isZeusInstalled
                 ? "zc.onboarding.connect.connected".loc
-                : "zc.onboarding.connect.readyWithoutZeus".loc
+                : "zc.onboarding.connect.readyWithoutZeus".deviceLoc
         } else if connection.validity == .revoked {
             "zc.settings.zeus.revokedNotice".loc
         } else if connection.isExpired {
@@ -96,8 +96,8 @@ struct OnboardingConnectPage: View {
 
     private var zeusDetail: String {
         connection.isZeusInstalled
-            ? "zc.onboarding.connect.zeusInstalled".loc
-            : "zc.onboarding.connect.zeusMissing".loc
+            ? "zc.onboarding.connect.zeusInstalled".deviceLoc
+            : "zc.onboarding.connect.zeusMissing".deviceLoc
     }
 
     /// The certificate's team and expiry, or what's wrong with it.

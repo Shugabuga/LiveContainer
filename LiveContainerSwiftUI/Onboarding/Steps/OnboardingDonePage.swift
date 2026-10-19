@@ -61,7 +61,7 @@ struct OnboardingDonePage: View {
         if connection.isConnected {
             "zc.onboarding.done.connected".loc
         } else if !connection.isZeusInstalled {
-            "zc.onboarding.done.zeusMissing".loc
+            "zc.onboarding.done.zeusMissing".deviceLoc
         } else {
             "zc.onboarding.done.notSetUp".loc
         }

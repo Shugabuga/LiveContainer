@@ -62,6 +62,7 @@ PREBUILT = ('Frameworks/OpenSSL.framework/', 'Frameworks/CydiaSubstrate.framewor
 ALWAYS = [
     'LiveContainer', 'Info.plist', 'PkgInfo', 'Settings.bundle/Root.plist', 'universal.js',
     'AppIcon.png', 'AppIcon60x60@2x.png', 'AppIcon60x60@3x.png', 'AppIcon76x76@2x~ipad.png',
+    'AppIcon83.5x83.5@2x~ipad.png',
     'en.lproj/Localizable.strings', 'en.lproj/Localizable.stringsdict', 'en.lproj/InfoPlist.strings',
     'Frameworks/LiveContainerShared.framework/LiveContainerShared',
     'Frameworks/LiveContainerSwiftUI.framework/LiveContainerSwiftUI',

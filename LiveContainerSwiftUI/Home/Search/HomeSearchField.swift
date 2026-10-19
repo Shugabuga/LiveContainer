@@ -6,7 +6,7 @@
 import SwiftUI
 
 /// The search field at the bottom of search, in a glass capsule, with a
-/// button beside it that closes search.
+/// button beside it that closes search. On iPad, Escape closes it too.
 struct HomeSearchField: View {
     /// What is typed.
     @Binding var text: String
@@ -27,6 +27,7 @@ struct HomeSearchField: View {
                     .focused(isFocused)
                     .submitLabel(.go)
                     .onSubmit(onSubmit)
+                    .onKeyPress(.escape, action: escapePressed)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                 if !text.isEmpty {
@@ -60,5 +61,15 @@ struct HomeSearchField: View {
 
     private func clear() {
         text = ""
+    }
+
+    /// On iPad, Escape on a hardware keyboard closes search, as it closes
+    /// Spotlight. On iPhone the key goes on as before.
+    private func escapePressed() -> KeyPress.Result {
+        guard !SharedModel.isPhone else {
+            return .ignored
+        }
+        onClose()
+        return .handled
     }
 }

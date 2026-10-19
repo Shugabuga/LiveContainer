@@ -39,6 +39,9 @@ struct LCAppSettingsView: View {
     @State private var selectUnusedContainerSheetShow = false
     
     @EnvironmentObject private var sharedModel : SharedModel
+    /// This view's own window, which the JIT script picker opens over: on
+    /// iPad another scene, such as an app's own window, can be connected too.
+    @EnvironmentObject private var sceneDelegate: SceneDelegate
     
     init(model: LCAppModel) {
         self.appInfo = model.appInfo
@@ -186,8 +189,8 @@ struct LCAppSettingsView: View {
                             }
                             picker.delegate = documentPickerCoordinator
 
-                            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-                               let rootViewController = windowScene.windows.first?.rootViewController {
+                            if let rootViewController = sceneDelegate.window?.rootViewController
+                                ?? (UIApplication.shared.connectedScenes.first as? UIWindowScene)?.windows.first?.rootViewController {
                                 // From the top, since these settings open over the
                                 // Home Screen as a sheet or full screen cover.
                                 rootViewController.topPresentedViewController.present(picker, animated: true)
@@ -222,17 +225,17 @@ struct LCAppSettingsView: View {
                 Toggle(isOn: $model.uiIsLocked) {
                     Text("lc.appSettings.lockApp".loc)
                 }
-                .onChange(of: model.uiIsLocked, perform: { newValue in
+                .onChange(of: model.uiIsLocked) { _, newValue in
                     Task { await model.setLocked(newLockState: newValue) }
-                })
+                }
 
                 if model.uiIsLocked {
                     Toggle(isOn: $model.uiIsHidden) {
                         Text("lc.appSettings.hideApp".loc)
                     }
-                    .onChange(of: model.uiIsHidden, perform: { _ in
+                    .onChange(of: model.uiIsHidden) {
                         Task { await toggleHidden() }
-                    })
+                    }
                     .transition(.opacity.combined(with: .slide)) 
                 }
             } footer: {

@@ -187,7 +187,8 @@ def main_app_plist(app):
     # array shapes LCUtils.m edits for the grey multi-LiveContainer icon.
     info.pop('CFBundleIconName', None)
     info['CFBundleIcons'] = {'CFBundlePrimaryIcon': {'CFBundleIconFiles': ['AppIcon60x60']}}
-    info['CFBundleIcons~ipad'] = {'CFBundlePrimaryIcon': {'CFBundleIconFiles': ['AppIcon60x60', 'AppIcon76x76']}}
+    # AppIcon83.5x83.5 is the iPad Pro and other all-screen iPads' Home Screen size.
+    info['CFBundleIcons~ipad'] = {'CFBundlePrimaryIcon': {'CFBundleIconFiles': ['AppIcon60x60', 'AppIcon76x76', 'AppIcon83.5x83.5']}}
     info['CFBundleIconFile'] = 'AppIcon'
     # What the Xcode target's Run Script adds: "$CONFIGURATION ($BRANCH/$COMMIT)".
     info['LCVersionInfo'] = ENV.get('ZC_VERSION_INFO') or 'Release (unknown/unknown)'
@@ -355,7 +356,8 @@ def compile_asset_catalog(app, catalog, icon_name):
         if kind == '.appiconset' and name == icon_name:
             src = app_icon_source(path)
             for out, px in (('AppIcon60x60@2x.png', 120), ('AppIcon60x60@3x.png', 180),
-                            ('AppIcon76x76@2x~ipad.png', 152), ('AppIcon.png', 1024)):
+                            ('AppIcon76x76@2x~ipad.png', 152), ('AppIcon83.5x83.5@2x~ipad.png', 167),
+                            ('AppIcon.png', 1024)):
                 magick(src, '-resize', f'{px}x{px}', '-strip', os.path.join(app, out))
             note(f'{entry}: loose AppIcon PNGs (no dark or tinted variants without Assets.car)')
         elif kind == '.imageset':

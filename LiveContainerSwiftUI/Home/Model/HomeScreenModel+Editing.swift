@@ -132,7 +132,9 @@ extension HomeScreenModel {
         }
         var others = layout
         others.remove(drag.item)
-        if metrics.dockContains(center) {
+        // An iPad's dock glass fits its icons, so a dragged icon reaches the
+        // dock where the glass would be with it inside, one place wider.
+        if metrics.dockContains(center, count: min(others.dock.count + 1, HomeLayout.dockCapacity)) {
             guard others.dock.count < HomeLayout.dockCapacity else {
                 return drag.target
             }
@@ -191,7 +193,7 @@ extension HomeScreenModel {
     /// right side of the screen, and stops when it moves away.
     private func updatePageTurn(at finger: CGPoint, metrics: HomeMetrics) {
         let edge = HomeDesign.pageTurnEdge
-        let direction = if metrics.dockContains(finger) {
+        let direction = if metrics.dockContains(finger, count: displayedLayout.dock.count) {
             0
         } else if finger.x < edge {
             -1

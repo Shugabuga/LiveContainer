@@ -34,6 +34,9 @@ struct HomeAddAppMenu: View {
                 .foregroundStyle(.white)
                 .frame(width: size, height: size)
                 .homeGlass(.circle, isInteractive: true)
+                // Lights up under a trackpad or mouse pointer.
+                .contentShape(.hoverEffect, .circle)
+                .hoverEffect(.highlight)
                 .frame(width: HomeDesign.minimumTouchSize, height: HomeDesign.minimumTouchSize)
                 .contentShape(.circle)
         }

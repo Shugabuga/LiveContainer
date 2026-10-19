@@ -59,11 +59,18 @@ class SceneDelegate: NSObject, UIWindowSceneDelegate, ObservableObject { // Make
         options: UIScene.ActivationRequestOptions?,
         errorHandler: ((any Error) -> Void)? = nil
     ) {
+        // Full screen when the window in front is. With several scenes no
+        // window may be key, such as while a restored app window reopens the
+        // main one at launch, and then the options go through as they are.
+        let scenes = connectedScenes.compactMap { $0 as? UIWindowScene }
+        let frontScene = scenes.first { $0.activationState == .foregroundActive && $0.keyWindow != nil }
+            ?? scenes.first { $0.keyWindow != nil }
         var newOptions = options
-        if newOptions == nil {
-            newOptions = UIScene.ActivationRequestOptions()
+        if let frontScene, let frontWindow = frontScene.keyWindow {
+            let fullScreenOptions = options ?? UIScene.ActivationRequestOptions()
+            fullScreenOptions._setRequestFullscreen(frontWindow.bounds == frontScene.screen.bounds)
+            newOptions = fullScreenOptions
         }
-        newOptions!._setRequestFullscreen(UIScreen.main.bounds == self.keyWindow!.bounds)
         self.hook_requestSceneSessionActivation(sceneSession, userActivity: userActivity, options: newOptions, errorHandler: errorHandler)
     }
     

@@ -36,7 +36,7 @@ struct HomeAppMenu: View {
         Section {
             HomeLockMenu(app: app)
             if showsEditHomeScreen {
-                Button("zc.home.editHomeScreen".loc, systemImage: "apps.iphone", action: model.beginEditing)
+                Button("zc.home.editHomeScreen".loc, systemImage: .homeScreenSymbol, action: model.beginEditing)
             }
             if !app.uiIsShared {
                 Button("zc.home.removeApp".loc, systemImage: "minus.circle", role: .destructive, action: requestRemoval)

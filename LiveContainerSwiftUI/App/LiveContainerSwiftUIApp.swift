@@ -127,6 +127,11 @@ struct LiveContainerSwiftUIApp : SwiftUI.App {
                 .environment(wallpaper)
                 .environment(systemAppearance)
         }
+        // zContainer shows one main window. On iPad, File > New Window and
+        // Command-N would open a second one only for it to close again.
+        .commands {
+            CommandGroup(replacing: .newItem) { }
+        }
         
         if UIApplication.shared.supportsMultipleScenes, #available(iOS 16.1, *) {
             WindowGroup(id: "appView", for: String.self) { $id in

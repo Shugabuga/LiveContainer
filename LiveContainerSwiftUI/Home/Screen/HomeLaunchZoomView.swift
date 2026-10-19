@@ -8,7 +8,9 @@ import SwiftUI
 /// A tapped app opening: its icon grows from its place into a black screen,
 /// the way iOS zooms an app open, just before zContainer turns into the app.
 /// With Reduce Motion on, the screen fades to black instead. It tells the
-/// model once the screen is covered, which lets the launch go ahead.
+/// model once the screen is covered, which lets the launch go ahead. The
+/// growing icon doesn't lift under a trackpad or mouse pointer the way the
+/// icon it grows from does.
 struct HomeLaunchZoomView: View {
     /// The icon the app opens from, and where it is.
     let zoom: HomeLaunchZoom
@@ -22,7 +24,12 @@ struct HomeLaunchZoomView: View {
 
     var body: some View {
         let frame = isOpen || reduceMotion ? CGRect(origin: .zero, size: metrics.size) : zoom.iconFrame
-        let iconScale = zoom.iconFrame.width > 0 ? frame.width / zoom.iconFrame.width : 1
+        // On iPad the artwork is drawn at the pages' icon size, which a
+        // shrunken dock icon starts smaller than. The iPhone keeps measuring
+        // from the tapped icon, as it always has.
+        let baseWidth = SharedModel.isPhone ? zoom.iconFrame.width : metrics.iconSize
+        let iconScale = baseWidth > 0 ? frame.width / baseWidth : 1
+        let startRadius = SharedModel.isPhone ? metrics.iconCornerRadius : zoom.iconFrame.width * HomeDesign.iconCornerFraction
 
         ZStack {
             Color.black
@@ -31,9 +38,10 @@ struct HomeLaunchZoomView: View {
                 .opacity(isOpen || reduceMotion ? 0 : 1)
         }
         .frame(width: frame.width, height: frame.height)
-        .clipShape(.rect(cornerRadius: isOpen ? 0 : metrics.iconCornerRadius))
+        .clipShape(.rect(cornerRadius: isOpen ? 0 : startRadius))
         .position(x: frame.midX, y: frame.midY)
         .opacity(reduceMotion && !isOpen ? 0 : 1)
+        .hoverEffectDisabled()
         .accessibilityHidden(true)
         .onAppear(perform: open)
     }

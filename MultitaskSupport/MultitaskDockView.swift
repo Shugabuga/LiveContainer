@@ -136,7 +136,15 @@ class AppInfoProvider {
     @Published var isDockHidden: Bool = false
     @Published var settingsChanged: Bool = false
 
-    @objc public var windowHostingView = VirtualWindowsHostView()
+    /// The view the virtual windows live in, on the main window. Reading it
+    /// first puts it there when it isn't yet, since the main window may not
+    /// have been known when the manager was made. On iPad it also brings it
+    /// back above the Home Screen.
+    @objc public var windowHostingView: VirtualWindowsHostView {
+        attachWindowHostingView()
+        return hostView
+    }
+    private let hostView = VirtualWindowsHostView()
     internal var hostingController: UIHostingController<AnyView>?
 
     public struct Constants {
@@ -269,8 +277,15 @@ class AppInfoProvider {
         return calculateIconSize(for: dockWidth)
     }
 
+    /// The main window, the one showing the Home Screen, which the virtual
+    /// windows and the dock go on. On iPad other scenes can be connected too,
+    /// so it isn't simply the first one. An iPhone has the one scene, whose
+    /// first window it has always used.
     public var keyWindow: UIWindow? {
-        (UIApplication.shared.connectedScenes.first as? UIWindowScene)?.windows.first
+        if SharedModel.isPhone {
+            return (UIApplication.shared.connectedScenes.first as? UIWindowScene)?.windows.first
+        }
+        return MainWindow.window
     }
 
     public var safeAreaInsets: UIEdgeInsets {
@@ -281,12 +296,12 @@ class AppInfoProvider {
     }
 
     private var safeAreaHeight: CGFloat {
-        keyWindow!.bounds.height - safeAreaInsets.top - safeAreaInsets.bottom
+        (keyWindow?.bounds.height ?? 0) - safeAreaInsets.top - safeAreaInsets.bottom
     }
     
     override init() {
         super.init()
-        keyWindow!.rootViewController!.view.subviews.first!.addSubview(self.windowHostingView)
+        attachWindowHostingView()
         setupDockView()
         NotificationCenter.default.addObserver(
             self,
@@ -305,6 +320,31 @@ class AppInfoProvider {
     deinit {
         NotificationCenter.default.removeObserver(self)
         NotificationCenter.default.removeObserver(self, name: UIDevice.orientationDidChangeNotification, object: nil)
+    }
+
+    /// Puts the virtual windows' host view on the main window, and waits
+    /// while no main window is known.
+    ///
+    /// On iPhone it goes where it always has, once: into the first view of
+    /// the window's root view, sized to the window, and it stays there.
+    ///
+    /// On iPad it goes on the root view itself, sized to it and above the
+    /// Home Screen, and comes back to the front when something covered it.
+    /// zContainer's root is its own SwiftUI view rather than a tab bar
+    /// controller whose view came first, so the first view there could be one
+    /// that scrolls with the Home Screen's pages.
+    private func attachWindowHostingView() {
+        guard let window = keyWindow, let rootView = window.rootViewController?.view else { return }
+        if SharedModel.isPhone {
+            guard hostView.superview == nil else { return }
+            hostView.frame = window.bounds
+            (rootView.subviews.first ?? rootView).addSubview(hostView)
+        } else if hostView.superview !== rootView {
+            hostView.frame = rootView.bounds
+            rootView.addSubview(hostView)
+        } else if rootView.subviews.last !== hostView {
+            rootView.bringSubviewToFront(hostView)
+        }
     }
 
     @objc private func deviceOrientationDidChange() {
@@ -336,9 +376,8 @@ class AppInfoProvider {
     }
 
     private func updateDockFrame(animated: Bool = true) {
-        guard let hostingController = hostingController else { return }
+        guard let hostingController = hostingController, let screenBounds = keyWindow?.bounds else { return }
 
-        let screenBounds = keyWindow!.bounds
         let currentDockWidth = self.dockWidth
         
         let dockHeight = calculateTargetDockHeight(forWidth: currentDockWidth)
@@ -506,7 +545,7 @@ class AppInfoProvider {
                 let finalScale = Constants.initialScale
                 hostingController.view.transform = CGAffineTransform(scaleX: finalScale, y: finalScale)
                 // Move off-screen to hide, but keep in view hierarchy
-                let screenBounds = self.keyWindow!.bounds
+                guard let screenBounds = self.keyWindow?.bounds else { return }
                 let currentDockWidth = self.dockWidth
                 let targetX = self.calculateTargetX(isDockHidden: true, isOnRightSide: hostingController.view.frame.midX > screenBounds.width / 2, dockWidth: currentDockWidth, screenWidth: screenBounds.width)
                 let targetY = hostingController.view.frame.origin.y // Keep current Y
@@ -541,7 +580,7 @@ class AppInfoProvider {
     }
 
     func handleSwipeToHideOrShowGesture(for originalFrame: CGRect, translation: CGSize) -> Bool {
-        let screenWidth = keyWindow!.bounds.width
+        guard let screenWidth = keyWindow?.bounds.width else { return false }
         let isOnRightSide = originalFrame.origin.x > screenWidth / 2
         let isSwipingAway = (isOnRightSide && translation.width > 0) || (!isOnRightSide && translation.width < 0)
         
@@ -569,7 +608,7 @@ class AppInfoProvider {
             return false
         }
         
-        let screenWidth = keyWindow!.bounds.width
+        guard let screenWidth = keyWindow?.bounds.width else { return false }
         let isOnRightSide = originalFrame.origin.x > screenWidth / 2
         
         guard !self.isDockHidden else { return false }
@@ -589,9 +628,10 @@ class AppInfoProvider {
     
     // Find and bring corresponding multitask view to front
     func bringMultitaskViewToFront(uuid: String, from center: CGPoint? = nil) -> Bool {
-        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene else {
+        guard let windowScene = keyWindow?.windowScene else {
             return false
         }
+        attachWindowHostingView()
 
         for window in windowScene.windows {
             if let targetView = findMultitaskView(in: window, withUUID: uuid) {
@@ -772,8 +812,7 @@ class AppInfoProvider {
     
     // Add edge gesture recognition areas when dock is hidden
     private func setupEdgeGestureRecognizers() {
-        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let keyWindow = windowScene.windows.first else { return }
+        guard let keyWindow = self.keyWindow else { return }
         
         keyWindow.gestureRecognizers?.removeAll { gesture in
             return gesture is UITapGestureRecognizer || gesture is UIScreenEdgePanGestureRecognizer
@@ -888,8 +927,8 @@ public struct MultitaskDockSwiftView: View {
                 
                 let currentPhysicalFrame = hcFrame.offsetBy(dx: self.dragOffset.width, dy: self.dragOffset.height)
                 
-                if dockManager.isPositionChangeGesture(for: hcFrame, translation: value.translation) {
-                    let screenBounds = dockManager.keyWindow!.bounds
+                if dockManager.isPositionChangeGesture(for: hcFrame, translation: value.translation),
+                   let screenBounds = dockManager.keyWindow?.bounds {
                     let targetX = dockManager.calculateTargetX(isDockHidden: false, isOnRightSide: currentPhysicalFrame.midX > screenBounds.width / 2, dockWidth: dockManager.dockWidth, screenWidth: screenBounds.width)
                     
                     let safeAreaInsets = dockManager.safeAreaInsets
@@ -931,7 +970,11 @@ public struct MultitaskDockSwiftView: View {
                     return
                 }
                 
-                let screenBounds = dockManager.keyWindow!.bounds
+                guard let screenBounds = dockManager.keyWindow?.bounds else {
+                    self.dragOffset = .zero
+                    self.isMoving = false
+                    return
+                }
                 let safeAreaInsets = dockManager.safeAreaInsets
                 let dockVerticalMargin = MultitaskDockManager.Constants.dockVerticalMargin
                 let minY = safeAreaInsets.top + dockVerticalMargin

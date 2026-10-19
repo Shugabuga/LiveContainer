@@ -78,7 +78,12 @@ extension HomeScreenModel {
             }
             return metrics.iconFrame(around: metrics.iconCenter(at: index))
         case .dock(let index)?:
-            return metrics.iconFrame(around: metrics.dockIconCenter(at: index, count: layout.dock.count))
+            // At the size the dock draws it, which an iPad window too narrow
+            // for a full dock shrinks. Elsewhere it is the pages' icon size.
+            let count = layout.dock.count
+            let size = metrics.dockIconSize(count: count)
+            let center = metrics.dockIconCenter(at: index, count: count)
+            return CGRect(x: center.x - size / 2, y: center.y - size / 2, width: size, height: size)
         case nil:
             return nil
         }
@@ -94,9 +99,10 @@ extension HomeScreenModel {
     // MARK: Screens over the Home Screen
 
     /// Opens a screen over the Home Screen. From iOS 18 it zooms out of its
-    /// icon and covers the screen, so the status bar follows it from then on.
+    /// icon and covers the screen, and so it does on iPad on iOS 17, so the
+    /// status bar follows it from then on.
     func present(_ screen: HomePresentedScreen) {
-        if #available(iOS 18.0, *) {
+        if HomeScreenPresentation.coversHomeScreen {
             isCoveredByScreen = true
         }
         presentedScreen = screen

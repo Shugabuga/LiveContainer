@@ -13,8 +13,8 @@ enum HomeDesign {
 
     /// The width the sizes below were measured at.
     static let referenceWidth = 428.0
-    /// The largest scale HomeMetrics applies, so an iPad gets a roomy phone
-    /// layout instead of giant icons.
+    /// The largest scale HomeMetrics applies, so an iPad's icons come out a
+    /// little larger than an iPhone's instead of giant.
     static let maximumScale = 1.2
     /// The coordinate space of the whole screen, which HomeMetrics' positions
     /// and the drag gesture share.
@@ -82,11 +82,48 @@ enum HomeDesign {
     /// smaller than elsewhere so they fit the short status bar.
     static let squareScreenEditButtonSize = 28.0
 
+    // MARK: iPad
+
+    // iPadOS keeps the dock floating at the bottom in both orientations and
+    // spreads the grid over the whole screen, so iPads (and their Split View,
+    // Slide Over and Stage Manager windows) get their own layout rather than
+    // a scaled up iPhone.
+
+    /// The height HomeDesign's sizes reach full scale at on an iPad, so short
+    /// windows scale down as narrow ones do. An iPad mini in landscape (744
+    /// points high) still gets full size icons.
+    static let padReferenceHeight = 620.0
+    /// The space between the grid's outer cells and the sides of the screen,
+    /// before scaling. Icons sit centered in their cells, further in.
+    static let padGridSideInset = 24.0
+    /// The least room between neighboring icons, before scaling. Icons shrink
+    /// before they get closer.
+    static let padMinimumColumnGap = 16.0
+    /// The least room between a name and the icon under it, before scaling.
+    static let padMinimumRowGap = 12.0
+    /// The most the rows can be apart, as a multiple of the column distance,
+    /// so a tall narrow window doesn't pull its rows far apart. The grid
+    /// keeps to the top, as a page that isn't full does.
+    static let padMaximumRowToColumnPitch = 1.6
+    /// How far a name can reach past each side of its icon, before scaling.
+    /// iPadOS cuts long names off near their icon rather than letting them
+    /// run across the wide columns.
+    static let padNameOverhang = 16.0
+    /// The space between the ends of the dock's glass and its first and last
+    /// icons, before scaling, as on the iPhone's full dock. The glass is only
+    /// as wide as its icons need, as on iPadOS.
+    static let padDockEndPadding = 17.7
+    /// The least room between neighboring icons in the dock, before scaling.
+    /// In a window too narrow for a full dock at the pages' icon size, the
+    /// dock's icons come this close, then shrink.
+    static let padMinimumDockGap = 12.0
+
     // MARK: Dock
 
     /// The space between the dock and the sides of the screen.
     static let dockSideInset = 14.4
-    /// The dock's height (its width in landscape, where it stands on the side).
+    /// The dock's height (its width on an iPhone in landscape, where it
+    /// stands on the side).
     static let dockThickness = 105.0
     /// The space between the dock and the bottom of the screen.
     static let dockBottomInset = 13.5

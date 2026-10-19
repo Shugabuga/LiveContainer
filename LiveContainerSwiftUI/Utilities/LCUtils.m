@@ -77,7 +77,9 @@
             }
         }
         
-        UIViewController *rootVC = ((UIWindowScene *)UIApplication.sharedApplication.connectedScenes.anyObject).keyWindow.rootViewController;
+        // The Home Screen's window: on iPad another scene, such as an app's own
+        // window, can be connected too.
+        UIViewController *rootVC = MainWindow.window.rootViewController;
         DecoratedAppSceneViewController *launcherView = [[DecoratedAppSceneViewController alloc] initWindowName:displayName bundleId:bundleId dataUUID:dataUUID rootVC:rootVC];
         // Wire PID callback
         launcherView.pidAvailableHandler = completionHandler;

@@ -32589,6 +32589,18 @@
         }
       }
     },
+    "zc.onboarding.connect.readyWithoutZeus.ipad" : {
+      "comment" : "Onboarding, Connect to Zeus: the explanation when zContainer has a usable certificate but Zeus isn't installed. The iPad version of zc.onboarding.connect.readyWithoutZeus, shown on iPad in its place.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "zContainer can sign your apps with its certificate. Without Zeus on this iPad, you can add them from Files."
+          }
+        }
+      }
+    },
     "zc.onboarding.connect.sameTeam" : {
       "comment" : "Onboarding, Connect to Zeus: row checking that the certificate belongs to the developer team that signed zContainer.",
       "extractionState" : "manual",
@@ -32673,6 +32685,18 @@
         }
       }
     },
+    "zc.onboarding.connect.zeusInstalled.ipad" : {
+      "comment" : "Onboarding, Connect to Zeus: under the Zeus row when Zeus is installed. The iPad version of zc.onboarding.connect.zeusInstalled, shown on iPad in its place.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Installed on this iPad"
+          }
+        }
+      }
+    },
     "zc.onboarding.connect.zeusMissing" : {
       "comment" : "Onboarding, Connect to Zeus: under the Zeus row when Zeus isn't installed.",
       "extractionState" : "manual",
@@ -32681,6 +32705,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Not found on this iPhone"
+          }
+        }
+      }
+    },
+    "zc.onboarding.connect.zeusMissing.ipad" : {
+      "comment" : "Onboarding, Connect to Zeus: under the Zeus row when Zeus isn't installed. The iPad version of zc.onboarding.connect.zeusMissing, shown on iPad in its place.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not found on this iPad"
           }
         }
       }
@@ -32817,6 +32853,18 @@
         }
       }
     },
+    "zc.onboarding.done.zeusMissing.ipad" : {
+      "comment" : "Onboarding, last page: the Zeus row's value when Zeus isn't installed. The iPad version of zc.onboarding.done.zeusMissing, shown on iPad in its place.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not on This iPad"
+          }
+        }
+      }
+    },
     "zc.onboarding.doneValue" : {
       "comment" : "Onboarding: what VoiceOver reads for a checklist row whose part is done.",
       "extractionState" : "manual",
@@ -32849,6 +32897,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Arrange your apps on pages and in a dock, just like on your iPhone."
+          }
+        }
+      }
+    },
+    "zc.onboarding.feature.homeScreenDetail.ipad" : {
+      "comment" : "Onboarding welcome screen: the line under “Your Own Home Screen”. The iPad version of zc.onboarding.feature.homeScreenDetail, shown on iPad in its place.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arrange your apps on pages and in a dock, just like on your iPad."
           }
         }
       }
@@ -32993,6 +33053,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Icons saved or added to the iPhone’s Home Screen from an app’s Add to Home Screen menu get a zContainer frame around them."
+          }
+        }
+      }
+    },
+    "zc.settings.advanced.frameIconsFooter.ipad" : {
+      "comment" : "Settings > Advanced: footer under Frame Shortcut Icon. The iPad version of zc.settings.advanced.frameIconsFooter, shown on iPad in its place.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Icons saved or added to the iPad’s Home Screen from an app’s Add to Home Screen menu get a zContainer frame around them."
           }
         }
       }
@@ -34097,6 +34169,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zeus isn’t installed on this iPhone."
+          }
+        }
+      }
+    },
+    "zc.settings.zeus.zeusMissing.ipad" : {
+      "comment" : "Settings > Zeus: alert when Open Zeus can’t open Zeus. The iPad version of zc.settings.zeus.zeusMissing, shown on iPad in its place.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zeus isn’t installed on this iPad."
           }
         }
       }

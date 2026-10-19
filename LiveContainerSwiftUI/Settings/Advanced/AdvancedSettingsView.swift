@@ -85,7 +85,7 @@ struct AdvancedSettingsView: View {
             Section {
                 Toggle("lc.settings.FrameIcon".loc, isOn: $frameShortcutIcons)
             } footer: {
-                Text("zc.settings.advanced.frameIconsFooter".loc)
+                Text("zc.settings.advanced.frameIconsFooter".deviceLoc)
             }
 
             Section {

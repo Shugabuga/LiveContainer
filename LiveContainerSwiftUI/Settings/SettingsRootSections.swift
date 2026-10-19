@@ -1,0 +1,69 @@
+//
+//  SettingsRootSections.swift
+//  LiveContainerSwiftUI
+//
+
+import SwiftUI
+
+/// The rows Settings opens on, in the Settings app's order: Zeus on top where
+/// the Apple Account is, with a row asking for attention under it when
+/// zContainer can't sign apps; then General, Home Screen and Wallpaper; then
+/// Apps, which holds each app's settings; and last Advanced, where the
+/// Settings app puts Developer. Each row opens a page of its own, except
+/// "Finish Setting Up zContainer", which opens onboarding again over the Home
+/// Screen.
+struct SettingsRootSections: View {
+    @Environment(ZeusConnection.self) private var connection
+    @Environment(OnboardingModel.self) private var onboarding
+
+    var body: some View {
+        Section {
+            SettingsPageLink(page: .zeus) {
+                ZeusCard()
+            }
+        }
+
+        if let attention = connection.attention {
+            Section {
+                if attention == .notSetUp {
+                    Button(action: onboarding.present) {
+                        ZeusAttentionRow(attention: attention, showsChevron: true)
+                    }
+                } else {
+                    SettingsPageLink(page: .attention) {
+                        ZeusAttentionRow(attention: attention)
+                    }
+                }
+            }
+        }
+
+        Section {
+            SettingsPageLink(page: .general) {
+                SettingsRow(title: "zc.settings.general".loc, systemImage: "gear", color: .gray)
+            }
+
+            // Its one setting, dark app icons, needs iOS 18.
+            if #available(iOS 18.0, *) {
+                SettingsPageLink(page: .homeScreen) {
+                    SettingsRow(title: "zc.settings.homeScreen".loc, systemImage: .homeScreenSymbol, color: .blue)
+                }
+            }
+
+            SettingsPageLink(page: .wallpaper) {
+                SettingsRow(title: "zc.settings.wallpaper".loc, systemImage: "camera.macro", color: .cyan)
+            }
+        }
+
+        Section {
+            SettingsPageLink(page: .apps) {
+                SettingsRow(title: "lc.tabView.apps".loc, systemImage: "square.grid.2x2.fill", color: .indigo)
+            }
+        }
+
+        Section {
+            SettingsPageLink(page: .advanced) {
+                SettingsRow(title: "zc.settings.advanced".loc, systemImage: "hammer.fill", color: .gray)
+            }
+        }
+    }
+}

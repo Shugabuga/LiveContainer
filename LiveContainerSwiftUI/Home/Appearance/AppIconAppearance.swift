@@ -12,6 +12,8 @@ import SwiftUI
 struct AppIconAppearance: ViewModifier {
     @AppStorage(HomeIconStyle.storageKey, store: LCUtils.appGroupUserDefault) private var style = HomeIconStyle.automatic
     @Environment(SystemAppearance.self) private var system
+    @Environment(\.scenePhase) private var scenePhase
+    @EnvironmentObject private var sceneDelegate: SceneDelegate
 
     func body(content: Content) -> some View {
         let prefersDark = style.prefersDarkIcons(systemIsDark: system.isDark)
@@ -19,6 +21,11 @@ struct AppIconAppearance: ViewModifier {
         content
             .environment(\.prefersDarkAppIcons, prefersDark)
             .onAppear(perform: followScene)
+            .onChange(of: scenePhase) {
+                if scenePhase == .active {
+                    followScene()
+                }
+            }
             .onChange(of: prefersDark, initial: true) {
                 LCUtils.appGroupUserDefault.set(prefersDark, forKey: Self.liveContainerKey)
             }
@@ -27,9 +34,14 @@ struct AppIconAppearance: ViewModifier {
     /// LiveContainer's own dark icon setting.
     private static let liveContainerKey = "darkModeIcon"
 
+    /// Has the system appearance follow this view's own scene, when it's the
+    /// main window's. On iPad other scenes can be connected too, and a second
+    /// window that opens only to close again mustn't take it over. Coming to
+    /// the front follows again, which picks up a scene iPadOS reconnected.
     private func followScene() {
-        let scene = UIApplication.shared.connectedScenes.lazy.compactMap { $0 as? UIWindowScene }.first
-        if let scene {
+        let scene = sceneDelegate.window?.windowScene
+            ?? UIApplication.shared.connectedScenes.lazy.compactMap { $0 as? UIWindowScene }.first
+        if let scene, MainWindow.isMain(scene) {
             system.follow(scene)
         }
     }

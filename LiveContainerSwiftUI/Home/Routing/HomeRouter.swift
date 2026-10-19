@@ -32,10 +32,6 @@ final class HomeRouter {
     /// Whether `crashReport` is on screen.
     var isShowingCrashReport = false
 
-    /// The window showing zContainer's main screen. A second window that opens
-    /// meanwhile closes, and only this one's closing frees the main screen.
-    @ObservationIgnored private weak var mainWindowScene: UIWindowScene?
-
     init(coordinator: AppLaunchCoordinator, onboarding: OnboardingModel) {
         self.coordinator = coordinator
         self.sharedModel = coordinator.sharedModel
@@ -80,8 +76,14 @@ final class HomeRouter {
     /// Runs when the main window opens: closes it when zContainer's main window
     /// is already open in another one, runs the launch checks, and opens the
     /// web page an app asked zContainer to show on its next launch.
+    ///
+    /// On iPad, a window that closes again, or the main window running this a
+    /// second time, skips the checks, so what they found doesn't show twice.
+    /// An iPhone runs them every time, as it always has.
     func start(in scene: UIWindowScene?) async {
-        closeDuplicatedWindow(scene)
+        guard acceptMainWindow(scene) || SharedModel.isPhone else {
+            return
+        }
         checkLastLaunchError()
         checkTeamId()
         checkAndSaveBundleId()
@@ -94,24 +96,35 @@ final class HomeRouter {
     /// Notes that a window closed. When it was the main window, the next one
     /// to open becomes the main window.
     func sceneDidDisconnect(_ scene: UIScene) {
-        guard let mainWindowScene, mainWindowScene === scene else {
+        guard let mainScene = MainWindow.scene, mainScene === scene else {
             return
         }
-        self.mainWindowScene = nil
+        MainWindow.scene = nil
         sharedModel.mainWindowOpened = false
     }
 
-    /// Asks iOS to close this window when the main window is already open in
-    /// another, and otherwise records this one as the main window.
-    private func closeDuplicatedWindow(_ scene: UIWindowScene?) {
+    /// Records this window as the main window and returns true. When the main
+    /// window is already open, it asks iOS to close this one instead and
+    /// returns false.
+    ///
+    /// On iPad it also returns false for the main window itself, so running
+    /// again there leaves it open. An iPhone keeps the old path, where a
+    /// second run asks to close its only window, as it always has.
+    private func acceptMainWindow(_ scene: UIWindowScene?) -> Bool {
+        defer {
+            sharedModel.mainWindowOpened = true
+        }
+        if !SharedModel.isPhone, let scene, let mainScene = MainWindow.scene, mainScene === scene {
+            return false
+        }
         if let session = scene?.session, sharedModel.mainWindowOpened {
             UIApplication.shared.requestSceneSessionDestruction(session, options: nil) { error in
                 print(error)
             }
-        } else {
-            mainWindowScene = scene
+            return false
         }
-        sharedModel.mainWindowOpened = true
+        MainWindow.scene = scene
+        return true
     }
 
     /// Opens the page an app asked zContainer to show, through

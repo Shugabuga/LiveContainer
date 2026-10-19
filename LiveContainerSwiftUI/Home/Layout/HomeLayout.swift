@@ -6,13 +6,18 @@
 import Foundation
 
 /// Where every icon sits: the pages, each holding up to 24 icons in order, and
-/// the dock, holding up to 4. Like iOS, a page has no gaps; icons fill it from
-/// the top left. HomeLayoutStorage saves it as JSON.
+/// the dock, holding up to 4 on an iPhone and 6 on an iPad. Like iOS, a page
+/// has no gaps; icons fill it from the top left. HomeLayoutStorage saves it
+/// as JSON.
 struct HomeLayout: Codable, Equatable, Sendable {
-    /// How many icons fit on a page: 4 columns by 6 rows, or 6 by 4 in landscape.
+    /// How many icons fit on a page: 4 columns by 6 rows, or 6 by 4 in
+    /// landscape and in wide iPad windows.
     static let iconsPerPage = 24
-    /// How many icons fit in the dock.
-    static let dockCapacity = 4
+    /// How many icons fit in the dock: 4 on an iPhone, as on iOS, and 6 on an
+    /// iPad, the most a 320 point Slide Over window still fits in a row. It is
+    /// the device's, not the window's, so turning or resizing never pushes an
+    /// icon out of the dock, and a layout saved before loads as it was.
+    static let dockCapacity = SharedModel.isPhone ? 4 : 6
 
     /// The pages, left to right. There is always at least one, even if empty.
     var pages: [[HomeItem]]

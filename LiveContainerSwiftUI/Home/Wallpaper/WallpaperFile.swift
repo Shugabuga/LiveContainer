@@ -11,9 +11,18 @@ import UIKit
 /// in Application Support a JPEG made from the chosen photo, turned upright and made no bigger than the largest screens need,
 /// so it loads quickly and doesn't hold a 48 megapixel photo in memory.
 enum WallpaperFile {
-    /// The longest side, in pixels, a wallpaper is made at: a little more
-    /// than the largest iPhone and iPad screens.
+    /// The longest side, in pixels, a wallpaper is made at on iPhone: a little
+    /// more than the largest iPhone screen. iPads never go below it either.
     private static let maximumPixelSize = 3000
+
+    /// The longest side of the largest iPad screen, in pixels: the 13 inch
+    /// iPad Pro's 2752. The photo's short side has to reach it, since an
+    /// iPad turns and a photo then fills the screen along its short side.
+    private static let padScreenLongSide = 2752
+
+    /// The longest side, in pixels, a wallpaper is made at on iPad, however
+    /// long and narrow the photo, so a panorama doesn't take up a lot of memory.
+    private static let padMaximumPixelSize = 4096
 
     /// The JPEG quality the wallpaper is saved at.
     private static let quality = 0.9
@@ -37,15 +46,15 @@ enum WallpaperFile {
     /// Makes a wallpaper from a photo's data, saves it in place of the last
     /// one, and returns it decoded for drawing.
     static func save(_ data: Data) throws -> UIImage {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else {
+            throw WallpaperError.unreadable
+        }
         let options = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
             kCGImageSourceCreateThumbnailWithTransform: true,
-            kCGImageSourceThumbnailMaxPixelSize: maximumPixelSize
+            kCGImageSourceThumbnailMaxPixelSize: pixelSize(for: source)
         ] as CFDictionary
-        guard
-            let source = CGImageSourceCreateWithData(data as CFData, nil),
-            let picture = CGImageSourceCreateThumbnailAtIndex(source, 0, options)
-        else {
+        guard let picture = CGImageSourceCreateThumbnailAtIndex(source, 0, options) else {
             throw WallpaperError.unreadable
         }
         let image = UIImage(cgImage: picture)
@@ -55,6 +64,27 @@ enum WallpaperFile {
         try FileManager.default.createDirectory(at: .applicationSupportDirectory, withIntermediateDirectories: true)
         try jpeg.write(to: url, options: .atomic)
         return image.preparingForDisplay() ?? image
+    }
+
+    /// The longest side, in pixels, to make a photo's wallpaper at. On iPhone
+    /// it's always `maximumPixelSize`. On iPad it's enough for the photo's
+    /// short side to cover the largest iPad's long side, so the wallpaper
+    /// stays sharp in both orientations, up to `padMaximumPixelSize`. A photo
+    /// smaller than that keeps its own size, since thumbnails never grow.
+    private static func pixelSize(for source: CGImageSource) -> Int {
+        guard
+            !SharedModel.isPhone,
+            let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+            let width = properties[kCGImagePropertyPixelWidth] as? Int,
+            let height = properties[kCGImagePropertyPixelHeight] as? Int,
+            width > 0, height > 0
+        else {
+            return maximumPixelSize
+        }
+        let long = max(width, height)
+        let short = min(width, height)
+        let covering = (padScreenLongSide * long + short - 1) / short
+        return min(max(covering, maximumPixelSize), padMaximumPixelSize)
     }
 
     /// The wallpaper blurred as search blurs the Home Screen, made at a

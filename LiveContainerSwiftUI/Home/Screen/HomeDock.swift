@@ -5,10 +5,12 @@
 
 import SwiftUI
 
-/// The dock: up to four icons without names on a glass panel at the bottom
-/// of the screen, or on the trailing side in landscape, centered as on iOS.
-/// On iPhones with a Home button it runs the full width, flush with the bottom.
-/// Not to be confused with MultitaskDockView, the dock of multitasking windows.
+/// The dock: icons without names on a glass panel at the bottom of the
+/// screen, or on the trailing side on an iPhone in landscape, centered as on
+/// iOS. An iPhone's dock holds up to four, an iPad's up to six, on glass only
+/// as wide as its icons need, as on iPadOS. On iPhones with a Home button it
+/// runs the full width, flush with the bottom. Not to be confused with
+/// MultitaskDockView, the dock of multitasking windows.
 struct HomeDock: View {
     /// Where things go on this screen.
     let metrics: HomeMetrics
@@ -20,20 +22,23 @@ struct HomeDock: View {
 
     var body: some View {
         let count = model.displayedLayout.dock.count
+        let glass = metrics.dockFrame(holding: count)
+        // A narrow iPad window shrinks a full dock's icons to fit.
+        let iconMetrics = metrics.dockIconMetrics(count: count)
 
         ZStack(alignment: .topLeading) {
             Color.clear
-                .frame(width: metrics.dockFrame.width, height: metrics.dockFrame.height)
+                .frame(width: glass.width, height: glass.height)
                 .homeGlass(metrics.isDockFlush ? .edgeToEdge : .screenConcentric(fallbackRadius: metrics.dockCornerRadius))
                 .contentShape(.rect)
-                .position(x: metrics.dockFrame.midX, y: metrics.dockFrame.midY)
+                .position(x: glass.midX, y: glass.midY)
                 .accessibilityHidden(true)
 
             ForEach(model.dockPlacements) { placement in
                 HomeIconCell(
                     item: placement.item,
                     app: app(for: placement.item),
-                    metrics: metrics,
+                    metrics: iconMetrics,
                     showsLabel: false,
                     isLifted: placement.isLifted,
                     isOnScreen: true,

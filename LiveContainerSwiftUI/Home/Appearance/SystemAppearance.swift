@@ -14,17 +14,35 @@ final class SystemAppearance {
     /// Whether Dark Mode is on.
     private(set) var isDark = UITraitCollection.current.userInterfaceStyle == .dark
 
+    /// The scene whose appearance this follows. When it disconnects, which
+    /// on iPad can happen while zContainer is in the background, the main
+    /// window's next scene takes over.
+    @ObservationIgnored private weak var followedScene: UIWindowScene?
     @ObservationIgnored private var registration: (any UITraitChangeRegistration)?
 
-    /// Starts following the appearance of the scene zContainer shows in. Only
-    /// the first call does anything.
+    /// Follows the appearance of the scene zContainer's main window shows in,
+    /// from now on, in place of the one it followed before. Calling it again
+    /// for the same scene only reads the appearance afresh.
     func follow(_ scene: UIWindowScene) {
-        guard registration == nil else {
+        update(from: scene)
+        guard scene !== followedScene else {
             return
         }
-        isDark = scene.traitCollection.userInterfaceStyle == .dark
+        if let registration {
+            followedScene?.unregisterForTraitChanges(registration)
+        }
+        followedScene = scene
         registration = scene.registerForTraitChanges([UITraitUserInterfaceStyle.self]) { [weak self] (scene: UIWindowScene, _: UITraitCollection) in
-            self?.isDark = scene.traitCollection.userInterfaceStyle == .dark
+            self?.update(from: scene)
+        }
+    }
+
+    /// Reads whether a scene is in Dark Mode, changing `isDark` only when the
+    /// answer is new, so the views reading it don't redraw for nothing.
+    private func update(from scene: UIWindowScene) {
+        let isDark = scene.traitCollection.userInterfaceStyle == .dark
+        if isDark != self.isDark {
+            self.isDark = isDark
         }
     }
 }

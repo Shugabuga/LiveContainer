@@ -22,7 +22,7 @@ struct HomeIconMenu: View {
             if let app {
                 HomeAppMenu(app: app, showsEditHomeScreen: true)
             } else {
-                Button("zc.home.editHomeScreen".loc, systemImage: "apps.iphone", action: model.beginEditing)
+                Button("zc.home.editHomeScreen".loc, systemImage: .homeScreenSymbol, action: model.beginEditing)
             }
         }
     }

@@ -17,6 +17,8 @@ struct HomeSpringboard: View {
     let zoomNamespace: Namespace.ID
 
     @Environment(HomeScreenModel.self) private var model
+    @Environment(\.scenePhase) private var scenePhase
+    @EnvironmentObject private var sceneDelegate: SceneDelegate
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -41,8 +43,27 @@ struct HomeSpringboard: View {
         }
         .frame(width: metrics.size.width, height: metrics.size.height)
         .coordinateSpace(.named(HomeDesign.coordinateSpace))
-        .onChange(of: metrics, initial: true) {
-            model.metrics = metrics
+        .onChange(of: metrics, initial: true, publishMetrics)
+        .onChange(of: scenePhase) {
+            if scenePhase == .active {
+                publishMetrics()
+            }
+        }
+    }
+
+    /// Hands this screen's metrics to the model, for dragging, the launch zoom
+    /// and search. Only the main window's Home Screen does: on iPad, a second
+    /// window that opens only to close again would leave its own size behind.
+    /// The main window hands them over again whenever it comes to the front,
+    /// in case another window's size got there meanwhile. On iPad they also
+    /// go to `padMetrics`, which search follows as the window changes size.
+    private func publishMetrics() {
+        guard MainWindow.isMain(sceneDelegate.window?.windowScene), model.metrics != metrics else {
+            return
+        }
+        model.metrics = metrics
+        if !SharedModel.isPhone {
+            model.padMetrics = metrics
         }
     }
 }

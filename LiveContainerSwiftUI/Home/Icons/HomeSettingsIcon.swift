@@ -17,6 +17,7 @@ struct HomeSettingsIcon: View {
     var body: some View {
         VStack(spacing: HomeDesign.labelSpacing) {
             HomeSettingsArtwork(size: metrics.iconSize, cornerRadius: metrics.iconCornerRadius)
+                .modifier(HomeIconPointerLift(cornerRadius: metrics.iconCornerRadius))
                 .modifier(zoomSource)
             if showsLabel {
                 HomeIconLabel(title: "lc.tabView.settings".loc)

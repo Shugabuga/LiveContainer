@@ -18,7 +18,7 @@ enum OnboardingFeature: Int, CaseIterable, Identifiable {
         switch self {
         case .oneSlot: "square.grid.2x2.fill"
         case .signedByZeus: "bolt.fill"
-        case .homeScreen: "apps.iphone"
+        case .homeScreen: String.homeScreenSymbol
         }
     }
 
@@ -34,7 +34,7 @@ enum OnboardingFeature: Int, CaseIterable, Identifiable {
         switch self {
         case .oneSlot: "zc.onboarding.feature.oneSlotDetail".loc
         case .signedByZeus: "zc.onboarding.feature.signedByZeusDetail".loc
-        case .homeScreen: "zc.onboarding.feature.homeScreenDetail".loc
+        case .homeScreen: "zc.onboarding.feature.homeScreenDetail".deviceLoc
         }
     }
 }

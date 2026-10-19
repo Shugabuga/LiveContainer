@@ -12,15 +12,21 @@ import SwiftUI
 struct HomeButtonBarPlacement: ViewModifier {
     /// What pressing the button does.
     let action: () -> Void
+    /// Whether the bar shows. It always does on iPhone. Settings on an iPad
+    /// wide enough for its sidebar leaves it out, as it puts the Home button
+    /// at the bottom of the sidebar instead.
+    let isShown: Bool
 
     func body(content: Content) -> some View {
         VStack(spacing: 0) {
             content
-            HomeButtonBar(action: action)
-                .background {
-                    Color(.systemGroupedBackground)
-                        .ignoresSafeArea()
-                }
+            if isShown {
+                HomeButtonBar(action: action)
+                    .background {
+                        Color(.systemGroupedBackground)
+                            .ignoresSafeArea()
+                    }
+            }
         }
     }
 }
@@ -28,7 +34,9 @@ struct HomeButtonBarPlacement: ViewModifier {
 extension View {
     /// Shows the Home button centered along the bottom of this screen. Apply
     /// it outside the screen's navigation stack, so every page shows it.
-    func homeButtonBar(action: @escaping () -> Void) -> some View {
-        modifier(HomeButtonBarPlacement(action: action))
+    /// `isShown` false leaves the bar out, for a screen that shows the
+    /// button somewhere else.
+    func homeButtonBar(isShown: Bool = true, action: @escaping () -> Void) -> some View {
+        modifier(HomeButtonBarPlacement(action: action, isShown: isShown))
     }
 }

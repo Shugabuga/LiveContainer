@@ -37,6 +37,7 @@ struct HomeAppIcon: View {
                         HomeProgressPie(progress: app.signProgress, cornerRadius: metrics.iconCornerRadius)
                     }
                 }
+                .modifier(HomeIconPointerLift(cornerRadius: metrics.iconCornerRadius))
                 .modifier(zoomSource)
                 .accessibilityHidden(true)
 

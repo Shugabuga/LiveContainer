@@ -29,6 +29,10 @@ struct HomeSearchPill: View {
             .frame(height: HomeDesign.pillHeight)
             .padding(.horizontal, HomeDesign.pillPadding)
             .homeGlass(.capsule, isInteractive: true)
+            // Lights up under a trackpad or mouse pointer, which can't pull
+            // the pages down to open search.
+            .contentShape(.hoverEffect, .capsule)
+            .hoverEffect(.highlight)
             // A taller touch area than the pill, which is only 30 points high.
             .padding(.vertical, (HomeDesign.minimumTouchSize - HomeDesign.pillHeight) / 2)
             .contentShape(.rect)

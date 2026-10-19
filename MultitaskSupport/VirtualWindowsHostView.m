@@ -9,8 +9,11 @@
 
 @implementation VirtualWindowsHostView
 - (instancetype)init {
-    CGRect frame = ((UIWindowScene *)UIApplication.sharedApplication.connectedScenes.anyObject).keyWindow.bounds;
-    self = [super initWithFrame:frame];
+    // MultitaskDockManager sizes it when it puts it on the main window: to the
+    // window on iPhone, as this init used to, and to the root view on iPad.
+    // Any connected scene could come first here, which on iPad may not be the
+    // main window's, or may have no window at all.
+    self = [super initWithFrame:CGRectZero];
     self.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     self.shouldForwardTapAction = YES;
     return self;

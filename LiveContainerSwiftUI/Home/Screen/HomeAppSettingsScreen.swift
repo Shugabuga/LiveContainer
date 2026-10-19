@@ -6,7 +6,9 @@
 import SwiftUI
 
 /// An app's settings, opened from its long-press menu, with Done to go back
-/// to the Home Screen and, as in Settings > Apps, Add to Home Screen.
+/// to the Home Screen and, as in Settings > Apps, Add to Home Screen. On iPad
+/// the settings stay in a readable column in the middle of the screen, so
+/// their switches sit near their labels.
 struct HomeAppSettingsScreen: View {
     /// The app whose settings show.
     let app: LCAppModel
@@ -16,6 +18,7 @@ struct HomeAppSettingsScreen: View {
     var body: some View {
         NavigationStack {
             LCAppSettingsView(model: app)
+                .readableContentWidth(Self.padReadableWidth)
                 .toolbar {
                     ToolbarItem(placement: .confirmationAction) {
                         Button("lc.common.done".loc, action: close)
@@ -30,4 +33,7 @@ struct HomeAppSettingsScreen: View {
     private func close() {
         dismiss()
     }
+
+    /// The widest the settings get on iPad.
+    private static let padReadableWidth = 700.0
 }
