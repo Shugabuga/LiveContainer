@@ -6,10 +6,14 @@
 import Foundation
 
 /// Saves the Home Screen layout as JSON in the app group's defaults, or the
-/// standard defaults when zContainer has no app group.
+/// standard defaults when zContainer has no app group, along with the page
+/// to come back to after an app.
 enum HomeLayoutStorage {
     /// The defaults key the layout is saved under.
     private static let layoutKey = "ZCHomeScreenLayout"
+    /// The page an app was opened from. zContainer quits on the way into the
+    /// app, so its state can't be restored any other way.
+    private static let returnPageKey = "ZCHomeScreenPage"
     /// LiveContainer's custom app order, which the share extension still reads
     /// to list the apps.
     private static let customOrderKey = "LCCustomSortOrder"
@@ -38,6 +42,20 @@ enum HomeLayoutStorage {
         defaults.set(data, forKey: layoutKey)
         defaults.set(layout.appKeysInOrder, forKey: customOrderKey)
         defaults.set("custom", forKey: sortTypeKey)
+    }
+
+    /// Saves the page an app is opened from, for when zContainer comes back.
+    static func saveReturnPage(_ page: Int) {
+        defaults.set(page, forKey: returnPageKey)
+    }
+
+    /// The page an app was opened from, once: it is forgotten after reading,
+    /// so only the launch that comes back from an app opens on it. 0 when no
+    /// app was opened.
+    static func takeReturnPage() -> Int {
+        let page = defaults.integer(forKey: returnPageKey)
+        defaults.removeObject(forKey: returnPageKey)
+        return max(page, 0)
     }
 
     /// The custom order LiveContainer's app list saved, which a first launch

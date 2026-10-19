@@ -24,19 +24,19 @@ extension HomeScreenModel {
         } else if isEditing {
             endEditing()
         } else if (page ?? 0) != 0 {
-            withAnimation(HomeDesign.reflow) {
-                page = 0
-            }
+            showPage(0)
         }
     }
 
-    /// What the row above the dock shows. The page dots take it while the
-    /// pages move or an icon is dragged. Otherwise the Home button does when
-    /// pressing it would do something, in edit mode and away from the first
-    /// page, and "Search" does on the first page, so the Home Screen there
-    /// looks exactly like the iPhone's.
+    /// What the row above the dock shows. When there is more than one page,
+    /// the page dots take it while the pages move and for the whole of edit
+    /// mode, as on iOS, so it always shows which page is up while icons are
+    /// moved. Otherwise the Home button does when pressing it would do
+    /// something, in edit mode and away from the first page, and "Search"
+    /// does on the first page, so the Home Screen there looks exactly like
+    /// the iPhone's.
     var pillContent: HomePillContent {
-        if pageCount > 1 && (showsPageDots || drag != nil) {
+        if pageCount > 1 && (isEditing || showsPageDots || drag != nil) {
             .pageDots
         } else if isEditing || (page ?? 0) != 0 {
             .homeButton

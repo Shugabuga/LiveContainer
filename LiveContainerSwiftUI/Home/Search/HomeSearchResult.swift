@@ -11,12 +11,14 @@ struct HomeSearchResult: View {
     @ObservedObject var app: LCAppModel
     /// Where things go on this screen, for the icon's size.
     let metrics: HomeMetrics
+    /// Whether the icon shows in its dark version, as the dark icons setting asks.
+    let darkModeIcon: Bool
 
     @Environment(HomeScreenModel.self) private var model
 
     var body: some View {
         Button(action: open) {
-            HomeIconContent(item: item, app: app, metrics: metrics, showsLabel: true)
+            HomeIconContent(item: item, app: app, metrics: metrics, showsLabel: true, darkModeIcon: darkModeIcon)
         }
         .buttonStyle(HomeIconButtonStyle())
         .accessibilityLabel(app.displayName)

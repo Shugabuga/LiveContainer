@@ -15,14 +15,14 @@ struct HomeEditControls: View {
 
     var body: some View {
         HStack {
-            HomeAddAppMenu()
+            HomeAddAppMenu(size: metrics.editButtonSize)
             Spacer()
             Button(action: model.endEditing) {
                 Text("lc.common.done".loc)
                     .font(.headline)
                     .foregroundStyle(.white)
                     .padding(.horizontal, HomeDesign.editButtonPadding)
-                    .frame(minHeight: HomeDesign.editButtonSize)
+                    .frame(minHeight: metrics.editButtonSize)
                     .homeGlass(.capsule, isInteractive: true)
                     .frame(minHeight: HomeDesign.minimumTouchSize)
                     .contentShape(.rect)

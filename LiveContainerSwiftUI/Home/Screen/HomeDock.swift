@@ -7,6 +7,7 @@ import SwiftUI
 
 /// The dock: up to four icons without names on a glass panel at the bottom
 /// of the screen, or on the trailing side in landscape, centered as on iOS.
+/// On iPhones with a Home button it runs the full width, flush with the bottom.
 /// Not to be confused with MultitaskDockView, the dock of multitasking windows.
 struct HomeDock: View {
     /// Where things go on this screen.
@@ -15,6 +16,7 @@ struct HomeDock: View {
     let zoomNamespace: Namespace.ID
 
     @Environment(HomeScreenModel.self) private var model
+    @AppStorage("darkModeIcon", store: LCUtils.appGroupUserDefault) private var darkModeIcon = false
 
     var body: some View {
         let count = model.displayedLayout.dock.count
@@ -22,7 +24,7 @@ struct HomeDock: View {
         ZStack(alignment: .topLeading) {
             Color.clear
                 .frame(width: metrics.dockFrame.width, height: metrics.dockFrame.height)
-                .homeGlass(.screenConcentric(fallbackRadius: metrics.dockCornerRadius))
+                .homeGlass(metrics.isDockFlush ? .edgeToEdge : .screenConcentric(fallbackRadius: metrics.dockCornerRadius))
                 .contentShape(.rect)
                 .position(x: metrics.dockFrame.midX, y: metrics.dockFrame.midY)
                 .accessibilityHidden(true)
@@ -34,6 +36,8 @@ struct HomeDock: View {
                     metrics: metrics,
                     showsLabel: false,
                     isLifted: placement.isLifted,
+                    isOnScreen: true,
+                    darkModeIcon: darkModeIcon,
                     zoomNamespace: zoomNamespace
                 )
                 .position(position(of: placement.slot, count: count))

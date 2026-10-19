@@ -388,18 +388,29 @@ final class AppLaunchCoordinator {
 
         let newAppModel = LCAppModel(appInfo: finalNewApp, delegate: self)
         if let appToReplace {
+            // One change to the list, so the Home Screen sees the app swapped
+            // in place and its icon keeps its slot, rather than seeing it
+            // leave and come back at the end.
             if appToReplace.uiIsHidden {
-                sharedModel.hiddenApps.removeAll { $0 == appToReplace }
-                sharedModel.hiddenApps.append(newAppModel)
+                Self.replace(appToReplace, with: newAppModel, in: &sharedModel.hiddenApps)
             } else {
-                sharedModel.apps.removeAll { $0 == appToReplace }
-                sharedModel.apps.append(newAppModel)
+                Self.replace(appToReplace, with: newAppModel, in: &sharedModel.apps)
             }
         } else {
             sharedModel.apps.append(newAppModel)
             if let urlSchemes = finalNewApp.urlSchemes(), urlSchemes.count > 0 {
                 UserDefaults.lcShared().mutableArrayValue(forKey: "LCGuestURLSchemes").addObjects(from: Array(urlSchemes))
             }
+        }
+    }
+
+    /// Puts `newApp` where `oldApp` is in `apps` in one change, or at the end
+    /// when `oldApp` isn't there.
+    private static func replace(_ oldApp: LCAppModel, with newApp: LCAppModel, in apps: inout [LCAppModel]) {
+        if let index = apps.firstIndex(of: oldApp) {
+            apps[index] = newApp
+        } else {
+            apps.append(newApp)
         }
     }
 

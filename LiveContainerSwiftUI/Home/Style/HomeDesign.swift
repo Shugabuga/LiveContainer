@@ -29,6 +29,9 @@ enum HomeDesign {
     static let iconCornerFraction = 0.225
     /// The distance between the centers of neighboring columns.
     static let columnPitch = 98.6
+    /// How far the grid sits right of the screen's center on a real Home
+    /// Screen, which isn't quite centered. The dock is.
+    static let gridOffsetX = 1.85
     /// How far the first row's icons start below the status bar.
     static let firstRowBelowStatusBar = 24.8
     /// The distance from the first row's top to the search pill's top, in
@@ -39,10 +42,40 @@ enum HomeDesign {
     /// The size of an icon's name. The Home Screen keeps names at this size
     /// whatever the text size setting, as iOS does.
     static let labelFontSize = 12.0
+    /// The weight of an icon's name, a little heavier than regular, as on iOS.
+    static let labelWeight = Font.Weight.medium
     /// The height of a name's line.
     static let labelLineHeight = 14.3
     /// The color of the names, readable on the black wallpaper.
     static let labelColor = Color.white
+
+    // MARK: iPhones with a Home button
+
+    // These iPhones have square screen corners and nothing under the screen's
+    // bottom edge, so iOS lays their Home Screen out with fixed sizes rather
+    // than scaling the Face ID layout: the 4.7 inch grid of 60 point icons
+    // 87 points apart, and a full-width dock along the bottom.
+
+    /// An icon's width and height.
+    static let squareScreenIconSize = 60.0
+    /// The distance between the centers of neighboring columns, which leaves
+    /// 27 points at each side of a 375 point screen.
+    static let squareScreenColumnPitch = 87.0
+    /// The most the rows can be apart, the distance on the 4.7 inch grid.
+    /// They come closer when the search pill needs the room.
+    static let squareScreenMaximumRowPitch = 88.0
+    /// How far the first row's icons start below the status bar, which keeps
+    /// them clear of edit mode's buttons.
+    static let squareScreenFirstRowBelowStatusBar = 20.0
+    /// The dock's height. It runs the full width of the screen, flush with
+    /// the bottom edge, with square corners.
+    static let squareScreenDockHeight = 96.0
+    /// The space between the search pill and the dock, and between the
+    /// pill and the names of the last row.
+    static let squareScreenPillGap = 4.0
+    /// The size of edit mode's round add button and the height of Done,
+    /// smaller than elsewhere so they fit the short status bar.
+    static let squareScreenEditButtonSize = 28.0
 
     // MARK: Dock
 
@@ -77,12 +110,18 @@ enum HomeDesign {
     /// How long the dots stay after the pages stop moving, before "Search"
     /// comes back.
     static let pageDotsLinger = Duration.milliseconds(900)
+    /// How far a finger dragged along the page dots moves to go one page
+    /// further, a little more than a dot and the space after it.
+    static let pageScrubStep = 20.0
 
     // MARK: Glass
 
     /// The fill behind the dock and the pill where Liquid Glass isn't
     /// available, the gray the glass shows over a black wallpaper.
     static let fallbackGlassFill = Color(white: 0.067)
+    /// The line along the top of a dock that runs to the screen's edges,
+    /// where Liquid Glass isn't available.
+    static let fallbackGlassHairline = Color(white: 0.3)
     /// The light rim along the glass's edge where Liquid Glass isn't available.
     static let fallbackGlassRim = LinearGradient(
         colors: [Color(white: 0.42), Color(white: 0.12), Color(white: 0.24)],
@@ -145,8 +184,11 @@ enum HomeDesign {
 
     /// How much the Home Screen blurs behind search.
     static let searchBlur = 24.0
-    /// How far a pull on the wallpaper must go down to open search.
+    /// How far a pull on the pages must go down to open search.
     static let pullToSearchDistance = 60.0
+    /// How long search waits for its field to get the keyboard before it
+    /// shows the Home button under the field anyway.
+    static let searchFocusWait = Duration.milliseconds(300)
     /// The space between search's panels and the sides of the screen.
     static let searchMargin = 16.0
     /// The space between search's panels, and above the search field.

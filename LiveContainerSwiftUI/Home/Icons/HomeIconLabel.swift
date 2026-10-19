@@ -14,7 +14,7 @@ struct HomeIconLabel: View {
 
     var body: some View {
         Text(verbatim: title)
-            .font(.system(size: HomeDesign.labelFontSize))
+            .font(.system(size: HomeDesign.labelFontSize, weight: HomeDesign.labelWeight))
             .foregroundStyle(HomeDesign.labelColor)
             .lineLimit(1)
             .truncationMode(.tail)

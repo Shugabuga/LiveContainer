@@ -6,8 +6,9 @@
 import SwiftUI
 
 /// One icon on the pages or in the dock, and everything it does: a tap opens
-/// it, a long press lifts it with its menu, and in edit mode it jiggles, shows
-/// its minus badge and can be held and dragged to a new place.
+/// it, a long press lifts it with its menu, and in edit mode it jiggles while
+/// on screen, shows its minus badge and can be held and dragged to a new
+/// place, or moved with VoiceOver's actions.
 struct HomeIconCell: View {
     /// The icon.
     let item: HomeItem
@@ -20,6 +21,12 @@ struct HomeIconCell: View {
     /// Whether this icon is being dragged. Its view stays put and hidden while
     /// a copy follows the finger, so the drag gesture on it keeps going.
     let isLifted: Bool
+    /// Whether the icon is on the page showing or in the dock. Only those
+    /// jiggle in edit mode, so the pages off screen cost nothing each frame.
+    let isOnScreen: Bool
+    /// Whether the app's icon shows in its dark version, as the dark icons
+    /// setting asks.
+    let darkModeIcon: Bool
     /// The namespace Settings and app settings zoom out of icons in.
     let zoomNamespace: Namespace.ID
 
@@ -29,10 +36,18 @@ struct HomeIconCell: View {
 
     var body: some View {
         Button(action: open) {
-            HomeIconContent(item: item, app: app, metrics: metrics, showsLabel: showsLabel, zoomNamespace: zoomNamespace)
+            HomeIconContent(
+                item: item,
+                app: app,
+                metrics: metrics,
+                showsLabel: showsLabel,
+                darkModeIcon: darkModeIcon,
+                zoomNamespace: zoomNamespace
+            )
         }
         .buttonStyle(HomeIconButtonStyle())
         .accessibilityLabel(title)
+        .homeIconMoveActions(for: item)
         .contentShape(.contextMenuPreview, HomeIconPreviewShape(iconSize: metrics.iconSize, cornerRadius: metrics.iconCornerRadius))
         .contextMenu {
             HomeIconMenu(item: item, app: app)
@@ -47,11 +62,11 @@ struct HomeIconCell: View {
         // it isn't taken for the start of a drag.
         .overlay(alignment: .topLeading) {
             if model.isEditing && model.isRemovable(item) && !isLifted {
-                HomeMinusBadge(action: requestRemoval)
+                HomeMinusBadge(title: title, action: requestRemoval)
                     .position(x: iconLeft + HomeDesign.minusBadgeInset, y: HomeDesign.minusBadgeInset)
             }
         }
-        .homeJiggle(isActive: model.isEditing && !reduceMotion && !isLifted, seed: jiggleSeed)
+        .homeJiggle(isActive: model.isEditing && isOnScreen && !reduceMotion && !isLifted, seed: jiggleSeed)
         .opacity(isLifted ? 0 : 1)
         .accessibilityHidden(isLifted)
     }

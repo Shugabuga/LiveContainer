@@ -24,7 +24,7 @@ struct HomeSpringboard: View {
 
             HomeDock(metrics: metrics, zoomNamespace: zoomNamespace)
 
-            HomePillRow()
+            HomePillRow(homeButtonScale: metrics.pillButtonScale)
                 .position(metrics.pillCenter)
 
             if model.isEditing {

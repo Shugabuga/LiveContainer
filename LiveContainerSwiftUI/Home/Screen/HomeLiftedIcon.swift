@@ -12,10 +12,11 @@ struct HomeLiftedIcon: View {
     let metrics: HomeMetrics
 
     @Environment(HomeScreenModel.self) private var model
+    @AppStorage("darkModeIcon", store: LCUtils.appGroupUserDefault) private var darkModeIcon = false
 
     var body: some View {
         if let drag = model.drag {
-            HomeIconContent(item: drag.item, app: app(for: drag.item), metrics: metrics, showsLabel: false)
+            HomeIconContent(item: drag.item, app: app(for: drag.item), metrics: metrics, showsLabel: false, darkModeIcon: darkModeIcon)
                 .scaleEffect(HomeDesign.liftedScale)
                 .shadow(color: .black.opacity(0.4), radius: 12, y: 6)
                 .position(model.liftedIconCenter)

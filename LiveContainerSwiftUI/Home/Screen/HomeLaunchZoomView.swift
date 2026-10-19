@@ -17,6 +17,7 @@ struct HomeLaunchZoomView: View {
 
     @Environment(HomeScreenModel.self) private var model
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @AppStorage("darkModeIcon", store: LCUtils.appGroupUserDefault) private var darkModeIcon = false
     @State private var isOpen = false
 
     var body: some View {
@@ -25,7 +26,7 @@ struct HomeLaunchZoomView: View {
 
         ZStack {
             Color.black
-            HomeIconContent(item: zoom.item, app: app, metrics: metrics, showsLabel: false)
+            HomeIconContent(item: zoom.item, app: app, metrics: metrics, showsLabel: false, darkModeIcon: darkModeIcon)
                 .scaleEffect(reduceMotion ? 1 : iconScale)
                 .opacity(isOpen || reduceMotion ? 0 : 1)
         }

@@ -15,15 +15,17 @@ struct HomeAppIcon: View {
     let metrics: HomeMetrics
     /// Whether the name shows under the icon. Icons in the dock have none.
     let showsLabel: Bool
+    /// Whether the icon shows in its dark version, as the dark icons setting asks.
+    let darkModeIcon: Bool
     /// Marks the icon as the place its settings zoom out of.
     let zoomSource: HomeZoomSource
-
-    @AppStorage("darkModeIcon", store: LCUtils.appGroupUserDefault) private var darkModeIcon = false
 
     var body: some View {
         VStack(spacing: HomeDesign.labelSpacing) {
             // LCAppInfo keeps each icon in memory after drawing it once, and on
-            // disk after the first launch, so reading it here is cheap.
+            // disk after the first launch, so reading it here is cheap after
+            // the first time. Only the pages near the one showing build their
+            // icons, which keeps that first time short.
             Image(uiImage: app.appInfo.iconIsDarkIcon(darkModeIcon) ?? UIImage())
                 .resizable()
                 .scaledToFill()

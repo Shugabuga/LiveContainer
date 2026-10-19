@@ -22,13 +22,15 @@ struct HomeScreenView: View {
             // as on iOS, so it reads the whole screen's size and safe area.
             GeometryReader { proxy in
                 HomeSpringboard(
-                    metrics: HomeMetrics(size: proxy.size, safeArea: proxy.safeAreaInsets),
+                    metrics: HomeMetrics(size: proxy.size, safeArea: proxy.safeAreaInsets, isPhone: isPhone),
                     zoomNamespace: zoomNamespace
                 )
             }
             .ignoresSafeArea()
             .blur(radius: model.isSearching ? HomeDesign.searchBlur : 0)
+            // Search covers the Home Screen for touches and for VoiceOver alike.
             .allowsHitTesting(!model.isSearching)
+            .accessibilityHidden(model.isSearching)
 
             if model.isSearching {
                 HomeSearchView()
@@ -47,5 +49,12 @@ struct HomeScreenView: View {
         .onChange(of: coordinator.appSettingsCloseRequests) {
             model.closeAppSettings()
         }
+    }
+
+    /// Whether zContainer runs on an iPhone, whose Home Screen has its own
+    /// layout when the iPhone has a Home button. SwiftUI has no way to tell
+    /// an iPhone from an iPad by itself.
+    private var isPhone: Bool {
+        UIDevice.current.userInterfaceIdiom == .phone
     }
 }

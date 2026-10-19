@@ -32121,6 +32121,54 @@
         }
       }
     },
+    "zc.home.moveAfter %@" : {
+      "comment" : "Home Screen, edit mode: VoiceOver action that moves an icon one place later, past the icon after it. %@ is that icon's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move After %@"
+          }
+        }
+      }
+    },
+    "zc.home.moveBefore %@" : {
+      "comment" : "Home Screen, edit mode: VoiceOver action that moves an icon one place earlier, past the icon before it. %@ is that icon's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move Before %@"
+          }
+        }
+      }
+    },
+    "zc.home.moveOutOfDock" : {
+      "comment" : "Home Screen, edit mode: VoiceOver action that moves an icon from the dock to the end of the page showing.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move Out of Dock"
+          }
+        }
+      }
+    },
+    "zc.home.moveToDock" : {
+      "comment" : "Home Screen, edit mode: VoiceOver action that moves an icon into the dock.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move to Dock"
+          }
+        }
+      }
+    },
     "zc.home.noHiddenApps" : {
       "comment" : "Home Screen search: shown in the Hidden section when no app is hidden.",
       "extractionState" : "manual",
@@ -32158,13 +32206,25 @@
       }
     },
     "zc.home.removeApp" : {
-      "comment" : "Home Screen icon menu and minus badge: asks whether to delete the app.",
+      "comment" : "Home Screen icon menu: asks whether to delete the app.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Remove App"
+          }
+        }
+      }
+    },
+    "zc.home.removeNamedApp %@" : {
+      "comment" : "Home Screen, edit mode: name of an icon's minus badge, which asks whether to delete the app. %@ is the app's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove %@"
           }
         }
       }

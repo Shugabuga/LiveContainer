@@ -9,9 +9,9 @@ import SwiftUI
 /// The Home Screen's state: the layout of the icons, the page showing, edit
 /// mode and the icon being dragged, search, and the screens and questions
 /// that open over it. It keeps the layout in line with the installed apps and
-/// saves it whenever it changes. Opening, editing and searching live in this
-/// type's extensions; the AppLaunchCoordinator does the installing, launching
-/// and removing.
+/// saves it whenever it changes. Opening, editing, searching and moving
+/// between pages live in this type's extensions; the AppLaunchCoordinator does
+/// the installing, launching and removing.
 @MainActor
 @Observable
 final class HomeScreenModel {
@@ -32,10 +32,16 @@ final class HomeScreenModel {
 
     /// The page showing, as the paging scroll view reports it.
     var page: Int? = 0
+    /// The pages whose icons are built: the page showing and its neighbors,
+    /// and while the pages move, every page they pass on the way. Pages
+    /// further away have no views, so their icons don't load or jiggle.
+    var builtPages = -1...1
     /// Whether the page dots show in place of "Search", which they do while
     /// the pages move.
     var showsPageDots = false
     @ObservationIgnored var pageDotsTask: Task<Void, Never>?
+    /// Whether a finger is scrubbing along the page dots, which keeps them up.
+    @ObservationIgnored var isScrubbingPages = false
 
     /// Whether the icons jiggle and can be moved and removed.
     var isEditing = false
@@ -76,6 +82,8 @@ final class HomeScreenModel {
 
     /// Loads the saved layout, or makes the first one from LiveContainer's
     /// custom order or the install order, and brings it in line with the apps.
+    /// When zContainer comes back from an app, it opens on the page the app
+    /// was opened from, as iOS does.
     init(coordinator: AppLaunchCoordinator) {
         self.coordinator = coordinator
         sharedModel = coordinator.sharedModel
@@ -86,6 +94,9 @@ final class HomeScreenModel {
             layout = .firstLaunch(apps: apps, customOrder: HomeLayoutStorage.legacyCustomOrder())
             HomeLayoutStorage.save(layout)
         }
+        let returnPage = min(HomeLayoutStorage.takeReturnPage(), max(layout.pages.count - 1, 0))
+        page = returnPage
+        builtPages = (returnPage - 1)...(returnPage + 1)
         syncApps(apps)
     }
 
@@ -117,6 +128,18 @@ final class HomeScreenModel {
         return placements
     }
 
+    /// The icons on the pages that are built, and the icon being dragged,
+    /// whose view has to stay so its drag gesture goes on. The page showing
+    /// and its neighbors always count as built, even before `builtPages`
+    /// catches up with a new page.
+    var visibleGridPlacements: [HomePlacement] {
+        let current = page ?? 0
+        let built = min(builtPages.lowerBound, current - 1)...max(builtPages.upperBound, current + 1)
+        return gridPlacements.filter { placement in
+            placement.isLifted || built.contains(placement.slot.page ?? 0)
+        }
+    }
+
     /// The icons in the dock and where each one shows.
     var dockPlacements: [HomePlacement] {
         let shown = displayedLayout
@@ -143,7 +166,12 @@ final class HomeScreenModel {
 
     /// Brings the layout in line with the apps the Home Screen shows: new
     /// apps take the next free slot, and removed or hidden apps leave theirs.
+    /// When that leaves fewer pages, the last one shows instead of one that
+    /// is gone.
     func syncApps(_ newApps: [LCAppModel]) {
+        defer {
+            clampPage()
+        }
         var lookup: [String: LCAppModel] = [:]
         var keys: [String] = []
         for app in newApps {
@@ -195,46 +223,6 @@ final class HomeScreenModel {
             showHomeScreen()
         case .certificate:
             break
-        }
-    }
-
-    // MARK: Page dots
-
-    /// Shows the page dots while the pages move, and "Search" again shortly
-    /// after they stop. iOS 18 and later report the scrolling directly.
-    func scrollPhaseChanged(isScrolling: Bool) {
-        guard pageCount > 1 else {
-            return
-        }
-        if isScrolling {
-            pageDotsTask?.cancel()
-            if !showsPageDots {
-                withAnimation(HomeDesign.modeChange) {
-                    showsPageDots = true
-                }
-            }
-        } else {
-            hidePageDotsSoon()
-        }
-    }
-
-    /// Shows the page dots for a moment after the page changes. iOS 17 can't
-    /// report scrolling, so it shows them only once a new page has settled.
-    func pageDidChange() {
-        scrollPhaseChanged(isScrolling: true)
-        hidePageDotsSoon()
-    }
-
-    private func hidePageDotsSoon() {
-        pageDotsTask?.cancel()
-        pageDotsTask = Task { [weak self] in
-            try? await Task.sleep(for: HomeDesign.pageDotsLinger)
-            guard !Task.isCancelled else {
-                return
-            }
-            withAnimation(HomeDesign.modeChange) {
-                self?.showsPageDots = false
-            }
         }
     }
 }

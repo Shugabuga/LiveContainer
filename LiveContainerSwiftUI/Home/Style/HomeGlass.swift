@@ -7,7 +7,8 @@ import SwiftUI
 
 /// The glass behind the dock, the search pill and the Home Screen's buttons:
 /// Liquid Glass on iOS 26 and later, and before that a dark fill with a light
-/// rim, which is how the glass looks over the black wallpaper.
+/// rim, which is how the glass looks over the black wallpaper. Glass that runs
+/// to the screen's edges gets a hairline along its top instead of the rim.
 struct HomeGlass: ViewModifier {
     /// The glass's outline.
     let shape: HomeGlassShape
@@ -21,7 +22,12 @@ struct HomeGlass: ViewModifier {
             content.background {
                 shape.fallbackShape
                     .fill(HomeDesign.fallbackGlassFill)
-                    .stroke(HomeDesign.fallbackGlassRim, lineWidth: 1)
+                    .stroke(shape.hasFullRim ? AnyShapeStyle(HomeDesign.fallbackGlassRim) : AnyShapeStyle(.clear), lineWidth: 1)
+                    .overlay(alignment: .top) {
+                        Rectangle()
+                            .fill(HomeDesign.fallbackGlassHairline)
+                            .frame(height: shape.hasFullRim ? 0 : 1)
+                    }
             }
         }
     }

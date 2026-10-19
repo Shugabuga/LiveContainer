@@ -13,10 +13,12 @@ struct HomeAppGrid: View {
     /// Where things go on this screen, for the icons' size.
     let metrics: HomeMetrics
 
+    @AppStorage("darkModeIcon", store: LCUtils.appGroupUserDefault) private var darkModeIcon = false
+
     var body: some View {
         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 4), spacing: HomeDesign.searchSpacing) {
             ForEach(apps, id: \.self) { app in
-                HomeSearchResult(app: app, metrics: metrics)
+                HomeSearchResult(app: app, metrics: metrics, darkModeIcon: darkModeIcon)
             }
         }
     }

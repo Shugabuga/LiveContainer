@@ -1,15 +1,20 @@
 #import "LCHomeButtonController.h"
+#import "LCAppDeparture.h"
 #import "LCHomeButtonViewController.h"
 #import "LCHomeButtonWindow.h"
 #import "LCSharedUtils.h"
 #import "../../LiveContainer/utils.h"
 
+// How long the app gets to finish what it does on entering the background,
+// such as saving, before zContainer opens and the app's process ends.
+static const NSTimeInterval LCHomeButtonSaveTime = 0.3;
 // How long to wait for zContainer to open before giving the app back.
 static const NSTimeInterval LCHomeButtonLeaveTimeout = 4;
 
 @interface LCHomeButtonController ()
 @property (nonatomic, nullable) LCHomeButtonWindow *window;
 @property (nonatomic, nullable) LCHomeButtonViewController *buttonController;
+@property (nonatomic) LCAppDeparture *departure;
 @property (nonatomic) BOOL isLeaving;
 @end
 
@@ -22,6 +27,14 @@ static const NSTimeInterval LCHomeButtonLeaveTimeout = 4;
         controller = [[LCHomeButtonController alloc] init];
     });
     return controller;
+}
+
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        _departure = [[LCAppDeparture alloc] init];
+    }
+    return self;
 }
 
 - (void)start {
@@ -105,9 +118,11 @@ static const NSTimeInterval LCHomeButtonLeaveTimeout = 4;
     }
 }
 
-// Opens zContainer again with no app chosen, after covering the app in black.
-// zContainer quits as soon as iOS has it open; if it's still here a few
-// seconds later, opening didn't work, so the app comes back.
+// Opens zContainer again with no app chosen, after covering the app in black
+// and telling it that it is going to the background, as pressing Home would,
+// so it can save. zContainer's launch ends this process as soon as iOS has
+// zContainer open; if it's still here a few seconds later, opening didn't
+// work, so the app comes back to the foreground.
 - (void)goBackToZContainer {
     Class sharedUtils = NSClassFromString(@"LCSharedUtils");
     if (self.isLeaving || ![sharedUtils respondsToSelector:@selector(launchToGuestAppWithClassicMode:)]) {
@@ -120,17 +135,28 @@ static const NSTimeInterval LCHomeButtonLeaveTimeout = 4;
         [defaults removeObjectForKey:@"selected"];
         [defaults removeObjectForKey:@"selectedContainer"];
         [defaults synchronize];
-        @try {
-            [sharedUtils launchToGuestAppWithClassicMode:0];
-        } @catch (NSException *exception) {
-            NSLog(@"[LC] zContainer couldn't open: %@", exception);
-        }
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(LCHomeButtonLeaveTimeout * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-            LCHomeButtonController *controller = weakSelf;
-            controller.isLeaving = NO;
-            [controller.buttonController fadeBackIn];
+        [weakSelf.departure leave];
+        // The app's background work runs on the main queue too, so it gets a
+        // turn before zContainer opens.
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(LCHomeButtonSaveTime * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            [weakSelf openZContainerWith:sharedUtils];
         });
     }];
+}
+
+- (void)openZContainerWith:(Class)sharedUtils {
+    @try {
+        [sharedUtils launchToGuestAppWithClassicMode:0];
+    } @catch (NSException *exception) {
+        NSLog(@"[LC] zContainer couldn't open: %@", exception);
+    }
+    __weak LCHomeButtonController *weakSelf = self;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(LCHomeButtonLeaveTimeout * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        LCHomeButtonController *controller = weakSelf;
+        controller.isLeaving = NO;
+        [controller.departure comeBack];
+        [controller.buttonController fadeBackIn];
+    });
 }
 
 @end

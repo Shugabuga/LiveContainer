@@ -9,10 +9,10 @@ import SwiftUI
 /// before zContainer turns into them, Settings and an app's settings, which
 /// open over the Home Screen, and the actions in an app's long-press menu.
 extension HomeScreenModel {
-    /// Opens what an icon stands for, unless edit mode is on: Settings, or the
-    /// app, after Face ID when the app is locked.
+    /// Opens what an icon stands for, unless edit mode is on or search covers
+    /// the icons: Settings, or the app, after Face ID when the app is locked.
     func open(_ item: HomeItem) {
-        guard !isEditing, drag == nil else {
+        guard !isEditing, !isSearching, drag == nil else {
             return
         }
         switch item {
@@ -28,12 +28,15 @@ extension HomeScreenModel {
 
     /// Launches an app through the coordinator. Just before zContainer turns
     /// into the app, the app zooms open from its icon, or from the middle of
-    /// the screen when its icon isn't showing.
+    /// the screen when its icon isn't showing. The page showing is saved
+    /// then, as zContainer quits on the way into the app and comes back to it.
     func launch(_ app: LCAppModel, from item: HomeItem? = nil) {
         let zoomItem = item ?? app.homeKey.map(HomeItem.app) ?? .settings
         let frame = item.flatMap(iconFrame(of:)) ?? centeredIconFrame()
+        let returnPage = page ?? 0
         Task {
             await coordinator.open(app) {
+                HomeLayoutStorage.saveReturnPage(returnPage)
                 await self.playLaunchZoom(HomeLaunchZoom(item: zoomItem, iconFrame: frame))
             }
         }
@@ -119,13 +122,17 @@ extension HomeScreenModel {
 
     // MARK: Long-press actions
 
-    /// Makes a new container for an app and opens the app in it.
+    /// Makes a new container for an app and opens the app in it. Search
+    /// closes first when the app was found there, so its zoom shows.
     func openInNewContainer(_ app: LCAppModel) {
         do {
             try app.makeNewContainer(sharedModel: sharedModel)
         } catch {
             coordinator.errorMessage = error.localizedDescription
             return
+        }
+        if isSearching {
+            closeSearch()
         }
         launch(app, from: app.homeKey.map(HomeItem.app))
     }

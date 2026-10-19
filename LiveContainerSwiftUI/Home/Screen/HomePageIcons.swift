@@ -5,8 +5,10 @@
 
 import SwiftUI
 
-/// The icons of all the pages, side by side, each at its slot's place on its
-/// page, plus the icon holding a new app's place while it installs.
+/// The icons of the pages, side by side, each at its slot's place on its
+/// page, plus the icon holding a new app's place while it installs. Only the
+/// pages near the one showing are built (HomeScreenModel's `builtPages`), so
+/// icons far away don't load, and only the page showing jiggles in edit mode.
 struct HomePageIcons: View {
     /// Where things go on this screen.
     let metrics: HomeMetrics
@@ -17,16 +19,21 @@ struct HomePageIcons: View {
 
     @Environment(HomeScreenModel.self) private var model
     @Environment(AppLaunchCoordinator.self) private var coordinator
+    @AppStorage("darkModeIcon", store: LCUtils.appGroupUserDefault) private var darkModeIcon = false
 
     var body: some View {
+        let currentPage = model.page ?? 0
+
         ZStack(alignment: .topLeading) {
-            ForEach(model.gridPlacements) { placement in
+            ForEach(model.visibleGridPlacements) { placement in
                 HomeIconCell(
                     item: placement.item,
                     app: app(for: placement.item),
                     metrics: metrics,
                     showsLabel: true,
                     isLifted: placement.isLifted,
+                    isOnScreen: placement.slot.page == currentPage,
+                    darkModeIcon: darkModeIcon,
                     zoomNamespace: zoomNamespace
                 )
                 .position(position(of: placement.slot))

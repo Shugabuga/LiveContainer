@@ -16,6 +16,9 @@ enum HomeGlassShape {
     case screenConcentric(fallbackRadius: Double)
     /// A rounded rectangle with a fixed corner radius.
     case rounded(Double)
+    /// A rectangle that runs to the screen's sides and bottom edge, for the
+    /// dock on iPhones with a Home button.
+    case edgeToEdge
 
     /// The outline Liquid Glass takes.
     @available(iOS 26.0, *)
@@ -29,6 +32,18 @@ enum HomeGlassShape {
             AnyShape(ConcentricRectangle(corners: .concentric(minimum: .fixed(fallbackRadius)), isUniform: true))
         case .rounded(let radius):
             AnyShape(.rect(cornerRadius: radius))
+        case .edgeToEdge:
+            AnyShape(.rect)
+        }
+    }
+
+    /// Whether the glass's light rim runs all the way around it before iOS 26.
+    /// Glass that runs to the screen's edges has only a hairline along its top.
+    var hasFullRim: Bool {
+        if case .edgeToEdge = self {
+            false
+        } else {
+            true
         }
     }
 
@@ -41,6 +56,8 @@ enum HomeGlassShape {
             AnyShape(.circle)
         case .screenConcentric(let radius), .rounded(let radius):
             AnyShape(.rect(cornerRadius: radius))
+        case .edgeToEdge:
+            AnyShape(.rect)
         }
     }
 }

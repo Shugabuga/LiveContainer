@@ -17,6 +17,10 @@ struct HomeIconContent: View {
     let metrics: HomeMetrics
     /// Whether the name shows under the icon.
     let showsLabel: Bool
+    /// Whether an app's icon shows in its dark version, as the dark icons
+    /// setting asks. The views showing many icons read the setting once and
+    /// pass it down, rather than each icon reading it.
+    let darkModeIcon: Bool
     /// The namespace screens zoom out of this icon in, or nil where none does,
     /// such as in search.
     var zoomNamespace: Namespace.ID?
@@ -28,7 +32,7 @@ struct HomeIconContent: View {
                 HomeSettingsIcon(metrics: metrics, showsLabel: showsLabel, zoomSource: zoomSource)
             case .app:
                 if let app {
-                    HomeAppIcon(app: app, metrics: metrics, showsLabel: showsLabel, zoomSource: zoomSource)
+                    HomeAppIcon(app: app, metrics: metrics, showsLabel: showsLabel, darkModeIcon: darkModeIcon, zoomSource: zoomSource)
                 }
             }
         }

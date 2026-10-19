@@ -7,6 +7,8 @@ NS_ASSUME_NONNULL_BEGIN
 // opened it, so going back means opening zContainer again with no app chosen:
 // LCSharedUtils' launchToGuestAppWithClassicMode:, as the Home Screen uses to
 // open apps, which zContainer's launch takes as a request for its own screens.
+// First it tells the app it is going to the background (LCAppDeparture), as
+// pressing Home on the iPhone does, so the app can save before it ends.
 //
 // TweakLoader starts it in every app zContainer runs itself. It stays out of
 // apps in multitask windows (LiveProcess), which zContainer's windows already

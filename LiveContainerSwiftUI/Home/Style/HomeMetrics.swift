@@ -9,9 +9,10 @@ import SwiftUI
 /// from the screen's top left corner. HomeDesign's measurements are scaled
 /// from the screen's width, and the rows share the height between the status
 /// bar and the search pill, so the layout matches a real Home Screen on an
-/// iPhone 13 Pro Max and keeps its proportions elsewhere. In landscape the
-/// grid turns to 6 columns by 4 rows and the dock stands on the trailing side,
-/// as on iPhones whose Home Screen rotates.
+/// iPhone 13 Pro Max and keeps its proportions elsewhere. iPhones with a Home
+/// button get the fixed sizes iOS gives them instead, with a full-width dock
+/// along the bottom. In landscape the grid turns to 6 columns by 4 rows and
+/// the dock stands on the trailing side, as on iPhones whose Home Screen rotates.
 struct HomeMetrics: Equatable {
     /// The size of the whole screen.
     let size: CGSize
@@ -33,15 +34,24 @@ struct HomeMetrics: Equatable {
     let dockFrame: CGRect
     /// Whether the dock stands on the trailing side, in landscape.
     let isDockVertical: Bool
+    /// Whether the dock runs the full width of the screen, flush with its
+    /// bottom edge, as on iPhones with a Home button.
+    let isDockFlush: Bool
     /// The dock's corner radius where corners can't follow the screen's.
     let dockCornerRadius: Double
     /// The center of the search pill and the page dots.
     let pillCenter: CGPoint
+    /// How much the Home button shrinks where it takes the search pill's
+    /// place, so it fits between the last row's names and the dock. It is 1
+    /// wherever there is room.
+    let pillButtonScale: Double
     /// The vertical center of the buttons edit mode shows in place of the
     /// status bar.
     let editControlsCenterY: Double
     /// The space between the edit mode buttons and the sides of the screen.
     let editControlsInset: Double
+    /// The size of edit mode's round add button, and the height of Done.
+    let editButtonSize: Double
 
     /// The center of the first icon on a page.
     private let firstIconCenter: CGPoint
@@ -51,12 +61,13 @@ struct HomeMetrics: Equatable {
     private let dockPitch: Double
 
     /// Lays the Home Screen out for a screen of `size`, whose system bars
-    /// cover `safeArea`.
-    init(size: CGSize, safeArea: EdgeInsets) {
+    /// cover `safeArea`. `isPhone` tells an iPhone from an iPad, since only
+    /// iPhones with a Home button get their own fixed layout.
+    init(size: CGSize, safeArea: EdgeInsets, isPhone: Bool = true) {
         self.size = size
         let labelBlock = HomeDesign.labelSpacing + HomeDesign.labelLineHeight
         isDockVertical = size.width > size.height
-        editControlsCenterY = max(safeArea.top * 0.54, 24)
+        isDockFlush = isPhone && !isDockVertical && safeArea.bottom == 0
 
         if isDockVertical {
             let scale = min(size.height / HomeDesign.referenceWidth, HomeDesign.maximumScale)
@@ -86,7 +97,37 @@ struct HomeMetrics: Equatable {
                 y: top + (pitch.height - iconSize - labelBlock) / 2 + iconSize / 2
             )
             dockPitch = min(HomeDesign.columnPitch * scale, (dockFrame.height - 24 * scale) / 4)
+            editControlsCenterY = max(safeArea.top * 0.54, 24)
             editControlsInset = max(safeArea.leading, safeArea.trailing) + 16
+            editButtonSize = HomeDesign.editButtonSize
+        } else if isDockFlush {
+            // An iPhone with a Home button: fixed sizes, the dock along the
+            // bottom edge and the rows as close as the search pill needs.
+            scale = 1
+            columns = 4
+            rows = 6
+            let thickness = HomeDesign.squareScreenDockHeight
+            dockFrame = CGRect(x: 0, y: size.height - thickness, width: size.width, height: thickness)
+            let gap = HomeDesign.squareScreenPillGap
+            pillCenter = CGPoint(x: size.width / 2, y: dockFrame.minY - gap - HomeDesign.pillHeight / 2)
+            iconSize = HomeDesign.squareScreenIconSize
+            let firstIconTop = max(safeArea.top, 20) + HomeDesign.squareScreenFirstRowBelowStatusBar
+            let lastRowBottom = pillCenter.y - HomeDesign.pillHeight / 2 - gap
+            let rowPitch = min(
+                HomeDesign.squareScreenMaximumRowPitch,
+                (lastRowBottom - firstIconTop - iconSize - labelBlock) / 5
+            )
+            pitch = CGSize(width: HomeDesign.squareScreenColumnPitch, height: rowPitch)
+            firstIconCenter = CGPoint(
+                x: size.width / 2 - pitch.width * 1.5,
+                y: firstIconTop + iconSize / 2
+            )
+            dockPitch = pitch.width
+            editButtonSize = HomeDesign.squareScreenEditButtonSize
+            // The buttons sit in the status bar, just above the minus badges
+            // of the first row.
+            editControlsCenterY = max(firstIconTop - HomeDesign.minusBadgeSize / 2 + HomeDesign.minusBadgeInset - editButtonSize / 2, editButtonSize / 2)
+            editControlsInset = 16
         } else {
             let scale = min(size.width / HomeDesign.referenceWidth, HomeDesign.maximumScale)
             self.scale = scale
@@ -102,24 +143,37 @@ struct HomeMetrics: Equatable {
             )
             pillCenter = CGPoint(x: size.width / 2, y: dockFrame.minY - HomeDesign.pillAboveDock * scale)
             // At least the status bar's height, so the icons stay put when edit
-            // mode hides the status bar on iPhones with a Home button.
+            // mode hides the status bar.
             let firstIconTop = max(safeArea.top, 20) + HomeDesign.firstRowBelowStatusBar * scale
             let pillTop = pillCenter.y - HomeDesign.pillHeight / 2
             let rowPitch = (pillTop - firstIconTop) / HomeDesign.rowsAbovePill
             pitch = CGSize(width: HomeDesign.columnPitch * scale, height: rowPitch)
             iconSize = max(min(HomeDesign.iconSize * scale, rowPitch - labelBlock - 2), 20)
+            // A real Home Screen's grid sits a little right of center.
             firstIconCenter = CGPoint(
-                x: size.width / 2 - pitch.width * 1.5,
+                x: size.width / 2 - pitch.width * 1.5 + HomeDesign.gridOffsetX * scale,
                 y: firstIconTop + iconSize / 2
             )
             dockPitch = pitch.width
+            editControlsCenterY = max(safeArea.top * 0.54, 24)
             editControlsInset = 16
+            editButtonSize = HomeDesign.editButtonSize
         }
 
         iconCornerRadius = iconSize * HomeDesign.iconCornerFraction
         cellWidth = max(pitch.width - 6, iconSize)
         cellHeight = iconSize + labelBlock
-        dockCornerRadius = HomeDesign.dockCornerRadius * scale
+        dockCornerRadius = isDockFlush ? 0 : HomeDesign.dockCornerRadius * scale
+
+        // The Home button is centered where the pill is, between the names of
+        // the last row and the dock.
+        if isDockVertical {
+            pillButtonScale = 1
+        } else {
+            let lastNameBottom = firstIconCenter.y - iconSize / 2 + pitch.height * Double(rows - 1) + cellHeight
+            let room = min(pillCenter.y - lastNameBottom, dockFrame.minY - pillCenter.y) - 2
+            pillButtonScale = min(max(room * 2 / HomeDesign.homeButtonSize, 0.5), 1)
+        }
     }
 
     /// The layout of the iPhone 13 Pro Max in portrait, the screen HomeDesign

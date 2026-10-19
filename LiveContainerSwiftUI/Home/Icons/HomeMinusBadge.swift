@@ -6,14 +6,18 @@
 import SwiftUI
 
 /// The minus badge on an icon's top left corner in edit mode, which asks
-/// whether to remove the app. Its touch area is larger than the badge.
+/// whether to remove the app. Its touch area is larger than the badge, and
+/// its name says which app it removes, so each badge on a page can be told
+/// apart by VoiceOver and Voice Control.
 struct HomeMinusBadge: View {
+    /// The app's name.
+    let title: String
     /// Asks whether to remove the app.
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            Label("zc.home.removeApp".loc, systemImage: "minus")
+            Label("zc.home.removeNamedApp %@".localizeWithFormat(title), systemImage: "minus")
                 .labelStyle(.iconOnly)
                 .font(.system(size: HomeDesign.minusBadgeSize * 0.5, weight: .bold))
                 .foregroundStyle(.black)
