@@ -6,7 +6,8 @@
 import SwiftUI
 
 /// One part of the setup in Check Setup's list: its icon, its name, what it
-/// does (or, when it failed, why, in red), and how it stands.
+/// does (or, when it failed, why, in red, and when an optional part is
+/// missing, what that costs), and how it stands.
 struct ZeusSetupRow: View {
     let check: ZeusSetupCheck
     let result: ZeusCheckResult
@@ -19,7 +20,7 @@ struct ZeusSetupRow: View {
                 VStack(alignment: .leading, spacing: SettingsDesign.subtitleSpacing) {
                     Text(check.title)
 
-                    Text(result.failure ?? check.detail)
+                    Text(result.failure ?? (result == .missing ? check.missingDetail : check.detail))
                         .font(.footnote)
                         .foregroundStyle(result.failure == nil ? Color.secondary : Color.red)
                 }

@@ -66,9 +66,24 @@ enum ZeusSetupCheck: CaseIterable, Hashable {
         }
     }
 
-    /// Whether zContainer works without it. Without separate logins, the
-    /// containers of one app share its sign-ins, and nothing else breaks.
+    /// What is lost while it's missing, under the row's name, for the parts
+    /// zContainer works without.
+    var missingDetail: String {
+        switch self {
+        case .sharedStorage:
+            "zc.settings.setup.sharedStorageMissing".loc
+        case .separateLogins:
+            "zc.settings.setup.separateLoginsMissing".loc
+        case .signing:
+            detail
+        }
+    }
+
+    /// Whether zContainer works without it. Without the app group, apps run
+    /// from zContainer's own storage only, with no shared apps, multitasking
+    /// or share sheet; without separate logins, the containers of one app
+    /// share its sign-ins. Nothing else breaks.
     var isOptional: Bool {
-        self == .separateLogins
+        self != .signing
     }
 }

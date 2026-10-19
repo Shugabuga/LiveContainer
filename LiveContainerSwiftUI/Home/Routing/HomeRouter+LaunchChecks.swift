@@ -96,9 +96,10 @@ extension HomeRouter {
     }
 
     /// Checks the certificate Zeus put inside the app once after it's stored,
-    /// quietly, and shows what went wrong if something did.
+    /// quietly, and shows what went wrong if something did, unless onboarding
+    /// shows, whose steps say so themselves.
     func checkZeusCertificate() async {
-        guard let problem = await ZeusCertificate.checkIfNeeded() else {
+        guard let problem = await ZeusCertificate.checkIfNeeded(), !onboarding.isPresented else {
             return
         }
         launchProblem = problem

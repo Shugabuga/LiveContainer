@@ -14,6 +14,7 @@ struct HomeScreenView: View {
     @Environment(HomeScreenModel.self) private var model
     @Environment(HomeRouter.self) private var router
     @Environment(AppLaunchCoordinator.self) private var coordinator
+    @Environment(OnboardingModel.self) private var onboarding
     @Namespace private var zoomNamespace
 
     var body: some View {
@@ -42,7 +43,8 @@ struct HomeScreenView: View {
         // appearance setting. Screens opened over it keep the setting.
         .environment(\.colorScheme, .dark)
         .homeStatusBarHidden(model.isEditing)
-        .preferredColorScheme(model.isCoveredByScreen ? nil : .dark)
+        // A screen over the Home Screen, or onboarding, keeps the setting.
+        .preferredColorScheme(model.isCoveredByScreen || onboarding.coversHomeScreen ? nil : .dark)
         .homePresentations(zoomNamespace: zoomNamespace)
         .homeRouting(router, onRoute: model.handle)
         .onReceive(model.appsPublisher, perform: model.syncApps)

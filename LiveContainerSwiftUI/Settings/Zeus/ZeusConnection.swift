@@ -46,6 +46,14 @@ final class ZeusConnection {
     /// Goes up by one whenever a different certificate is stored or none is,
     /// so pages can ask Apple about the new one.
     private(set) var certificateVersion = 0
+    /// Whether Zeus is on this iPhone, as far as `zeus://` opening tells.
+    private(set) var isZeusInstalled = false
+    /// The team that signed zContainer, which the certificate has to belong
+    /// to, or nil when zContainer's entitlements don't say.
+    private(set) var ownTeamID: String?
+    /// The team of the certificate Zeus put inside zContainer, when it was
+    /// left out for belonging to another team.
+    private(set) var mismatchedTeamID: String?
 
     /// How Check Setup found each part, for the parts it looked at.
     private var results: [ZeusSetupCheck: ZeusCheckResult] = [:]
@@ -135,8 +143,9 @@ final class ZeusConnection {
 
     /// Reads the stored certificate again, with what LCZeusCertificate and
     /// the launch check recorded about it, and looks at the parts of the
-    /// setup that take no time: the app group and the keychain groups. For
-    /// an imported certificate, it also reads which team it belongs to.
+    /// setup that take no time: the app group, the keychain groups, the team
+    /// that signed zContainer and whether Zeus is installed. For an imported
+    /// certificate, it also reads which team it belongs to.
     func reload() {
         readStoredState()
         if source == .imported && teamID == nil {
@@ -148,6 +157,9 @@ final class ZeusConnection {
         isSecondary = DataManager.shared.model.multiLCStatus == 2
         isBundled = LCZeusCertificate.isBundled()
         problem = ZeusCertificate.problem
+        mismatchedTeamID = ZeusCertificate.mismatchedTeamID
+        ownTeamID = LCSharedUtils.teamIdentifier()
+        isZeusInstalled = Self.zeusURL.map(UIApplication.shared.canOpenURL) ?? false
         updatedAt = defaults.object(forKey: Self.certificateDateKey) as? Date
 
         let zeusCertificate = ZeusCertificate.stored
@@ -170,9 +182,7 @@ final class ZeusConnection {
             break
         }
 
-        results[.sharedStorage] = ZeusEntitlements.hasSharedStorage
-            ? .passed
-            : .failed("zc.settings.setup.sharedStorageMissing".loc)
+        results[.sharedStorage] = ZeusEntitlements.hasSharedStorage ? .passed : .missing
         results[.separateLogins] = ZeusEntitlements.hasLoginGroups ? .passed : .missing
     }
 
@@ -227,10 +237,12 @@ final class ZeusConnection {
 
         guard hasCertificate else {
             results[.signing] = .failed("zc.settings.setup.noCertificate".loc)
+            ZeusCertificate.lastCheckPassed = false
             return
         }
         results[.signing] = .checking
         let (passed, error) = await ZeusCertificate.validateJITLessSetup()
+        ZeusCertificate.lastCheckPassed = passed
         if passed {
             results[.signing] = .passed
             ZeusCertificate.clearFailedCheck()
@@ -260,6 +272,8 @@ final class ZeusConnection {
         defaults.set(password, forKey: Self.certificatePasswordKey)
         defaults.set(Date.now, forKey: Self.certificateDateKey)
         ZeusCertificate.forgetStored()
+        // Not checked yet: Check Setup tells whether this one signs.
+        ZeusCertificate.lastCheckPassed = nil
         UserDefaults.standard.set(LCSharedUtils.appGroupID(), forKey: Self.appGroupKey)
         certificateChanged()
     }
@@ -271,6 +285,7 @@ final class ZeusConnection {
         defaults.removeObject(forKey: Self.certificatePasswordKey)
         defaults.removeObject(forKey: Self.certificateDateKey)
         ZeusCertificate.forgetStored()
+        ZeusCertificate.lastCheckPassed = false
         UserDefaults.standard.removeObject(forKey: Self.appGroupKey)
         certificateChanged()
     }

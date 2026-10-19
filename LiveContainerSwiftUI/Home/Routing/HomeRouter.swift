@@ -7,9 +7,10 @@ import SwiftUI
 
 /// Routes the URLs zContainer is opened with, and runs the checks the main
 /// window makes when it opens, whatever screens that window shows. App links
-/// go straight to the AppLaunchCoordinator; links meant for one screen wait
-/// here until that screen takes them. What the checks find waits here too,
-/// for the root view to show with `homeRouting(_:onRoute:)`.
+/// go straight to the AppLaunchCoordinator, except install links that arrive
+/// while onboarding shows, which wait in its queue; links meant for one
+/// screen wait here until that screen takes them. What the checks find waits
+/// here too, for the root view to show with `homeRouting(_:onRoute:)`.
 @MainActor
 @Observable
 final class HomeRouter {
@@ -17,6 +18,8 @@ final class HomeRouter {
     @ObservationIgnored let coordinator: AppLaunchCoordinator
     /// The app state the launch checks read, the coordinator's own.
     @ObservationIgnored let sharedModel: SharedModel
+    /// Holds install links while onboarding shows.
+    @ObservationIgnored let onboarding: OnboardingModel
 
     /// A certificate link waiting for the certificate import to store it.
     private(set) var pendingCertificate: CertificateLink?
@@ -33,9 +36,10 @@ final class HomeRouter {
     /// meanwhile closes, and only this one's closing frees the main screen.
     @ObservationIgnored private weak var mainWindowScene: UIWindowScene?
 
-    init(coordinator: AppLaunchCoordinator) {
+    init(coordinator: AppLaunchCoordinator, onboarding: OnboardingModel) {
         self.coordinator = coordinator
         self.sharedModel = coordinator.sharedModel
+        self.onboarding = onboarding
     }
 
     /// Sends a URL zContainer was opened with where it goes, and returns that
@@ -49,11 +53,22 @@ final class HomeRouter {
         case .home:
             break
         case .app(let link):
-            coordinator.handle(link)
+            send(link)
         case .certificate(let link):
             pendingCertificate = link
         }
         return route
+    }
+
+    /// Hands an app link to the coordinator. An install link that arrives
+    /// while onboarding shows, or while apps it received are still coming in,
+    /// waits in onboarding's queue instead, downloading at once, since a
+    /// one-time link from Zeus only answers for about a minute.
+    private func send(_ link: AppLink) {
+        if case .install(let address) = link, onboarding.takeInstallLink(address) {
+            return
+        }
+        coordinator.handle(link)
     }
 
     /// Hands the waiting certificate link to the import that stores it, once.

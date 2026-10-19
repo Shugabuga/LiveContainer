@@ -32277,6 +32277,594 @@
         }
       }
     },
+    "zc.onboarding.apps.addFromFiles" : {
+      "comment" : "Onboarding, Add Apps: button that picks an IPA in the Files app.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add from Files"
+          }
+        }
+      }
+    },
+    "zc.onboarding.apps.downloadFailed %@" : {
+      "comment" : "Onboarding, Add Apps: under an app whose download failed. %@ is the error.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn’t download it: %@. Send it again from Zeus."
+          }
+        }
+      }
+    },
+    "zc.onboarding.apps.downloading" : {
+      "comment" : "Onboarding, Add Apps: under an app while it downloads.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Downloading…"
+          }
+        }
+      }
+    },
+    "zc.onboarding.apps.failedAlert %@ %@" : {
+      "comment" : "Alert after onboarding when an app it was adding failed. The first %@ is the app's name, the second why.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn’t add “%1$@”. %2$@"
+          }
+        }
+      }
+    },
+    "zc.onboarding.apps.footer" : {
+      "comment" : "Onboarding, Add Apps: the note under the apps.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can add more anytime, from Zeus or from zContainer’s Home Screen."
+          }
+        }
+      }
+    },
+    "zc.onboarding.apps.fromZeus" : {
+      "comment" : "Onboarding, Add Apps: what an app sent from Zeus is called until its own name is known.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App from Zeus"
+          }
+        }
+      }
+    },
+    "zc.onboarding.apps.installed" : {
+      "comment" : "Onboarding, Add Apps: under an app once it's on the Home Screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Installed"
+          }
+        }
+      }
+    },
+    "zc.onboarding.apps.message" : {
+      "comment" : "Onboarding, Add Apps: the explanation.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send apps from Zeus, or add an IPA from Files. zContainer installs and signs them right here."
+          }
+        }
+      }
+    },
+    "zc.onboarding.apps.notInstalled" : {
+      "comment" : "Onboarding, Add Apps: under an app that wasn't added, like when the person kept the copy already installed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not Installed"
+          }
+        }
+      }
+    },
+    "zc.onboarding.apps.received" : {
+      "comment" : "Onboarding, Add Apps: header over the apps being added.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apps"
+          }
+        }
+      }
+    },
+    "zc.onboarding.apps.title" : {
+      "comment" : "Onboarding: title of the step where apps sent from Zeus install.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Apps"
+          }
+        }
+      }
+    },
+    "zc.onboarding.apps.waiting" : {
+      "comment" : "Onboarding, Add Apps: under an app that has downloaded and waits for its turn.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting to Install"
+          }
+        }
+      }
+    },
+    "zc.onboarding.check.checking" : {
+      "comment" : "Onboarding, Check Setup: the explanation while the check runs.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "zContainer is signing a small test library with its certificate, the way it signs your apps."
+          }
+        }
+      }
+    },
+    "zc.onboarding.check.failed" : {
+      "comment" : "Onboarding, Check Setup: the explanation when signing fails.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "zContainer can’t sign apps with its certificate yet. Open Zeus to sign zContainer again, so it gets a fresh certificate."
+          }
+        }
+      }
+    },
+    "zc.onboarding.check.footer" : {
+      "comment" : "Onboarding, Check Setup: the note under the checklist.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shared Storage and Separate Logins are optional: zContainer works without them, with fewer features. Zeus sets them up when it signs zContainer."
+          }
+        }
+      }
+    },
+    "zc.onboarding.check.optional" : {
+      "comment" : "Onboarding, Check Setup: beside a part zContainer works without, when it's missing.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Optional"
+          }
+        }
+      }
+    },
+    "zc.onboarding.check.passed" : {
+      "comment" : "Onboarding, Check Setup: the explanation once signing works.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "zContainer can sign your apps, and they’ll open without JIT."
+          }
+        }
+      }
+    },
+    "zc.onboarding.check.retry" : {
+      "comment" : "Onboarding, Check Setup: plain button under Open Zeus that runs the check again when signing failed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check Again"
+          }
+        }
+      }
+    },
+    "zc.onboarding.connect.connected" : {
+      "comment" : "Onboarding, Connect to Zeus: the explanation when everything is in place.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "zContainer is connected to Zeus, and signs your apps with the certificate Zeus gave it."
+          }
+        }
+      }
+    },
+    "zc.onboarding.connect.footer" : {
+      "comment" : "Onboarding, Connect to Zeus: the note under the checklist.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Each time Zeus signs zContainer, it puts a fresh copy of the certificate inside. If you signed zContainer another way, import the .p12 that signed it."
+          }
+        }
+      }
+    },
+    "zc.onboarding.connect.import" : {
+      "comment" : "Onboarding, Connect to Zeus: button that imports a .p12 of the person's own.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import a Certificate"
+          }
+        }
+      }
+    },
+    "zc.onboarding.connect.notConnected" : {
+      "comment" : "Onboarding, Connect to Zeus: the explanation when something is missing.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Install zContainer from Zeus’s official source. Zeus signs it and puts your certificate inside, so zContainer can sign the apps you add."
+          }
+        }
+      }
+    },
+    "zc.onboarding.connect.sameTeam" : {
+      "comment" : "Onboarding, Connect to Zeus: row checking that the certificate belongs to the developer team that signed zContainer.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Same Team"
+          }
+        }
+      }
+    },
+    "zc.onboarding.connect.sameTeamMatch %@" : {
+      "comment" : "Onboarding, Connect to Zeus: under Same Team when the teams match. %@ is the team ID, like A1B2C3D4E5.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "zContainer and its certificate are both from team %@."
+          }
+        }
+      }
+    },
+    "zc.onboarding.connect.sameTeamMismatch %@ %@" : {
+      "comment" : "Onboarding, Connect to Zeus: under Same Team when the teams differ. The first %@ is the certificate's team ID, the second zContainer's.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The certificate is from team %1$@, but zContainer was signed by team %2$@."
+          }
+        }
+      }
+    },
+    "zc.onboarding.connect.sameTeamReading" : {
+      "comment" : "Onboarding, Connect to Zeus: under Same Team while an imported certificate is read.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reading the certificate’s team…"
+          }
+        }
+      }
+    },
+    "zc.onboarding.connect.sameTeamUnknown" : {
+      "comment" : "Onboarding, Connect to Zeus: under Same Team when there's no certificate.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checked once zContainer has a certificate."
+          }
+        }
+      }
+    },
+    "zc.onboarding.connect.title" : {
+      "comment" : "Onboarding: title of the step that checks zContainer got its certificate from Zeus.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect to Zeus"
+          }
+        }
+      }
+    },
+    "zc.onboarding.connect.zeusInstalled" : {
+      "comment" : "Onboarding, Connect to Zeus: under the Zeus row when Zeus is installed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Installed on this iPhone"
+          }
+        }
+      }
+    },
+    "zc.onboarding.connect.zeusMissing" : {
+      "comment" : "Onboarding, Connect to Zeus: under the Zeus row when Zeus isn't installed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not found on this iPhone"
+          }
+        }
+      }
+    },
+    "zc.onboarding.done.apps" : {
+      "comment" : "Onboarding, last step: row listing the apps that were added.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apps"
+          }
+        }
+      }
+    },
+    "zc.onboarding.done.checked" : {
+      "comment" : "Onboarding, last step: under the Signing row when Check Setup passed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checked"
+          }
+        }
+      }
+    },
+    "zc.onboarding.done.connected" : {
+      "comment" : "Onboarding, last step: under the Zeus row when zContainer is connected to Zeus.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connected"
+          }
+        }
+      }
+    },
+    "zc.onboarding.done.later" : {
+      "comment" : "Onboarding, last step: the explanation when steps were left for later.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anything you set up later is in Settings, on zContainer’s Home Screen."
+          }
+        }
+      }
+    },
+    "zc.onboarding.done.noApps" : {
+      "comment" : "Onboarding, last step: under Apps when none were added.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "None Yet"
+          }
+        }
+      }
+    },
+    "zc.onboarding.done.notSetUp" : {
+      "comment" : "Onboarding, last step: under a row that was left for later.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not Set Up"
+          }
+        }
+      }
+    },
+    "zc.onboarding.done.ready" : {
+      "comment" : "Onboarding, last step: the explanation when everything is set up.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "zContainer is ready. Send apps from Zeus anytime, and they’ll land on its Home Screen."
+          }
+        }
+      }
+    },
+    "zc.onboarding.done.start" : {
+      "comment" : "Onboarding, last step: the button that shows the Home Screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start Using zContainer"
+          }
+        }
+      }
+    },
+    "zc.onboarding.done.title" : {
+      "comment" : "Onboarding: title of the last step.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You’re All Set"
+          }
+        }
+      }
+    },
+    "zc.onboarding.doneValue" : {
+      "comment" : "Onboarding: what VoiceOver reads for a checklist row whose part is done.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done"
+          }
+        }
+      }
+    },
+    "zc.onboarding.feature.homeScreen" : {
+      "comment" : "Onboarding welcome screen: title of the third feature.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your Own Home Screen"
+          }
+        }
+      }
+    },
+    "zc.onboarding.feature.homeScreenDetail" : {
+      "comment" : "Onboarding welcome screen: the line under “Your Own Home Screen”.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arrange your apps on pages and in a dock, just like on your iPhone."
+          }
+        }
+      }
+    },
+    "zc.onboarding.feature.oneSlot" : {
+      "comment" : "Onboarding welcome screen: title of the first feature. Every app inside zContainer runs under zContainer's one App ID.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More Apps, One Slot"
+          }
+        }
+      }
+    },
+    "zc.onboarding.feature.oneSlotDetail" : {
+      "comment" : "Onboarding welcome screen: the line under “More Apps, One Slot”.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apps inside zContainer all use its one app slot, so you can keep more apps than your Apple ID allows."
+          }
+        }
+      }
+    },
+    "zc.onboarding.feature.signedByZeus" : {
+      "comment" : "Onboarding welcome screen: title of the second feature. Zeus is the sideloader that installs zContainer.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Signed by Zeus"
+          }
+        }
+      }
+    },
+    "zc.onboarding.feature.signedByZeusDetail" : {
+      "comment" : "Onboarding welcome screen: the line under “Signed by Zeus”.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zeus signs zContainer and hands it your certificate, so it can sign every app you add. There’s nothing to patch."
+          }
+        }
+      }
+    },
+    "zc.onboarding.sandboxNote" : {
+      "comment" : "Onboarding welcome screen: the small note above Continue, where Apple's welcome screens note privacy.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apps inside zContainer share one sandbox, so they can see each other’s files and use zContainer’s certificate. Add only apps you trust."
+          }
+        }
+      }
+    },
+    "zc.onboarding.setUpLater" : {
+      "comment" : "Onboarding: the plain button under a step's main button that leaves the step for later, as in iOS's own setup.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set Up Later"
+          }
+        }
+      }
+    },
+    "zc.onboarding.welcome.title %@" : {
+      "comment" : "Onboarding: the welcome screen's title, like Apple's own welcome screens. %@ is the app's name, zContainer, which shows in pink. Keep the line break before it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Welcome to\n%@"
+          }
+        }
+      }
+    },
     "zc.settings.about" : {
       "comment" : "Settings > General: row that opens About zContainer, with the credits and licenses. Its value is the version.",
       "extractionState" : "manual",
@@ -32885,6 +33473,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Each container of an app keeps its own sign-ins."
+          }
+        }
+      }
+    },
+    "zc.settings.setup.separateLoginsMissing" : {
+      "comment" : "Settings and onboarding, Check Setup: under Separate Logins when the keychain groups are missing, which zContainer works without.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An app’s containers share its sign-ins."
           }
         }
       }

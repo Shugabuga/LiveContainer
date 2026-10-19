@@ -9,9 +9,11 @@ import SwiftUI
 /// the Apple Account is, with a row asking for attention under it when
 /// zContainer can't sign apps; then General and Home Screen; then Apps, which
 /// holds each app's settings; and last Advanced, where the Settings app puts
-/// Developer. Each row opens a page of its own.
+/// Developer. Each row opens a page of its own, except "Finish Setting Up
+/// zContainer", which opens onboarding again over the Home Screen.
 struct SettingsRootList: View {
     @Environment(ZeusConnection.self) private var connection
+    @Environment(OnboardingModel.self) private var onboarding
 
     var body: some View {
         List {
@@ -25,10 +27,16 @@ struct SettingsRootList: View {
 
             if let attention = connection.attention {
                 Section {
-                    NavigationLink {
-                        ZeusSettingsView()
-                    } label: {
-                        ZeusAttentionRow(attention: attention)
+                    if attention == .notSetUp {
+                        Button(action: onboarding.present) {
+                            ZeusAttentionRow(attention: attention, showsChevron: true)
+                        }
+                    } else {
+                        NavigationLink {
+                            ZeusSettingsView()
+                        } label: {
+                            ZeusAttentionRow(attention: attention)
+                        }
                     }
                 }
             }

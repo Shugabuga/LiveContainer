@@ -189,7 +189,8 @@ final class AppLaunchCoordinator {
     /// Installs an IPA from a file URL. When zContainer can't read the file
     /// itself, it tries the bookmark the share extension leaves and then
     /// security-scoped access. An IPA in the Inbox is deleted afterwards.
-    private func installLocalIpa(_ fileURL: URL) async {
+    /// The caller marks the install as running.
+    func installLocalIpa(_ fileURL: URL) async {
         var installUrl = fileURL
         let fileExtension = installUrl.pathExtension.lowercased()
         if fileExtension != "ipa" && fileExtension != "tipa" {

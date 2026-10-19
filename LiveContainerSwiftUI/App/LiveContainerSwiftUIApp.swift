@@ -12,6 +12,7 @@ struct LiveContainerSwiftUIApp : SwiftUI.App {
     @State private var coordinator: AppLaunchCoordinator
     @State private var router: HomeRouter
     @State private var home: HomeScreenModel
+    @State private var onboarding: OnboardingModel
     
     init() {
         let fm = FileManager()
@@ -105,19 +106,22 @@ struct LiveContainerSwiftUIApp : SwiftUI.App {
         // Made after the apps are loaded, so the coordinator becomes their
         // delegate and the Home Screen places them.
         let coordinator = AppLaunchCoordinator(sharedModel: DataManager.shared.model)
+        let onboarding = OnboardingModel(coordinator: coordinator)
         _coordinator = State(initialValue: coordinator)
-        _router = State(initialValue: HomeRouter(coordinator: coordinator))
+        _onboarding = State(initialValue: onboarding)
+        _router = State(initialValue: HomeRouter(coordinator: coordinator, onboarding: onboarding))
         _home = State(initialValue: HomeScreenModel(coordinator: coordinator))
     }
     
     var body: some Scene {
         WindowGroup(id: "Main") {
-            HomeScreenView()
+            AppRootView()
                 .handlesExternalEvents(preferring: ["*"], allowing: ["*"])
                 .environmentObject(DataManager.shared.model)
                 .environment(coordinator)
                 .environment(router)
                 .environment(home)
+                .environment(onboarding)
         }
         
         if UIApplication.shared.supportsMultipleScenes, #available(iOS 16.1, *) {
