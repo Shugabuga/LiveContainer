@@ -20,7 +20,7 @@ NSString * const LCZeusCertificateProblemCheck = @"check";
 // marker gives.
 static const NSInteger LCZeusCertificateProtocol = 1;
 
-// The keys importing a certificate by hand writes (LCSettingsView).
+// The keys importing a certificate by hand writes (ZeusConnection.swift).
 static NSString * const LCCertificateDataKey = @"LCCertificateData";
 static NSString * const LCCertificatePasswordKey = @"LCCertificatePassword";
 static NSString * const LCCertificateUpdateDateKey = @"LCCertificateUpdateDate";

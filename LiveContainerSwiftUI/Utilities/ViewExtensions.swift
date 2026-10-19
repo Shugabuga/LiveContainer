@@ -102,7 +102,7 @@ public struct DocModifier: ViewModifier {
                 controller.allowsMultipleSelection = multiple
                 controller.delegate = delegate
                 self.docController = controller
-                sceneDelegate.window?.rootViewController?.present(controller, animated: true)
+                sceneDelegate.window?.rootViewController?.topPresentedViewController.present(controller, animated: true)
             } else if !isPresented, let docController = docController {
                 docController.dismiss(animated: true)
                 self.docController = nil
@@ -152,7 +152,7 @@ public struct TextFieldAlertModifier: ViewModifier {
             if isPresented, alertController == nil {
                 let alertController = makeAlertController()
                 self.alertController = alertController
-                sceneDelegate.window?.rootViewController?.present(alertController, animated: true)
+                sceneDelegate.window?.rootViewController?.topPresentedViewController.present(alertController, animated: true)
             } else if !isPresented, let alertController = alertController {
                 alertController.dismiss(animated: true)
                 self.alertController = nil
@@ -335,6 +335,18 @@ struct IconImageView: View {
 
 
 extension UIViewController {
+    /// The view controller showing on top: the last one presented over this
+    /// one, or this one when nothing is. The UIKit pickers and alerts below
+    /// present from it, so they also open over a SwiftUI sheet or full screen
+    /// cover, such as Settings over the Home Screen.
+    var topPresentedViewController: UIViewController {
+        var top = self
+        while let presented = top.presentedViewController, !presented.isBeingDismissed {
+            top = presented
+        }
+        return top
+    }
+
     func presentConfirmation(
         title: String,
         message: String,

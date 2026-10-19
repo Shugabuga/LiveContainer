@@ -104,6 +104,16 @@ struct ZeusCertificate {
         defaults.removeObject(forKey: LCZeusCertificateProblemDetailKey)
     }
 
+    /// After Check Setup passed in Settings: a failed JIT-less check recorded
+    /// earlier no longer stands, since signing works now. Other problems stay.
+    static func clearFailedCheck() {
+        guard defaults.string(forKey: LCZeusCertificateProblemKey) == LCZeusCertificateProblemCheck else {
+            return
+        }
+        defaults.removeObject(forKey: LCZeusCertificateProblemKey)
+        defaults.removeObject(forKey: LCZeusCertificateProblemDetailKey)
+    }
+
     private static func record(_ code: String, detail: String? = nil) {
         defaults.set(code, forKey: LCZeusCertificateProblemKey)
         if let detail {
@@ -113,9 +123,12 @@ struct ZeusCertificate {
         }
     }
 
-    /// LCUtils.validateJITLessSetup waits for ZSign on the calling thread, so it
-    /// runs off the main thread here; it reports back on the main queue.
-    private static func validateJITLessSetup() async -> (Bool, Error?) {
+    /// The JIT-less check: signs a test library with the stored certificate
+    /// and asks iOS whether it accepts the signature. LCUtils.validateJITLessSetup
+    /// waits for ZSign on the calling thread, so it runs off the main thread
+    /// here; it reports back on the main queue. Settings' Check Setup runs it
+    /// too.
+    static func validateJITLessSetup() async -> (Bool, Error?) {
         await withCheckedContinuation { continuation in
             DispatchQueue.global(qos: .utility).async {
                 LCUtils.validateJITLessSetup { success, error in

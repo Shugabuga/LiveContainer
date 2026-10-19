@@ -14,7 +14,7 @@ struct HomePresentedScreenView: View {
     var body: some View {
         switch screen {
         case .settings:
-            LCSettingsView()
+            SettingsView()
         case .appSettings(let app):
             HomeAppSettingsScreen(app: app)
         }

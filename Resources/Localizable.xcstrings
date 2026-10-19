@@ -32180,6 +32180,1014 @@
           }
         }
       }
+    },
+    "zc.settings.about" : {
+      "comment" : "Settings > General: row that opens About zContainer, with the credits and licenses. Its value is the version.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "About"
+          }
+        }
+      }
+    },
+    "zc.settings.advanced" : {
+      "comment" : "Settings: row and page title for the power-user settings (tweaks, JIT, multitasking, diagnosis).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Advanced"
+          }
+        }
+      }
+    },
+    "zc.settings.advanced.emulator" : {
+      "comment" : "Settings > Advanced: picker for the app that runs 32-bit apps.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "32-Bit Emulator"
+          }
+        }
+      }
+    },
+    "zc.settings.advanced.emulatorFooter" : {
+      "comment" : "Settings > Advanced: footer under the 32-bit emulator picker.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apps built for 32-bit iPhones run inside the emulator app chosen here, unless an app’s settings choose another. They need JIT."
+          }
+        }
+      }
+    },
+    "zc.settings.advanced.frameIconsFooter" : {
+      "comment" : "Settings > Advanced: footer under Frame Shortcut Icon.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Icons saved or added to the iPhone’s Home Screen from an app’s Add to Home Screen menu get a zContainer frame around them."
+          }
+        }
+      }
+    },
+    "zc.settings.advanced.jit" : {
+      "comment" : "Settings > Advanced: row and page title for the JIT enabler settings. Its value is the tool chosen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JIT"
+          }
+        }
+      }
+    },
+    "zc.settings.apps.empty" : {
+      "comment" : "Settings > Apps: title shown when no apps are in zContainer.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Apps"
+          }
+        }
+      }
+    },
+    "zc.settings.apps.emptyDetail" : {
+      "comment" : "Settings > Apps: text under “No Apps”.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apps you add to zContainer show up here, each with its settings."
+          }
+        }
+      }
+    },
+    "zc.settings.apps.hiddenFooter" : {
+      "comment" : "Settings > Apps > Hidden Apps: footer under the list of hidden apps.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hidden apps don’t show on the Home Screen. Search shows them in its Hidden section once you unlock it. To bring an app back, open it here and turn off Hide."
+          }
+        }
+      }
+    },
+    "zc.settings.apps.strictHidingFooter" : {
+      "comment" : "Settings > Apps > Hidden Apps: footer under the Strict Hiding Mode switch.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Links, shortcuts and other apps can’t open hidden apps, and the share sheet doesn’t offer them, until you unlock hidden apps in zContainer."
+          }
+        }
+      }
+    },
+    "zc.settings.attention.expired" : {
+      "comment" : "Settings: row under the Zeus card, with a red badge, when the signing certificate has expired.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Certificate Expired"
+          }
+        }
+      }
+    },
+    "zc.settings.attention.notSetUp" : {
+      "comment" : "Settings: row under the Zeus card, with a red badge, when zContainer has no certificate to sign apps with. Like iOS’s “Finish Setting Up Your iPhone”.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finish Setting Up zContainer"
+          }
+        }
+      }
+    },
+    "zc.settings.attention.problem" : {
+      "comment" : "Settings: row under the Zeus card, with a red badge, when storing or checking the certificate failed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Certificate Problem"
+          }
+        }
+      }
+    },
+    "zc.settings.attention.revoked" : {
+      "comment" : "Settings: row under the Zeus card, with a red badge, when Apple revoked the signing certificate.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Certificate Revoked"
+          }
+        }
+      }
+    },
+    "zc.settings.developer" : {
+      "comment" : "Settings > Advanced: row and page title for the developer settings, shown after tapping the version five times.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Developer"
+          }
+        }
+      }
+    },
+    "zc.settings.developer.exportBundle" : {
+      "comment" : "Settings > Advanced > Developer: button that copies zContainer’s app bundle to its Documents folder.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export Main Bundle"
+          }
+        }
+      }
+    },
+    "zc.settings.developer.exportCertificate" : {
+      "comment" : "Settings > Advanced > Developer: button that copies the provisioning profile and a certificate imported by hand to the Documents folder.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export Certificate"
+          }
+        }
+      }
+    },
+    "zc.settings.developer.exportDyld" : {
+      "comment" : "Settings > Advanced > Developer: button that copies the system’s dyld to the Documents folder. Keep “dyld” as is.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export dyld"
+          }
+        }
+      }
+    },
+    "zc.settings.developer.exported %@" : {
+      "comment" : "Settings > Advanced > Developer: message after an export. %@ is a list of file names.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved %@ to zContainer’s Documents folder."
+          }
+        }
+      }
+    },
+    "zc.settings.developer.exportedNothing" : {
+      "comment" : "Settings > Advanced > Developer: message after an export that found no files.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "There was nothing to export."
+          }
+        }
+      }
+    },
+    "zc.settings.developer.exportFooter" : {
+      "comment" : "Settings > Advanced > Developer: footer under the export buttons.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exports go to zContainer’s Documents folder, which Files shows. The certificate from Zeus and its password are never exported."
+          }
+        }
+      }
+    },
+    "zc.settings.developer.flex" : {
+      "comment" : "Settings > Advanced > Developer: button that shows the FLEX debugging tool. Keep “FLEX” as is.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show FLEX Overlay"
+          }
+        }
+      }
+    },
+    "zc.settings.developer.ignoreJIT" : {
+      "comment" : "Settings > Advanced > Developer: switch.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ignore JIT When Launching Apps"
+          }
+        }
+      }
+    },
+    "zc.settings.developer.keepSelected" : {
+      "comment" : "Settings > Advanced > Developer: switch.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep Selected App When Quitting"
+          }
+        }
+      }
+    },
+    "zc.settings.developer.noWatchdog" : {
+      "comment" : "Settings > Advanced > Developer: switch. Keep “LiveProcess” as is.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn Off LiveProcess Watchdog"
+          }
+        }
+      }
+    },
+    "zc.settings.developer.resetSymbolOffsets" : {
+      "comment" : "Settings > Advanced > Developer: button that clears the cached symbol offsets.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset Symbol Offsets"
+          }
+        }
+      }
+    },
+    "zc.settings.developer.sharePrivateData" : {
+      "comment" : "Settings > Advanced > Developer: switch. Keep “LiveProcess” as is.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Let LiveProcess Read Private Data"
+          }
+        }
+      }
+    },
+    "zc.settings.developer.waitForDebugger" : {
+      "comment" : "Settings > Advanced > Developer: switch.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wait for Debugger"
+          }
+        }
+      }
+    },
+    "zc.settings.general" : {
+      "comment" : "Settings: row and page title for About, storage and Reset.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "General"
+          }
+        }
+      }
+    },
+    "zc.settings.homeScreen" : {
+      "comment" : "Settings: row and page title for how zContainer’s Home Screen looks.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Home Screen"
+          }
+        }
+      }
+    },
+    "zc.settings.homeScreen.darkIcons" : {
+      "comment" : "Settings > Home Screen: switch for the dark versions of app icons.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dark App Icons"
+          }
+        }
+      }
+    },
+    "zc.settings.homeScreen.darkIconsFooter" : {
+      "comment" : "Settings > Home Screen: footer under the Dark App Icons switch.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apps on the Home Screen show the dark versions of their icons, drawn by iOS."
+          }
+        }
+      }
+    },
+    "zc.settings.reset.homeScreen" : {
+      "comment" : "Settings > General > Reset: button.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset Home Screen Layout"
+          }
+        }
+      }
+    },
+    "zc.settings.reset.homeScreenConfirm" : {
+      "comment" : "Settings > General > Reset: destructive button in the question before resetting the Home Screen layout.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset Home Screen"
+          }
+        }
+      }
+    },
+    "zc.settings.reset.homeScreenMessage" : {
+      "comment" : "Settings > General > Reset: message of the question before resetting the Home Screen layout.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settings goes back in the dock, and the apps go back on the pages in the order you added them."
+          }
+        }
+      }
+    },
+    "zc.settings.reset.homeScreenTitle" : {
+      "comment" : "Settings > General > Reset: title of the question before resetting the Home Screen layout.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset Home Screen Layout?"
+          }
+        }
+      }
+    },
+    "zc.settings.reset.notificationsFooter" : {
+      "comment" : "Settings > General > Reset: footer under Clear Notifications.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Removes the notifications the apps inside zContainer sent, and the badge on zContainer’s icon."
+          }
+        }
+      }
+    },
+    "zc.settings.setup" : {
+      "comment" : "Settings > Zeus: header of the Check Setup section.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Setup"
+          }
+        }
+      }
+    },
+    "zc.settings.setup.check" : {
+      "comment" : "Settings > Zeus: button that checks zContainer’s setup, including signing a test library.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check Setup"
+          }
+        }
+      }
+    },
+    "zc.settings.setup.checking" : {
+      "comment" : "Settings > Zeus: the Check Setup button while it works.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checking…"
+          }
+        }
+      }
+    },
+    "zc.settings.setup.failed" : {
+      "comment" : "Settings > Zeus: what VoiceOver reads for a part of the setup that doesn’t work.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Failed"
+          }
+        }
+      }
+    },
+    "zc.settings.setup.footer" : {
+      "comment" : "Settings > Zeus: footer under the Setup section.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zeus sets these up when it signs zContainer. Check Setup signs a small test library with the certificate, the way the apps inside are signed, and checks that iOS accepts it."
+          }
+        }
+      }
+    },
+    "zc.settings.setup.missing" : {
+      "comment" : "Settings > Zeus: what VoiceOver reads for an optional part of the setup that zContainer doesn’t have.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Missing"
+          }
+        }
+      }
+    },
+    "zc.settings.setup.noCertificate" : {
+      "comment" : "Settings > Zeus: why the Signing check failed when no certificate is stored.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "zContainer has no certificate to sign with."
+          }
+        }
+      }
+    },
+    "zc.settings.setup.notChecked" : {
+      "comment" : "Settings > Zeus: status of a check that hasn’t run yet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not Checked"
+          }
+        }
+      }
+    },
+    "zc.settings.setup.passed" : {
+      "comment" : "Settings > Zeus: what VoiceOver reads for a part of the setup that works.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passed"
+          }
+        }
+      }
+    },
+    "zc.settings.setup.separateLogins" : {
+      "comment" : "Settings > Zeus: the keychain groups that keep each container’s sign-ins apart.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Separate Logins"
+          }
+        }
+      }
+    },
+    "zc.settings.setup.separateLoginsDetail" : {
+      "comment" : "Settings > Zeus: text under Separate Logins.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Each container of an app keeps its own sign-ins."
+          }
+        }
+      }
+    },
+    "zc.settings.setup.sharedStorage" : {
+      "comment" : "Settings > Zeus: the app group zContainer shares with its extensions.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shared Storage"
+          }
+        }
+      }
+    },
+    "zc.settings.setup.sharedStorageDetail" : {
+      "comment" : "Settings > Zeus: text under Shared Storage.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shared apps, multitasking and the share sheet can reach your apps."
+          }
+        }
+      }
+    },
+    "zc.settings.setup.sharedStorageMissing" : {
+      "comment" : "Settings > Zeus: why the Shared Storage check failed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "zContainer has no app group. Sign it again in Zeus."
+          }
+        }
+      }
+    },
+    "zc.settings.setup.signing" : {
+      "comment" : "Settings > Zeus: the check that signs and loads a test library.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Signing"
+          }
+        }
+      }
+    },
+    "zc.settings.setup.signingDetail" : {
+      "comment" : "Settings > Zeus: text under Signing.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apps are signed with this certificate and open without JIT."
+          }
+        }
+      }
+    },
+    "zc.settings.shortcut.iconFileName %@" : {
+      "comment" : "Add to Home Screen > Save App Icon: name Files suggests for the icon. %@ is the app’s name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ Icon"
+          }
+        }
+      }
+    },
+    "zc.settings.storage" : {
+      "comment" : "Settings > General: row that opens how much space the apps take, like iPhone Storage.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "zContainer Storage"
+          }
+        }
+      }
+    },
+    "zc.settings.zeus" : {
+      "comment" : "The name of the Zeus app, which signs zContainer. Keep it as is.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zeus"
+          }
+        }
+      }
+    },
+    "zc.settings.zeus.actionsFooterBundled" : {
+      "comment" : "Settings > Zeus: footer under Import Another Certificate.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zeus puts its certificate back each time it signs zContainer. To sign with a certificate of your own instead, import the .p12 that signed zContainer."
+          }
+        }
+      }
+    },
+    "zc.settings.zeus.actionsFooterImported" : {
+      "comment" : "Settings > Zeus: footer under the buttons when a certificate imported by hand is in use.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To use another certificate, remove this one first."
+          }
+        }
+      }
+    },
+    "zc.settings.zeus.actionsFooterNone" : {
+      "comment" : "Settings > Zeus: footer under Import Certificate when no certificate is stored.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To sign with a certificate of your own, import the .p12 that signed zContainer, with its password."
+          }
+        }
+      }
+    },
+    "zc.settings.zeus.actionsFooterZeus" : {
+      "comment" : "Settings > Zeus: footer under Remove Certificate when Zeus’s certificate is in use.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "After you remove it, zContainer can’t sign apps until Zeus signs zContainer again or you import a certificate."
+          }
+        }
+      }
+    },
+    "zc.settings.zeus.certificate" : {
+      "comment" : "Settings > Zeus: header of the section about the signing certificate.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Certificate"
+          }
+        }
+      }
+    },
+    "zc.settings.zeus.couldNotCheck" : {
+      "comment" : "Settings > Zeus: certificate status when Apple couldn’t be asked about it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn’t Check"
+          }
+        }
+      }
+    },
+    "zc.settings.zeus.couldNotCheckReason %@" : {
+      "comment" : "Settings > Zeus: footer line saying why the certificate status couldn’t be checked. %@ is the error.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple couldn’t be asked about this certificate: %@"
+          }
+        }
+      }
+    },
+    "zc.settings.zeus.expiredNotice" : {
+      "comment" : "Settings > Zeus: notice at the top when the certificate has expired.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The certificate has expired. Open Zeus and sign zContainer again to get a new one."
+          }
+        }
+      }
+    },
+    "zc.settings.zeus.expires" : {
+      "comment" : "Settings > Zeus: row with the certificate’s expiry date.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Expires"
+          }
+        }
+      }
+    },
+    "zc.settings.zeus.footerImported" : {
+      "comment" : "Settings > Zeus: footer under the certificate when it was imported by hand.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You imported this certificate. It has to belong to the team that signed zContainer, or the apps it signs won’t open."
+          }
+        }
+      }
+    },
+    "zc.settings.zeus.footerZeus" : {
+      "comment" : "Settings > Zeus: footer under the certificate when it came from Zeus.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zeus put this certificate inside zContainer when it signed it, and brings a new one each time it signs zContainer again."
+          }
+        }
+      }
+    },
+    "zc.settings.zeus.headerDetail" : {
+      "comment" : "Settings > Zeus: text under “Zeus” at the top of the page.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "zContainer signs the apps inside it with the certificate Zeus signed it with."
+          }
+        }
+      }
+    },
+    "zc.settings.zeus.import" : {
+      "comment" : "Settings > Zeus: button in the password question that imports the certificate.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import"
+          }
+        }
+      }
+    },
+    "zc.settings.zeus.importedCertificate" : {
+      "comment" : "Settings: line under “Zeus” in the card at the top when the certificate was imported by hand.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Imported certificate"
+          }
+        }
+      }
+    },
+    "zc.settings.zeus.noCertificate" : {
+      "comment" : "Settings: line under “Zeus” in the card at the top when no certificate is stored.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No certificate yet"
+          }
+        }
+      }
+    },
+    "zc.settings.zeus.openZeus" : {
+      "comment" : "Settings > Zeus: button that opens the Zeus app.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Zeus"
+          }
+        }
+      }
+    },
+    "zc.settings.zeus.password" : {
+      "comment" : "Settings > Zeus: placeholder of the certificate password field.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Password"
+          }
+        }
+      }
+    },
+    "zc.settings.zeus.passwordMessage" : {
+      "comment" : "Settings > Zeus: message of the question asking for the certificate’s password.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter the password that protects this .p12 file."
+          }
+        }
+      }
+    },
+    "zc.settings.zeus.passwordTitle" : {
+      "comment" : "Settings > Zeus: title of the question asking for the certificate’s password.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Certificate Password"
+          }
+        }
+      }
+    },
+    "zc.settings.zeus.removeMessage" : {
+      "comment" : "Settings > Zeus: message of the question before removing the certificate.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "zContainer can’t sign new apps until it has a certificate again."
+          }
+        }
+      }
+    },
+    "zc.settings.zeus.removeTitle" : {
+      "comment" : "Settings > Zeus: title of the question before removing the certificate.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove Certificate?"
+          }
+        }
+      }
+    },
+    "zc.settings.zeus.revokedNotice" : {
+      "comment" : "Settings > Zeus: notice at the top when Apple revoked the certificate.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple revoked this certificate, so apps signed with it won’t open. Open Zeus and sign zContainer again to get a new one."
+          }
+        }
+      }
+    },
+    "zc.settings.zeus.signingFailedNotice" : {
+      "comment" : "Settings > Zeus: notice at the top when Check Setup’s signing test failed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Signing with this certificate didn’t work. Open Zeus and sign zContainer again, then check the setup."
+          }
+        }
+      }
+    },
+    "zc.settings.zeus.source" : {
+      "comment" : "Settings > Zeus: row saying where the certificate came from: Zeus or imported.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Source"
+          }
+        }
+      }
+    },
+    "zc.settings.zeus.sourceImported" : {
+      "comment" : "Settings > Zeus: value of the Source row for a certificate imported by hand.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Imported"
+          }
+        }
+      }
+    },
+    "zc.settings.zeus.status" : {
+      "comment" : "Settings > Zeus: row with what Apple says about the certificate.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Status"
+          }
+        }
+      }
+    },
+    "zc.settings.zeus.updated" : {
+      "comment" : "Settings > Zeus: row with when the certificate was stored in zContainer.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Added"
+          }
+        }
+      }
+    },
+    "zc.settings.zeus.zeusMissing" : {
+      "comment" : "Settings > Zeus: alert when Open Zeus can’t open Zeus.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zeus isn’t installed on this iPhone."
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

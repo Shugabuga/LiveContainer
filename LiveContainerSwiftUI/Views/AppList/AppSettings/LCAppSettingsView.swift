@@ -188,7 +188,9 @@ struct LCAppSettingsView: View {
 
                             if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
                                let rootViewController = windowScene.windows.first?.rootViewController {
-                                rootViewController.present(picker, animated: true)
+                                // From the top, since these settings open over the
+                                // Home Screen as a sheet or full screen cover.
+                                rootViewController.topPresentedViewController.present(picker, animated: true)
                             }
                         }) {
                             Text("lc.common.select".loc)
