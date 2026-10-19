@@ -7,8 +7,8 @@ import CoreImage
 import ImageIO
 import UIKit
 
-/// The wallpaper's file in Application Support: a JPEG made from the chosen
-/// photo, turned upright and made no bigger than the largest screens need,
+/// The wallpaper's files: the halo zContainer comes with, in its bundle, and
+/// in Application Support a JPEG made from the chosen photo, turned upright and made no bigger than the largest screens need,
 /// so it loads quickly and doesn't hold a 48 megapixel photo in memory.
 enum WallpaperFile {
     /// The longest side, in pixels, a wallpaper is made at: a little more
@@ -25,6 +25,13 @@ enum WallpaperFile {
     /// The saved wallpaper, decoded for drawing, or nil when there's none.
     static func load() -> UIImage? {
         UIImage(contentsOfFile: url.path(percentEncoded: false))?.preparingForDisplay()
+    }
+
+    /// The halo zContainer comes with, decoded for drawing: a square one for
+    /// iPads, which fills their screens in both orientations, and a tall one
+    /// for iPhones. `Scripts/zc/art/wallpaper` renders both.
+    static func loadDefault(isPad: Bool) -> UIImage? {
+        UIImage(named: isPad ? "DefaultWallpaperPad" : "DefaultWallpaperPhone")?.preparingForDisplay()
     }
 
     /// Makes a wallpaper from a photo's data, saves it in place of the last

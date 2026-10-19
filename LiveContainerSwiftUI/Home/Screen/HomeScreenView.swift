@@ -5,8 +5,9 @@
 
 import SwiftUI
 
-/// zContainer's main screen: a Home Screen like the iPhone's, on a black
-/// wallpaper or a photo chosen for it, under the real status bar. It shows the apps inside zContainer on
+/// zContainer's main screen: a Home Screen like the iPhone's, on the halo
+/// wallpaper it comes with or a photo chosen for it, under the real status
+/// bar. It shows the apps inside zContainer on
 /// pages of icons with a dock, opens them with a tap, and opens Settings, an
 /// app's settings and search over itself. It is the main window's root, so it
 /// also runs HomeRouter's launch checks and links.

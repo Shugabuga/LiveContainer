@@ -6,14 +6,14 @@
 import SwiftUI
 
 /// Settings > Wallpaper: the Home Screen's wallpaper, with a way to choose a
-/// photo for it, dim it, or go back to black.
+/// photo for it, dim it, or go back to the halo zContainer comes with.
 struct WallpaperSettingsView: View {
     @Environment(WallpaperStore.self) private var wallpaper
     @State private var isChoosing = false
 
     var body: some View {
         @Bindable var wallpaper = wallpaper
-        let hasPhoto = wallpaper.image != nil
+        let hasPhoto = wallpaper.isCustom
 
         List {
             Section {
@@ -36,7 +36,7 @@ struct WallpaperSettingsView: View {
 
             if hasPhoto {
                 Section {
-                    Button("zc.settings.wallpaper.remove".loc, role: .destructive, action: wallpaper.remove)
+                    Button("zc.settings.wallpaper.useDefault".loc, action: wallpaper.useDefault)
                 }
             }
         }

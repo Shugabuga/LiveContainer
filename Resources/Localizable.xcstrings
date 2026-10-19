@@ -33741,14 +33741,14 @@
         }
       }
     },
-    "zc.settings.wallpaper.remove" : {
-      "comment" : "Settings > Wallpaper: button that goes back to the black wallpaper.",
+    "zc.settings.wallpaper.useDefault" : {
+      "comment" : "Settings > Wallpaper: button that replaces the chosen photo with the halo zContainer comes with.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Remove Wallpaper"
+            "value" : "Use Default Wallpaper"
           }
         }
       }
