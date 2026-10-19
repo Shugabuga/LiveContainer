@@ -6,8 +6,9 @@
 import SwiftUI
 
 /// The last step: zContainer is ready, with what was set up ticked off and
-/// anything left for later waiting in Settings. Like the last page of iOS's
-/// own setup, it only goes forward, and its button fades the Home Screen in.
+/// anything left for later waiting in Settings, then a way into Zeus's
+/// Discord server. Like the last page of iOS's own setup, it only goes
+/// forward, and its button fades the Home Screen in.
 struct OnboardingDonePage: View {
     @Environment(OnboardingModel.self) private var onboarding
     @Environment(ZeusConnection.self) private var connection
@@ -31,6 +32,10 @@ struct OnboardingDonePage: View {
                 OnboardingChecklistRow(systemImage: "square.grid.2x2.fill", title: "zc.onboarding.done.apps".loc, isDone: !installedNames.isEmpty) {
                     Text(appsDetail)
                 }
+            }
+
+            Section {
+                ZeusDiscordRow()
             }
         }
         .onboardingBottomBar {

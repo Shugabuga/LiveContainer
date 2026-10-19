@@ -12,8 +12,8 @@ enum ZContainerMarkStage: Int, Comparable {
     case tile
     /// The container's outline, drawn around the tile.
     case frame
-    /// The z inside it: the whole icon.
-    case letter
+    /// Zeus's bolt inside it: the whole icon.
+    case bolt
 
     static func < (lhs: Self, rhs: Self) -> Bool {
         lhs.rawValue < rhs.rawValue

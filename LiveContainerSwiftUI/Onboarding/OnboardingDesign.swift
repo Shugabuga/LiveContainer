@@ -118,10 +118,10 @@ enum OnboardingDesign {
 
     /// How zContainer's icon arrives on the welcome screen: its tile swells
     /// in after a beat, the container's outline draws itself around, and the
-    /// z pops into it.
+    /// bolt pops into it.
     static let markTileArrival = Animation.spring(duration: 0.5, bounce: 0.2).delay(0.25)
     static let markFrameDrawing = Animation.easeInOut(duration: 0.55)
-    static let markLetterArrival = Animation.spring(duration: 0.5, bounce: 0.4)
+    static let markBoltArrival = Animation.spring(duration: 0.5, bounce: 0.4)
     /// How the icon comes in with Reduce Motion on: it only fades.
     static let markFade = Animation.easeOut(duration: 0.35)
 

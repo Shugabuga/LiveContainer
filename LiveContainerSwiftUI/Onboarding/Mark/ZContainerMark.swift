@@ -6,14 +6,14 @@
 import SwiftUI
 
 /// zContainer's icon, drawn rather than loaded so it stays sharp at any size
-/// and its parts can arrive one by one: the pink container and z on their
-/// near black tile, with a hairline around the tile so it doesn't melt into
+/// and its parts can arrive one by one: the pink container and Zeus's bolt on
+/// their near black tile, with a hairline around the tile so it doesn't melt into
 /// a dark page. Each part swells in, and the outline draws itself around,
 /// except with Reduce Motion, where every part is whole from the start and
 /// only fades in.
 struct ZContainerMark: View {
     /// How much of the icon shows.
-    var stage = ZContainerMarkStage.letter
+    var stage = ZContainerMarkStage.bolt
     /// The icon's width and height.
     var size = OnboardingDesign.markSize
 
@@ -39,10 +39,10 @@ struct ZContainerMark: View {
                 )
                 .opacity(reduceMotion && stage < .frame ? 0 : 1)
 
-            ZContainerMarkLetter()
+            ZContainerMarkBolt()
                 .fill(OnboardingDesign.accent)
-                .scaleEffect(scale(of: .letter, from: 0.4))
-                .opacity(stage >= .letter ? 1 : 0)
+                .scaleEffect(scale(of: .bolt, from: 0.4))
+                .opacity(stage >= .bolt ? 1 : 0)
         }
         .frame(width: size, height: size)
         .accessibilityHidden(true)

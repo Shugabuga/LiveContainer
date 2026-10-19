@@ -21,6 +21,9 @@ enum SettingsDesign {
     /// The hairline around an app's icon, which keeps white icons apart from
     /// the white rows.
     static let iconOutlineWidth = 0.5
+    /// The largest a row's logo grows with the text size, so a 180 pixel
+    /// logo stays sharp on a 3x screen.
+    static let largestLogoSize = 60.0
 
     // MARK: The Zeus card
 

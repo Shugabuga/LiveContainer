@@ -33849,6 +33849,30 @@
         }
       }
     },
+    "zc.settings.zeus.discordDetail" : {
+      "comment" : "Settings > Zeus and the last step of onboarding: line under “Discord” in the row that opens Zeus’s Discord server.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Join the Zeus community"
+          }
+        }
+      }
+    },
+    "zc.settings.zeus.discordHint" : {
+      "comment" : "VoiceOver hint of the row that opens Zeus’s Discord server, on Settings > Zeus and the last step of onboarding.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens in Discord or your browser."
+          }
+        }
+      }
+    },
     "zc.settings.zeus.expiredNotice" : {
       "comment" : "Settings > Zeus: notice at the top when the certificate has expired.",
       "extractionState" : "manual",

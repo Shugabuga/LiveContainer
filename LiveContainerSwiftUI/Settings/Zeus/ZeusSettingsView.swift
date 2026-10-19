@@ -8,7 +8,8 @@ import SwiftUI
 /// Settings > Zeus, the page behind the card at the top of Settings, laid out
 /// like the Apple Account page and kept short: Zeus's icon and what Zeus does
 /// for zContainer, what is wrong when something is, the certificate Zeus gave
-/// zContainer, Check Setup, and, last, importing a certificate by hand.
+/// zContainer, Check Setup, Zeus's Discord server, and, last, importing a
+/// certificate by hand.
 ///
 /// It asks Apple about the certificate when it opens, and again whenever a
 /// different certificate is stored.
@@ -31,6 +32,10 @@ struct ZeusSettingsView: View {
             }
 
             ZeusSetupSection()
+
+            Section {
+                ZeusDiscordRow()
+            }
 
             if connection.isSecondary {
                 Section {
