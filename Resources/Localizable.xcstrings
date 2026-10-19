@@ -31869,6 +31869,18 @@
         }
       }
     },
+    "zc.guestTweak.homeButtonHint" : {
+      "comment" : "Home button floating over a running app: VoiceOver hint.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Goes back to zContainer."
+          }
+        }
+      }
+    },
     "zc.home.addApp" : {
       "comment" : "Home Screen edit mode: the plus button at the top left that installs an app.",
       "extractionState" : "manual",
@@ -32069,6 +32081,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hide and Require Touch ID"
+          }
+        }
+      }
+    },
+    "zc.home.homeButton" : {
+      "comment" : "Home button: VoiceOver name of the round button that does what pressing Home does, on zContainer's screens and over a running app.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Home"
+          }
+        }
+      }
+    },
+    "zc.home.homeButtonHint" : {
+      "comment" : "Home button on zContainer's own screens: VoiceOver hint.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Goes back to the Home Screen."
           }
         }
       }
@@ -32285,6 +32321,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hidden apps don’t show on the Home Screen. Search shows them in its Hidden section once you unlock it. To bring an app back, open it here and turn off Hide."
+          }
+        }
+      }
+    },
+    "zc.settings.apps.homeButton" : {
+      "comment" : "An app's settings: switch that shows the Home button over the app while it runs.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Home Button"
+          }
+        }
+      }
+    },
+    "zc.settings.apps.homeButtonFooter" : {
+      "comment" : "An app's settings: footer under the Home Button switch.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shows a round button over the app that takes you back to zContainer. You can drag it to any edge of the screen."
+          }
+        }
+      }
+    },
+    "zc.settings.apps.homeButtonNeedsTweakLoader" : {
+      "comment" : "An app's settings: footer under the Home Button switch when TweakLoader is turned off for the app, so the button can't show.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Home button comes from TweakLoader, which is turned off for this app."
           }
         }
       }

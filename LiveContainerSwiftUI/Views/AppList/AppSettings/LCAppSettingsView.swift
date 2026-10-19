@@ -253,7 +253,9 @@ struct LCAppSettingsView: View {
                     }
                 }
             }
-            
+
+            AppHomeButtonSection(model: model)
+
             Section {
                 NavigationLink {
                     if let supportedLanguage = model.supportedLanguages {

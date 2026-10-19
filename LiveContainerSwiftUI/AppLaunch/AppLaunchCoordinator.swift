@@ -369,6 +369,7 @@ final class AppLaunchCoordinator {
             finalNewApp.orientationLock = appToReplace.appInfo.orientationLock
             finalNewApp.dontInjectTweakLoader = appToReplace.appInfo.dontInjectTweakLoader
             finalNewApp.hideLiveContainer = appToReplace.appInfo.hideLiveContainer
+            finalNewApp.hideHomeButton = appToReplace.appInfo.hideHomeButton
             finalNewApp.dontLoadTweakLoader = appToReplace.appInfo.dontLoadTweakLoader
             finalNewApp.doUseLCBundleId = appToReplace.appInfo.doUseLCBundleId
             finalNewApp.fixFilePickerNew = appToReplace.appInfo.fixFilePickerNew

@@ -6,7 +6,7 @@
 import SwiftUI
 
 /// The small "Search" pill above the dock, which opens search. While the
-/// pages move, and in edit mode, it shows the page dots instead, as on iOS.
+/// pages move, or an icon is dragged, it shows the page dots instead, as on iOS.
 struct HomeSearchPill: View {
     /// How many pages there are.
     let pageCount: Int

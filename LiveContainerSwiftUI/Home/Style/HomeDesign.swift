@@ -122,6 +122,25 @@ enum HomeDesign {
     /// The space at each end of Done.
     static let editButtonPadding = 18.0
 
+    // MARK: Home button
+
+    /// The Home button's width and height, on zContainer's own screens and
+    /// over apps alike (TweakLoader's LCHomeButtonView draws the same button).
+    static let homeButtonSize = 52.0
+    /// The rings on the Home button, from the outside in: each one's width and
+    /// how white it is. They stack like AssistiveTouch's, a soft halo around a
+    /// bright dot.
+    static let homeButtonRings: [(size: Double, opacity: Double)] = [(40, 0.12), (32, 0.22), (24, 0.92)]
+    /// The dark tint of the Home button's glass, so it looks the same over the
+    /// black wallpaper, over Settings in light mode and over apps.
+    static let homeButtonTint = Color.black.opacity(0.32)
+    /// The light rim of the Home button where Liquid Glass isn't available.
+    static let homeButtonRim = Color.white.opacity(0.22)
+    /// The space above and below the Home button in a screen's bottom bar.
+    static let homeButtonBarPadding = 8.0
+    /// How much the Home button shrinks while it is pressed.
+    static let homeButtonPressedScale = 0.9
+
     // MARK: Search
 
     /// How much the Home Screen blurs behind search.

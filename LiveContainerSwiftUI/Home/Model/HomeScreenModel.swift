@@ -187,23 +187,6 @@ final class HomeScreenModel {
         }
     }
 
-    /// Does what pressing Home does on iOS, one step at a time: closes the
-    /// screen open over the Home Screen, then search, then edit mode, and
-    /// otherwise goes back to the first page.
-    func goHome() {
-        if presentedScreen != nil {
-            presentedScreen = nil
-        } else if isSearching {
-            closeSearch()
-        } else if isEditing {
-            endEditing()
-        } else {
-            withAnimation(HomeDesign.reflow) {
-                page = 0
-            }
-        }
-    }
-
     /// Follows a link zContainer was opened with: links that do something in
     /// an app, or bring up zContainer, show the Home Screen.
     func handle(_ route: HomeRoute) {

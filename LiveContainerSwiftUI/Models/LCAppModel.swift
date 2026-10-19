@@ -72,6 +72,12 @@ class LCAppModel: ObservableObject, Hashable {
             appInfo.hideLiveContainer = uiHideLiveContainer
         }
     }
+    /// Whether the Home button floats over the app while it runs.
+    @Published var uiShowsHomeButton : Bool {
+        didSet {
+            appInfo.hideHomeButton = !uiShowsHomeButton
+        }
+    }
     @Published var uiTweakLoaderInjectFailed : Bool
     @Published var uiDontInjectTweakLoader : Bool {
         didSet {
@@ -187,6 +193,7 @@ class LCAppModel: ObservableObject, Hashable {
         self.uiFixFilePickerNew = appInfo.fixFilePickerNew
         self.uiFixLocalNotification = appInfo.fixLocalNotification
         self.uiHideLiveContainer = appInfo.hideLiveContainer
+        self.uiShowsHomeButton = !appInfo.hideHomeButton
         self.uiDontInjectTweakLoader = appInfo.dontInjectTweakLoader
         self.uiTweakLoaderInjectFailed = appInfo.info()["LCTweakLoaderCantInject"] as? Bool ?? false
         self.uiDontLoadTweakLoader = appInfo.dontLoadTweakLoader

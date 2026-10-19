@@ -198,6 +198,11 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				DocumentPicker.m,
+				HomeButton/LCHomeButtonController.m,
+				HomeButton/LCHomeButtonPlacement.m,
+				HomeButton/LCHomeButtonView.m,
+				HomeButton/LCHomeButtonViewController.m,
+				HomeButton/LCHomeButtonWindow.m,
 				Notification.m,
 				TweakLoader.m,
 				"UIKit+GuestHooks.m",

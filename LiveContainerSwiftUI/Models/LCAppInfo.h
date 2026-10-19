@@ -29,6 +29,9 @@ typedef NS_ENUM(NSInteger, MultitaskSpecified){
 @property bool isHidden;
 @property bool doSymlinkInbox;
 @property bool hideLiveContainer;
+// Whether the Home button that floats over the app while it runs is hidden
+// (TweakLoader's LCHomeButtonController reads it as "hideHomeButton").
+@property bool hideHomeButton;
 @property bool dontLoadTweakLoader;
 @property bool dontInjectTweakLoader;
 @property LCOrientationLock orientationLock;

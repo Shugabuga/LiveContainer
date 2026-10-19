@@ -515,6 +515,14 @@
     [self save];
 }
 
+- (bool)hideHomeButton {
+    return [_info[@"hideHomeButton"] boolValue];
+}
+- (void)setHideHomeButton:(bool)hideHomeButton {
+    _info[@"hideHomeButton"] = [NSNumber numberWithBool:hideHomeButton];
+    [self save];
+}
+
 - (bool)dontInjectTweakLoader {
     if(_info[@"dontInjectTweakLoader"] != nil) {
         return [_info[@"dontInjectTweakLoader"] boolValue];

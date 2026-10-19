@@ -321,7 +321,7 @@ synced folder Resources
   PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet Embed Frameworks: ['Frameworks/CydiaSubstrate.framework'] attrs={'Frameworks/CydiaSubstrate.framework': ['CodeSignOnCopy', 'RemoveHeadersOnCopy']}
 synced folder LiveContainerSwiftUI
 synced folder TweakLoader
-  PBXFileSystemSynchronizedBuildFileExceptionSet TweakLoader: ['DocumentPicker.m', 'Notification.m', 'TweakLoader.m', 'UIKit+GuestHooks.m']
+  PBXFileSystemSynchronizedBuildFileExceptionSet TweakLoader: ['DocumentPicker.m', 'HomeButton/LCHomeButtonController.m', 'HomeButton/LCHomeButtonPlacement.m', 'HomeButton/LCHomeButtonView.m', 'HomeButton/LCHomeButtonViewController.m', 'HomeButton/LCHomeButtonWindow.m', 'Notification.m', 'TweakLoader.m', 'UIKit+GuestHooks.m']
 synced folder ZSign
 synced folder TestJITLess
 synced folder litehook

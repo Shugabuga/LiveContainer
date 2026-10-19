@@ -6,9 +6,10 @@
 import SwiftUI
 
 /// Everything on the Home Screen itself, laid out on the whole screen: the
-/// pages, the dock, the search pill, edit mode's buttons, the icon being
-/// dragged and the launch zoom. Positions come from HomeMetrics, in the
-/// screen's coordinate space, which the drag gesture uses too.
+/// pages, the dock, the search pill (or the Home button in its place), edit
+/// mode's buttons, the icon being dragged and the launch zoom. Positions come
+/// from HomeMetrics, in the screen's coordinate space, which the drag gesture
+/// uses too.
 struct HomeSpringboard: View {
     /// Where things go on this screen.
     let metrics: HomeMetrics
@@ -23,13 +24,8 @@ struct HomeSpringboard: View {
 
             HomeDock(metrics: metrics, zoomNamespace: zoomNamespace)
 
-            HomeSearchPill(
-                pageCount: model.pageCount,
-                currentPage: model.page ?? 0,
-                showsPageDots: model.showsPageDots || model.isEditing,
-                action: model.openSearch
-            )
-            .position(metrics.pillCenter)
+            HomePillRow()
+                .position(metrics.pillCenter)
 
             if model.isEditing {
                 HomeEditControls(metrics: metrics)
