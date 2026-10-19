@@ -215,15 +215,45 @@
 
 }
 
+- (UIImage*)homeScreenIconIsDarkIcon:(BOOL)isDarkIcon {
+    UIImage* uiIcon = isDarkIcon ? _cachedHomeScreenIconDark : _cachedHomeScreenIcon;
+    if(uiIcon) {
+        return uiIcon;
+    }
+
+    NSString* cachedIconPath = [_bundlePath stringByAppendingPathComponent:isDarkIcon ? @"LCAppHomeScreenIconDark.png" : @"LCAppHomeScreenIconLight.png"];
+    NSURL* cachedIconUrl = [NSURL fileURLWithPath:cachedIconPath];
+    if([NSFileManager.defaultManager fileExistsAtPath:cachedIconPath]) {
+        CGImageRef imageRef = loadCGImageFromURL(cachedIconUrl);
+        uiIcon = [UIImage imageWithCGImage:imageRef];
+    }
+
+    if(!uiIcon) {
+        uiIcon = [UIImage generateIconForBundleURL:[NSURL fileURLWithPath:_bundlePath] style:isDarkIcon hasBorder:NO];
+        saveCGImage([uiIcon CGImage], cachedIconUrl);
+    }
+
+    if(isDarkIcon) {
+        _cachedHomeScreenIconDark = uiIcon;
+    } else {
+        _cachedHomeScreenIcon = uiIcon;
+    }
+    return uiIcon;
+}
+
 - (void)clearIconCache {
     NSString* lightModeIconPath = [_bundlePath stringByAppendingPathComponent:@"LCAppIconLight.png"];
     NSString* darkModeIconPath = [_bundlePath stringByAppendingPathComponent:@"LCAppIconDark.png"];
     [NSFileManager.defaultManager removeItemAtPath:lightModeIconPath error:nil];
     [NSFileManager.defaultManager removeItemAtPath:darkModeIconPath error:nil];
+    [NSFileManager.defaultManager removeItemAtPath:[_bundlePath stringByAppendingPathComponent:@"LCAppHomeScreenIconLight.png"] error:nil];
+    [NSFileManager.defaultManager removeItemAtPath:[_bundlePath stringByAppendingPathComponent:@"LCAppHomeScreenIconDark.png"] error:nil];
     [self setCachedColor:nil];
     [self setCachedColorDark:nil];
     _cachedIcon = nil;
     _cachedIconDark = nil;
+    _cachedHomeScreenIcon = nil;
+    _cachedHomeScreenIconDark = nil;
 }
 
 - (UIImage *)generateLiveContainerWrappedIconWithStyle:(GeneratedIconStyle)style {

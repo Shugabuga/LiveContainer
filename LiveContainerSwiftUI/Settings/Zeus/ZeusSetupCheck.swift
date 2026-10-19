@@ -50,7 +50,7 @@ enum ZeusSetupCheck: CaseIterable, Hashable {
         case .separateLogins:
             "key.fill"
         case .signing:
-            "signature"
+            "checkmark.seal.fill"
         }
     }
 

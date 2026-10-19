@@ -48,6 +48,11 @@ enum HomeDesign {
     static let labelLineHeight = 14.3
     /// The color of the names, readable on the black wallpaper.
     static let labelColor = Color.white
+    /// The soft shadow under the names over a photo, so they read over its
+    /// bright parts, as on iOS.
+    static let labelShadow = Color.black.opacity(0.45)
+    /// How far the names' shadow spreads.
+    static let labelShadowRadius = 2.0
 
     // MARK: iPhones with a Home button
 
@@ -88,6 +93,12 @@ enum HomeDesign {
     /// The dock's corner radius before iOS 26, where corners can't follow the
     /// screen's. It matches the 13 Pro Max's screen corners less the inset.
     static let dockCornerRadius = 39.0
+
+    // MARK: Wallpaper
+
+    /// How much black goes over a photo wallpaper when it's dimmed, about
+    /// what iOS's dark mode dims wallpapers by.
+    static let wallpaperDimming = 0.22
 
     // MARK: Search pill and page dots
 

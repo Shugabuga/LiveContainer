@@ -5,29 +5,43 @@
 
 import SwiftUI
 
-/// One part of the setup in Check Setup's list: its icon, its name, what it
-/// does (or, when it failed, why, in red, and when an optional part is
-/// missing, what that costs), and how it stands.
+/// One part of the setup in Check Setup's list: its icon and name, with how
+/// it stands on the trailing side. A line under the name says why when it
+/// failed, in red, or what's lost when an optional part is missing. What the
+/// part does is VoiceOver's hint.
 struct ZeusSetupRow: View {
     let check: ZeusSetupCheck
     let result: ZeusCheckResult
 
     var body: some View {
-        LabeledContent {
-            ZeusCheckStatus(result: result)
-        } label: {
+        // A stack rather than LabeledContent, which moves the status under
+        // the name once a note makes the name's side two lines tall.
+        HStack {
             Label {
                 VStack(alignment: .leading, spacing: SettingsDesign.subtitleSpacing) {
                     Text(check.title)
 
-                    Text(result.failure ?? (result == .missing ? check.missingDetail : check.detail))
-                        .font(.footnote)
-                        .foregroundStyle(result.failure == nil ? Color.secondary : Color.red)
+                    if let note {
+                        Text(note)
+                            .font(.footnote)
+                            .foregroundStyle(result.failure == nil ? Color.secondary : Color.red)
+                    }
                 }
             } icon: {
                 SettingsIcon(systemImage: check.systemImage, color: check.color)
             }
+
+            Spacer(minLength: 8)
+
+            ZeusCheckStatus(result: result)
         }
         .accessibilityElement(children: .combine)
+        .accessibilityHint(check.detail)
+    }
+
+    /// Why it failed, or what's lost while it's missing, or nil when there's
+    /// nothing wrong.
+    private var note: String? {
+        result.failure ?? (result == .missing ? check.missingDetail : nil)
     }
 }

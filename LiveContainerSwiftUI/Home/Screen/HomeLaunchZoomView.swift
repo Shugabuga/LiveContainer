@@ -17,7 +17,7 @@ struct HomeLaunchZoomView: View {
 
     @Environment(HomeScreenModel.self) private var model
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @AppStorage("darkModeIcon", store: LCUtils.appGroupUserDefault) private var darkModeIcon = false
+    @Environment(\.prefersDarkAppIcons) private var darkModeIcon
     @State private var isOpen = false
 
     var body: some View {

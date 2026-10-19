@@ -5,23 +5,22 @@
 
 import SwiftUI
 
-/// Pins the Home button bar to the bottom of a screen and makes room for it,
-/// so the screen's last rows can scroll out from under the button. On iOS 26
-/// and later it is a safe area bar, which also fades the content scrolling
-/// beneath it as toolbars do.
+/// Puts the Home button bar under a screen, on the grouped background
+/// Settings pages use, and ends the screen above it, so nothing on any of its
+/// pages goes under the button. Laid over the screen as a safe area bar, it
+/// left Settings' pages running on under the button.
 struct HomeButtonBarPlacement: ViewModifier {
     /// What pressing the button does.
     let action: () -> Void
 
     func body(content: Content) -> some View {
-        if #available(iOS 26.0, *) {
-            content.safeAreaBar(edge: .bottom) {
-                HomeButtonBar(action: action)
-            }
-        } else {
-            content.safeAreaInset(edge: .bottom) {
-                HomeButtonBar(action: action)
-            }
+        VStack(spacing: 0) {
+            content
+            HomeButtonBar(action: action)
+                .background {
+                    Color(.systemGroupedBackground)
+                        .ignoresSafeArea()
+                }
         }
     }
 }

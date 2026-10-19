@@ -13,16 +13,4 @@ enum ZeusCertificateSource: Equatable {
     case zeus
     /// The person imported a .p12 of their own.
     case imported
-
-    /// How the Zeus page names it.
-    var title: String {
-        switch self {
-        case .none:
-            "lc.common.none".loc
-        case .zeus:
-            "zc.settings.zeus".loc
-        case .imported:
-            "zc.settings.zeus.sourceImported".loc
-        }
-    }
 }

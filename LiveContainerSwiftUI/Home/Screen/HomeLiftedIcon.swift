@@ -12,7 +12,7 @@ struct HomeLiftedIcon: View {
     let metrics: HomeMetrics
 
     @Environment(HomeScreenModel.self) private var model
-    @AppStorage("darkModeIcon", store: LCUtils.appGroupUserDefault) private var darkModeIcon = false
+    @Environment(\.prefersDarkAppIcons) private var darkModeIcon
 
     var body: some View {
         if let drag = model.drag {

@@ -13,6 +13,8 @@ struct LiveContainerSwiftUIApp : SwiftUI.App {
     @State private var router: HomeRouter
     @State private var home: HomeScreenModel
     @State private var onboarding: OnboardingModel
+    @State private var wallpaper = WallpaperStore()
+    @State private var systemAppearance = SystemAppearance()
     
     init() {
         let fm = FileManager()
@@ -122,6 +124,8 @@ struct LiveContainerSwiftUIApp : SwiftUI.App {
                 .environment(router)
                 .environment(home)
                 .environment(onboarding)
+                .environment(wallpaper)
+                .environment(systemAppearance)
         }
         
         if UIApplication.shared.supportsMultipleScenes, #available(iOS 16.1, *) {

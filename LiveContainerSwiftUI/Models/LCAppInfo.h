@@ -57,10 +57,15 @@ typedef NS_ENUM(NSInteger, MultitaskSpecified){
 @property UIColor* cachedColorDark;
 @property UIImage* cachedIcon;
 @property UIImage* cachedIconDark;
+@property UIImage* cachedHomeScreenIcon;
+@property UIImage* cachedHomeScreenIconDark;
 
 - (void)setBundlePath:(NSString*)newBundlePath;
 - (NSMutableDictionary*)info;
 - (UIImage*)iconIsDarkIcon:(BOOL)isDarkIcon;
+// The icon without IconServices' mask and border, for views that clip it to
+// the Home Screen's icon shape themselves, so no light rim shows at its edges.
+- (UIImage*)homeScreenIconIsDarkIcon:(BOOL)isDarkIcon;
 - (void)clearIconCache;
 - (NSString*)displayName;
 - (NSString*)bundlePath;

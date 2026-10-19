@@ -16,7 +16,7 @@ struct HomeDock: View {
     let zoomNamespace: Namespace.ID
 
     @Environment(HomeScreenModel.self) private var model
-    @AppStorage("darkModeIcon", store: LCUtils.appGroupUserDefault) private var darkModeIcon = false
+    @Environment(\.prefersDarkAppIcons) private var darkModeIcon
 
     var body: some View {
         let count = model.displayedLayout.dock.count

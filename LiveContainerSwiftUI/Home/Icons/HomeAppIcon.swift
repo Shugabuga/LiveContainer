@@ -6,8 +6,9 @@
 import SwiftUI
 
 /// An app's icon as the Home Screen shows it: the icon IconServices drew for
-/// the Home Screen, in its dark version when the dark icons setting is on,
-/// with the app's name under it. While the app is being signed, the icon dims
+/// the Home Screen, without its mask and border, clipped to the icon shape
+/// here, in its dark version when the icon style asks for it, with the app's
+/// name under it. While the app is being signed, the icon dims
 /// and fills with iOS's progress pie.
 struct HomeAppIcon: View {
     @ObservedObject var app: LCAppModel
@@ -15,7 +16,7 @@ struct HomeAppIcon: View {
     let metrics: HomeMetrics
     /// Whether the name shows under the icon. Icons in the dock have none.
     let showsLabel: Bool
-    /// Whether the icon shows in its dark version, as the dark icons setting asks.
+    /// Whether the icon shows in its dark version, as the icon style asks.
     let darkModeIcon: Bool
     /// Marks the icon as the place its settings zoom out of.
     let zoomSource: HomeZoomSource
@@ -26,7 +27,7 @@ struct HomeAppIcon: View {
             // disk after the first launch, so reading it here is cheap after
             // the first time. Only the pages near the one showing build their
             // icons, which keeps that first time short.
-            Image(uiImage: app.appInfo.iconIsDarkIcon(darkModeIcon) ?? UIImage())
+            Image(uiImage: app.appInfo.homeScreenIconIsDarkIcon(darkModeIcon) ?? UIImage())
                 .resizable()
                 .scaledToFill()
                 .frame(width: metrics.iconSize, height: metrics.iconSize)

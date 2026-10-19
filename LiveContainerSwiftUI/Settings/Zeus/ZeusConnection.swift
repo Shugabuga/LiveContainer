@@ -30,8 +30,6 @@ final class ZeusConnection {
     /// When the certificate expires, once known. Zeus says it; for an imported
     /// certificate, asking Apple about it tells.
     private(set) var expiresAt: Date?
-    /// When the certificate was stored.
-    private(set) var updatedAt: Date?
     /// What went wrong storing or checking Zeus's certificate, as the person
     /// reads it.
     private(set) var problem: String?
@@ -162,7 +160,6 @@ final class ZeusConnection {
         mismatchedTeamID = ZeusCertificate.mismatchedTeamID
         ownTeamID = LCSharedUtils.teamIdentifier()
         isZeusInstalled = Self.zeusURL.map(UIApplication.shared.canOpenURL) ?? false
-        updatedAt = defaults.object(forKey: Self.certificateDateKey) as? Date
 
         let zeusCertificate = ZeusCertificate.stored
         if LCSharedUtils.certificatePassword() == nil {

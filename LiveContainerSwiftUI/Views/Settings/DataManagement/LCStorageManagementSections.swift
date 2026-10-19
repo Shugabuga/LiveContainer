@@ -225,7 +225,7 @@ struct LCStorageSummarySection: View {
 }
 
 struct LCInstalledAppsSection: View {
-    @AppStorage("darkModeIcon", store: LCUtils.appGroupUserDefault) var darkModeIcon = false
+    @Environment(\.prefersDarkAppIcons) private var darkModeIcon
     let breakdown: LCStorageBreakdown?
 
     var body: some View {
@@ -286,7 +286,7 @@ private struct LCAppStorageSummaryHeaderView: View {
     let appItem: LCAppStorageItem
 
     @ScaledMetric(relativeTo: .title) private var iconSize: CGFloat = 58
-    @AppStorage("darkModeIcon", store: LCUtils.appGroupUserDefault) var darkModeIcon = false
+    @Environment(\.prefersDarkAppIcons) private var darkModeIcon
     
     var body: some View {
         HStack(alignment: .center, spacing: 10) {

@@ -19,7 +19,7 @@ struct HomePageIcons: View {
 
     @Environment(HomeScreenModel.self) private var model
     @Environment(AppLaunchCoordinator.self) private var coordinator
-    @AppStorage("darkModeIcon", store: LCUtils.appGroupUserDefault) private var darkModeIcon = false
+    @Environment(\.prefersDarkAppIcons) private var darkModeIcon
 
     var body: some View {
         let currentPage = model.page ?? 0

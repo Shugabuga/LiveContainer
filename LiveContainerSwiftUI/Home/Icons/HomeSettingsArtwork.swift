@@ -7,12 +7,16 @@ import SwiftUI
 
 /// zContainer's Settings icon, drawn in the style of the iOS Settings icon: a
 /// silver tile with a dark, finely toothed gear, a light ring inside it, and a
-/// wheel of three spokes around the hub.
+/// wheel of three spokes around the hub. Its dark version, shown with apps'
+/// dark icons, turns the silver to near black and the gear to light gray, as
+/// iOS's dark Settings icon does.
 struct HomeSettingsArtwork: View {
     /// The icon's width and height.
     let size: Double
     /// The icon's corner radius.
     let cornerRadius: Double
+
+    @Environment(\.prefersDarkAppIcons) private var isDark
 
     /// How many teeth the gear has.
     private static let teeth = 36
@@ -21,8 +25,13 @@ struct HomeSettingsArtwork: View {
         Canvas { context, canvasSize in
             let side = canvasSize.width
             let center = CGPoint(x: side / 2, y: side / 2)
-            let dark = Gradient(colors: [Color(white: 0.36), Color(white: 0.17)])
-            let light = Gradient(colors: [Color(white: 0.93), Color(white: 0.7)])
+            // The gear and the spokes, and the rings between them.
+            let dark = isDark
+                ? Gradient(colors: [Color(white: 0.78), Color(white: 0.56)])
+                : Gradient(colors: [Color(white: 0.36), Color(white: 0.17)])
+            let light = isDark
+                ? Gradient(colors: [Color(white: 0.2), Color(white: 0.09)])
+                : Gradient(colors: [Color(white: 0.93), Color(white: 0.7)])
             let top = CGPoint(x: side / 2, y: side * 0.08)
             let bottom = CGPoint(x: side / 2, y: side * 0.92)
 
@@ -41,12 +50,17 @@ struct HomeSettingsArtwork: View {
                 )
             }
             context.fill(Self.circle(center: center, radius: side * 0.1), with: .linearGradient(dark, startPoint: top, endPoint: bottom))
-            context.fill(Self.circle(center: center, radius: side * 0.04), with: .color(Color(white: 0.78)))
+            context.fill(Self.circle(center: center, radius: side * 0.04), with: .color(Color(white: isDark ? 0.22 : 0.78)))
         }
         .frame(width: size, height: size)
-        .background(LinearGradient(colors: [Color(white: 0.87), Color(white: 0.6)], startPoint: .top, endPoint: .bottom))
+        .background(LinearGradient(colors: tile, startPoint: .top, endPoint: .bottom))
         .clipShape(.rect(cornerRadius: cornerRadius))
         .accessibilityHidden(true)
+    }
+
+    /// The tile's colors, from top to bottom.
+    private var tile: [Color] {
+        isDark ? [Color(white: 0.17), Color(white: 0.05)] : [Color(white: 0.87), Color(white: 0.6)]
     }
 
     /// A circle around `center`.

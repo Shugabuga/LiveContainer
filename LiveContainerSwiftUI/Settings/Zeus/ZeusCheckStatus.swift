@@ -6,8 +6,9 @@
 import SwiftUI
 
 /// How one part of the setup stands, on the trailing side of its row: a
-/// spinner while Check Setup looks at it, then a check, an exclamation mark
-/// for an optional part that's missing, or a cross. Each has its own symbol
+/// dashed circle until Check Setup looks at it, a spinner while it does, then
+/// a check, an exclamation mark for an optional part that's missing, or a
+/// cross. Each has its own symbol
 /// as well as its color, and VoiceOver reads what it means.
 struct ZeusCheckStatus: View {
     let result: ZeusCheckResult
@@ -15,10 +16,13 @@ struct ZeusCheckStatus: View {
     var body: some View {
         switch result {
         case .notChecked:
-            Text("zc.settings.setup.notChecked".loc)
-                .foregroundStyle(.secondary)
+            Image(systemName: "circle.dashed")
+                .imageScale(.large)
+                .foregroundStyle(.tertiary)
+                .accessibilityLabel("zc.settings.setup.notChecked".loc)
         case .checking:
             ProgressView()
+                .controlSize(.small)
                 .accessibilityLabel("lc.jitlessDiag.checking".loc)
         case .passed:
             Image(systemName: "checkmark.circle.fill")

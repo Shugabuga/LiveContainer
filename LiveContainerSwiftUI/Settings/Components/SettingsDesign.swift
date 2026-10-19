@@ -28,7 +28,7 @@ enum SettingsDesign {
     /// Account's picture is in the Settings app.
     static let cardMarkSize = 60.0
     /// The Zeus mark at the top of the Zeus page.
-    static let headerMarkSize = 88.0
+    static let headerMarkSize = 64.0
     /// How much of the Zeus mark's tile the bolt takes up.
     static let boltRatio = 0.56
     /// The tile behind the bolt, as on Zeus's app icon.

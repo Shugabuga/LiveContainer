@@ -7,9 +7,9 @@ import SwiftUI
 
 /// The rows Settings opens on, in the Settings app's order: Zeus on top where
 /// the Apple Account is, with a row asking for attention under it when
-/// zContainer can't sign apps; then General and Home Screen; then Apps, which
-/// holds each app's settings; and last Advanced, where the Settings app puts
-/// Developer. Each row opens a page of its own, except "Finish Setting Up
+/// zContainer can't sign apps; then General, Home Screen and Wallpaper; then
+/// Apps, which holds each app's settings; and last Advanced, where the
+/// Settings app puts Developer. Each row opens a page of its own, except "Finish Setting Up
 /// zContainer", which opens onboarding again over the Home Screen.
 struct SettingsRootList: View {
     @Environment(ZeusConnection.self) private var connection
@@ -55,6 +55,12 @@ struct SettingsRootList: View {
                     } label: {
                         SettingsRow(title: "zc.settings.homeScreen".loc, systemImage: "apps.iphone", color: .blue)
                     }
+                }
+
+                NavigationLink {
+                    WallpaperSettingsView()
+                } label: {
+                    SettingsRow(title: "zc.settings.wallpaper".loc, systemImage: "camera.macro", color: .cyan)
                 }
             }
 

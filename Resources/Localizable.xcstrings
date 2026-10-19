@@ -31905,6 +31905,18 @@
         }
       }
     },
+    "zc.home.chooseWallpaper" : {
+      "comment" : "Home Screen edit mode: item in the add button's menu that picks a photo for the wallpaper.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose Wallpaper"
+          }
+        }
+      }
+    },
     "zc.home.clearSearch" : {
       "comment" : "Home Screen search: button that empties the search field.",
       "extractionState" : "manual",
@@ -33321,26 +33333,62 @@
         }
       }
     },
-    "zc.settings.homeScreen.darkIcons" : {
-      "comment" : "Settings > Home Screen: switch for the dark versions of app icons.",
+    "zc.settings.homeScreen.iconStyle" : {
+      "comment" : "Settings > Home Screen: title of the choice of light or dark app icons.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dark App Icons"
+            "value" : "App Icons"
           }
         }
       }
     },
-    "zc.settings.homeScreen.darkIconsFooter" : {
-      "comment" : "Settings > Home Screen: footer under the Dark App Icons switch.",
+    "zc.settings.homeScreen.iconStyle.automatic" : {
+      "comment" : "Settings > Home Screen > App Icons: icons follow Dark Mode.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Apps on the Home Screen show the dark versions of their icons, drawn by iOS."
+            "value" : "Automatic"
+          }
+        }
+      }
+    },
+    "zc.settings.homeScreen.iconStyle.dark" : {
+      "comment" : "Settings > Home Screen > App Icons: always the dark icons.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dark"
+          }
+        }
+      }
+    },
+    "zc.settings.homeScreen.iconStyle.light" : {
+      "comment" : "Settings > Home Screen > App Icons: always the light icons.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Light"
+          }
+        }
+      }
+    },
+    "zc.settings.homeScreen.iconStyleFooter" : {
+      "comment" : "Settings > Home Screen: footer under the App Icons choice.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automatic shows the dark versions of app icons while Dark Mode is on."
           }
         }
       }
@@ -33460,7 +33508,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zeus sets these up when it signs zContainer. Check Setup signs a small test library with the certificate, the way the apps inside are signed, and checks that iOS accepts it."
+            "value" : "Check Setup signs a test library to make sure apps will open."
           }
         }
       }
@@ -33633,6 +33681,78 @@
         }
       }
     },
+    "zc.settings.wallpaper" : {
+      "comment" : "Settings: row and page title for the Home Screen's wallpaper.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wallpaper"
+          }
+        }
+      }
+    },
+    "zc.settings.wallpaper.choose" : {
+      "comment" : "Settings > Wallpaper: button that opens the photo library to pick a wallpaper.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a New Wallpaper"
+          }
+        }
+      }
+    },
+    "zc.settings.wallpaper.dim" : {
+      "comment" : "Settings > Wallpaper: switch that darkens the wallpaper a little.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dark Appearance Dims Wallpaper"
+          }
+        }
+      }
+    },
+    "zc.settings.wallpaper.dimFooter" : {
+      "comment" : "Settings > Wallpaper: footer under the Dim Wallpaper switch.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In Dark Mode, the wallpaper darkens a little so app names stay easy to read."
+          }
+        }
+      }
+    },
+    "zc.settings.wallpaper.preview" : {
+      "comment" : "Settings > Wallpaper: VoiceOver label of the small picture of the wallpaper.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wallpaper Preview"
+          }
+        }
+      }
+    },
+    "zc.settings.wallpaper.remove" : {
+      "comment" : "Settings > Wallpaper: button that goes back to the black wallpaper.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove Wallpaper"
+          }
+        }
+      }
+    },
     "zc.settings.zeus" : {
       "comment" : "The name of the Zeus app, which signs zContainer. Keep it as is.",
       "extractionState" : "manual",
@@ -33652,7 +33772,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zeus puts its certificate back each time it signs zContainer. To sign with a certificate of your own instead, import the .p12 that signed zContainer."
+            "value" : "To sign with your own certificate, import the .p12 that signed zContainer."
           }
         }
       }
@@ -33676,7 +33796,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "To sign with a certificate of your own, import the .p12 that signed zContainer, with its password."
+            "value" : "Or import the .p12 that signed zContainer, with its password."
           }
         }
       }
@@ -33688,7 +33808,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "After you remove it, zContainer can’t sign apps until Zeus signs zContainer again or you import a certificate."
+            "value" : "Without a certificate, zContainer can’t sign apps until Zeus signs it again."
           }
         }
       }
@@ -33760,7 +33880,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You imported this certificate. It has to belong to the team that signed zContainer, or the apps it signs won’t open."
+            "value" : "Imported by you. It must be from the team that signed zContainer."
           }
         }
       }
@@ -33772,7 +33892,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zeus put this certificate inside zContainer when it signed it, and brings a new one each time it signs zContainer again."
+            "value" : "From Zeus. A new one comes each time Zeus signs zContainer."
           }
         }
       }
@@ -33796,7 +33916,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "zContainer signs the apps inside it with the certificate Zeus signed it with."
+            "value" : "zContainer signs its apps with Zeus’s certificate."
           }
         }
       }
@@ -33933,30 +34053,6 @@
         }
       }
     },
-    "zc.settings.zeus.source" : {
-      "comment" : "Settings > Zeus: row saying where the certificate came from: Zeus or imported.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Source"
-          }
-        }
-      }
-    },
-    "zc.settings.zeus.sourceImported" : {
-      "comment" : "Settings > Zeus: value of the Source row for a certificate imported by hand.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Imported"
-          }
-        }
-      }
-    },
     "zc.settings.zeus.status" : {
       "comment" : "Settings > Zeus: row with what Apple says about the certificate.",
       "extractionState" : "manual",
@@ -33969,18 +34065,6 @@
         }
       }
     },
-    "zc.settings.zeus.updated" : {
-      "comment" : "Settings > Zeus: row with when the certificate was stored in zContainer.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Added"
-          }
-        }
-      }
-    },
     "zc.settings.zeus.zeusMissing" : {
       "comment" : "Settings > Zeus: alert when Open Zeus can’t open Zeus.",
       "extractionState" : "manual",
@@ -33989,6 +34073,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zeus isn’t installed on this iPhone."
+          }
+        }
+      }
+    },
+    "zc.wallpaper.failedTitle" : {
+      "comment" : "Alert title when a picked photo can't become the wallpaper.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn’t Use This Photo"
+          }
+        }
+      }
+    },
+    "zc.wallpaper.unreadable" : {
+      "comment" : "Alert message when a picked photo can't be read.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This photo can’t be opened. Try another one."
           }
         }
       }

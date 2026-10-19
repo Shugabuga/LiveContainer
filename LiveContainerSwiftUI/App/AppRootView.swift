@@ -31,6 +31,7 @@ struct AppRootView: View {
             }
         }
         .onChange(of: onboarding.isPresented, onboardingChanged)
+        .appIconAppearance()
     }
 
     /// Closes what's open over the Home Screen, like Settings, when
