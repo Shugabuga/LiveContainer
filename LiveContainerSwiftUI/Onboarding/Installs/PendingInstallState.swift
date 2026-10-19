@@ -4,7 +4,7 @@
 //
 
 /// How far an app in PendingInstallQueue has come.
-enum PendingInstallState: Equatable {
+enum PendingInstallState: Equatable, Codable {
     /// Its IPA is downloading.
     case downloading
 

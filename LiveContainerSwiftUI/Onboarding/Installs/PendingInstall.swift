@@ -11,9 +11,12 @@ import Foundation
 @MainActor
 @Observable
 final class PendingInstall: Identifiable {
-    let id = UUID()
+    /// Also names the folder its IPA goes in, and its record.
+    let id: UUID
     /// Where the app came from.
     let source: PendingInstallSource
+    /// What to call the app until it's installed and its own name is known.
+    let placeholderName: String
 
     /// How far it has come.
     private(set) var state: PendingInstallState
@@ -24,22 +27,39 @@ final class PendingInstall: Identifiable {
 
     /// The IPA on this iPhone, once it's there.
     @ObservationIgnored private(set) var file: URL?
+    /// For an opened IPA, the bookmark that finds it again if zContainer
+    /// closes before it's installed.
+    let bookmark: Data?
 
-    init(source: PendingInstallSource) {
+    /// - Parameters:
+    ///   - id: The app's id, which one brought back after zContainer closed
+    ///     keeps.
+    ///   - source: Where the app came from.
+    ///   - name: What to call it until it's installed, or nil for what the
+    ///     source calls it.
+    ///   - downloadedFile: A link's IPA, when it has downloaded already, or
+    ///     nil when it's still to download.
+    ///   - bookmark: For an opened IPA, the bookmark that finds it again.
+    init(id: UUID = UUID(), source: PendingInstallSource, name: String? = nil, downloadedFile: URL? = nil, bookmark: Data? = nil) {
+        self.id = id
         self.source = source
+        self.placeholderName = name ?? source.name
+        self.bookmark = bookmark
         switch source {
         case .link:
-            state = .downloading
+            file = downloadedFile
+            state = downloadedFile == nil ? .downloading : .waiting
+            downloadProgress = downloadedFile == nil ? 0 : 1
         case .openedFile(let url), .pickedFile(let url):
-            state = .waiting
             file = url
+            state = .waiting
         }
     }
 
     /// The app's name: its own once installed, until then what the source
-    /// calls it.
+    /// called it.
     var name: String {
-        app?.appInfo.displayName() ?? source.name
+        app?.appInfo.displayName() ?? placeholderName
     }
 
     /// Notes how much of the IPA has downloaded.

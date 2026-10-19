@@ -21,7 +21,7 @@ struct OnboardingDonePage: View {
         } content: {
             Section {
                 OnboardingChecklistRow(systemImage: "bolt.fill", title: "zc.settings.zeus".loc, isDone: connection.isConnected) {
-                    Text(connection.isConnected ? "zc.onboarding.done.connected".loc : "zc.onboarding.done.notSetUp".loc)
+                    Text(zeusDetail)
                 }
 
                 OnboardingChecklistRow(systemImage: "signature", title: "zc.settings.setup.signing".loc, isDone: isSigningChecked) {
@@ -50,10 +50,28 @@ struct OnboardingDonePage: View {
         onboarding.pendingInstalls.installedNames
     }
 
+    /// Whether Zeus is connected, or why not: it isn't on this iPhone, or
+    /// zContainer has no usable certificate.
+    private var zeusDetail: String {
+        if connection.isConnected {
+            "zc.onboarding.done.connected".loc
+        } else if !connection.isZeusInstalled {
+            "zc.onboarding.done.zeusMissing".loc
+        } else {
+            "zc.onboarding.done.notSetUp".loc
+        }
+    }
+
+    /// That zContainer is ready, when it can sign, even without Zeus to send
+    /// it apps, or that what's left is in Settings.
     private var message: String {
-        connection.isConnected && isSigningChecked
-            ? "zc.onboarding.done.ready".loc
-            : "zc.onboarding.done.later".loc
+        if connection.isReadyToSign && isSigningChecked {
+            connection.isZeusInstalled
+                ? "zc.onboarding.done.ready".loc
+                : "zc.onboarding.done.readyWithoutZeus".loc
+        } else {
+            "zc.onboarding.done.later".loc
+        }
     }
 
     /// The apps that came in, or that some are still coming.

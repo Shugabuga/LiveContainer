@@ -6,14 +6,14 @@
 import SwiftUI
 
 /// Opens Zeus, where zContainer gets signed again with a fresh certificate.
-/// When Zeus isn't on this iPhone, it says so.
+/// When Zeus isn't on this iPhone, it says so, and offers Zeus's website.
 struct ZeusOpenButton: View {
     @Environment(\.openURL) private var openURL
     @State private var isZeusMissing = false
 
     var body: some View {
         Button("zc.settings.zeus.openZeus".loc, action: openZeus)
-            .alert("zc.settings.zeus.zeusMissing".loc, isPresented: $isZeusMissing) { }
+            .zeusMissingAlert(isPresented: $isZeusMissing)
     }
 
     private func openZeus() {

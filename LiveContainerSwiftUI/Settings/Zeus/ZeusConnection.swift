@@ -19,6 +19,8 @@ import SwiftUI
 final class ZeusConnection {
     /// The link that opens Zeus.
     static let zeusURL = URL(string: "zeus://")
+    /// Zeus's website, where it's to be had when it isn't on this iPhone.
+    static let websiteURL = URL(string: "https://getzeus.app")
 
     /// Where the stored certificate came from, or `.none`.
     private(set) var source: ZeusCertificateSource = .none

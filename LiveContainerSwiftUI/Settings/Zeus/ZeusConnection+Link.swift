@@ -7,7 +7,9 @@ import Foundation
 
 /// How zContainer stands with Zeus, as onboarding's Connect to Zeus step
 /// ticks it off: Zeus is installed, a certificate that can sign is stored,
-/// and it belongs to the team that signed zContainer.
+/// and it belongs to the team that signed zContainer. The certificate is
+/// what signing takes; Zeus being installed only matters for sending apps
+/// and signing zContainer again.
 extension ZeusConnection {
     /// Whether the certificate belongs to the team that signed zContainer:
     /// false when Zeus's certificate was left out for belonging to another
@@ -29,9 +31,16 @@ extension ZeusConnection {
         hasCertificate && !isExpired && validity != .revoked && problem == nil
     }
 
-    /// Whether zContainer is connected to Zeus: Zeus is installed, and a
-    /// certificate of zContainer's own team is stored and usable.
+    /// Whether zContainer can sign apps, as far as is known without signing
+    /// anything: a usable certificate of its own team is stored, whether
+    /// Zeus put it inside or it was imported by hand.
+    var isReadyToSign: Bool {
+        isCertificateUsable && isSameTeam == true
+    }
+
+    /// Whether zContainer is connected to Zeus: Zeus is installed, and
+    /// zContainer is ready to sign.
     var isConnected: Bool {
-        isZeusInstalled && isCertificateUsable && isSameTeam == true
+        isZeusInstalled && isReadyToSign
     }
 }

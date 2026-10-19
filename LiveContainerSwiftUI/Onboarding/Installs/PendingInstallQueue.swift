@@ -19,6 +19,12 @@ import Foundation
 /// Apps still on their way in when onboarding closes go on in the same way,
 /// and links that arrive meanwhile join them rather than being turned away
 /// by the install running.
+///
+/// The apps outlast zContainer closing, as it does when Zeus signs it again
+/// or iOS ends it while the person is in Zeus: PendingInstallStore keeps
+/// their IPAs and writes them down whenever one changes, and the next launch
+/// brings back the ones still to install, under Add Apps again or
+/// installing at once when onboarding doesn't show.
 @MainActor
 @Observable
 final class PendingInstallQueue {
@@ -26,17 +32,33 @@ final class PendingInstallQueue {
     private(set) var items: [PendingInstall] = []
     /// Whether installs wait, as they do until onboarding reaches Add Apps.
     /// Downloads never wait.
-    private(set) var holdsInstalls = false
+    private(set) var holdsInstalls: Bool
 
     /// Whether a failure shows as an alert, as it does while no list shows
     /// it: once onboarding has closed.
-    @ObservationIgnored private var reportsFailures = true
+    @ObservationIgnored private var reportsFailures: Bool
     /// Whether one of the apps is installing.
     @ObservationIgnored private var isInstalling = false
     @ObservationIgnored private let coordinator: AppLaunchCoordinator
 
-    init(coordinator: AppLaunchCoordinator) {
+    /// Brings back the apps that were still on their way in when zContainer
+    /// last closed. Downloads that hadn't finished start again; the rest
+    /// install now, or once onboarding reaches Add Apps.
+    /// - Parameter holdsForOnboarding: Whether onboarding shows from the
+    ///   start, so installs wait for it.
+    init(coordinator: AppLaunchCoordinator, holdsForOnboarding: Bool) {
         self.coordinator = coordinator
+        holdsInstalls = holdsForOnboarding
+        reportsFailures = !holdsForOnboarding
+        items = PendingInstallStore.restore()
+        for item in items {
+            if item.state == .downloading, case .link(let url) = item.source {
+                Task {
+                    await download(item, from: url)
+                }
+            }
+        }
+        installNext()
     }
 
     /// Whether any app is still on its way in.
@@ -64,7 +86,7 @@ final class PendingInstallQueue {
             return false
         }
         if url.isFileURL {
-            add(PendingInstall(source: .openedFile(url)))
+            add(PendingInstall(source: .openedFile(url), bookmark: Self.bookmark(forOpenedFile: url)))
             return true
         }
         guard ["http", "https"].contains(url.scheme?.lowercased() ?? "") else {
@@ -80,12 +102,34 @@ final class PendingInstallQueue {
 
     /// Takes an IPA picked in Files, which Files copied for zContainer.
     func add(pickedFile url: URL) {
-        add(PendingInstall(source: .pickedFile(url)))
+        let id = UUID()
+        // Files copies into the temporary folder, which iOS may empty while
+        // zContainer is closed, so the copy moves in beside the downloads.
+        let file = (try? PendingInstallStore.moveIn(url, for: id)) ?? url
+        add(PendingInstall(id: id, source: .pickedFile(file)))
     }
 
     private func add(_ item: PendingInstall) {
         items.append(item)
+        saveItems()
         installNext()
+    }
+
+    /// A bookmark that finds an opened IPA again if zContainer closes before
+    /// it's installed. One shared to zContainer may be reachable only
+    /// through the share extension's bookmark, which installing it falls
+    /// back on too.
+    private static func bookmark(forOpenedFile url: URL) -> Data? {
+        let isAccessing = url.startAccessingSecurityScopedResource()
+        defer {
+            if isAccessing {
+                url.stopAccessingSecurityScopedResource()
+            }
+        }
+        if FileManager.default.isReadableFile(atPath: url.path), let bookmark = LCUtils.bookmark(for: url) {
+            return bookmark
+        }
+        return LCUtils.appGroupUserDefault.data(forKey: "LCLaunchExtensionFileBookmark")
     }
 
     // MARK: Onboarding
@@ -115,11 +159,9 @@ final class PendingInstallQueue {
 
     // MARK: Downloading
 
-    /// Downloads a link's IPA into a folder of its own, the way installing
+    /// Downloads a link's IPA into the app's own folder, the way installing
     /// from a link always does, with the progress on the app's row.
     private func download(_ item: PendingInstall, from url: URL) async {
-        let folder = Self.folder(for: item)
-        let destination = folder.appending(path: PendingInstallSource.downloadName(for: url))
         let downloader = DownloadHelper()
         // DownloadHelper reports its progress on the main queue.
         let progress = downloader.$downloadProgress.sink { [weak item] fraction in
@@ -130,20 +172,16 @@ final class PendingInstallQueue {
         defer { progress.cancel() }
 
         do {
-            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            let folder = try PendingInstallStore.makeFolder(for: item.id)
+            let destination = folder.appending(path: PendingInstallSource.downloadName(for: url), directoryHint: .notDirectory)
             try await downloader.download(url: url, to: destination)
             item.downloaded(to: destination)
+            saveItems()
         } catch {
-            try? FileManager.default.removeItem(at: folder)
+            PendingInstallStore.removeFolder(for: item.id)
             fail(item, because: "zc.onboarding.apps.downloadFailed %@".localizeWithFormat(error.localizedDescription))
         }
         installNext()
-    }
-
-    /// Where a link's IPA downloads to: a folder of its own, since several
-    /// can download at once.
-    private static func folder(for item: PendingInstall) -> URL {
-        URL.temporaryDirectory.appending(path: "ReceivedApps/\(item.id.uuidString)", directoryHint: .isDirectory)
     }
 
     // MARK: Installing
@@ -166,16 +204,28 @@ final class PendingInstallQueue {
     private func install(_ item: PendingInstall) async {
         guard let file = item.file else {
             item.finishInstalling(adding: nil)
+            saveItems()
             return
         }
         await waitForOtherInstalls()
         item.startInstalling()
+        saveItems()
+
+        // An opened IPA may lie outside zContainer, as one found again by
+        // its bookmark does, and only opens with access granted.
+        let isAccessing = !item.source.isOwnCopy && file.startAccessingSecurityScopedResource()
         do {
             let app = try await coordinator.installReceivedIPA(at: file, isOwnCopy: item.source.isOwnCopy)
             item.finishInstalling(adding: app)
+            saveItems()
         } catch {
             fail(item, because: error.localizedDescription)
         }
+        if isAccessing {
+            file.stopAccessingSecurityScopedResource()
+        }
+        // Only once the app no longer counts as on its way in, so the next
+        // launch can't find it written down without its IPA.
         removeCopy(of: item, at: file)
     }
 
@@ -197,10 +247,9 @@ final class PendingInstallQueue {
     /// download's whole folder, or the copy Files made.
     private func removeCopy(of item: PendingInstall, at file: URL) {
         switch item.source {
-        case .link:
-            try? FileManager.default.removeItem(at: Self.folder(for: item))
-        case .pickedFile:
+        case .link, .pickedFile:
             try? FileManager.default.removeItem(at: file)
+            PendingInstallStore.removeFolder(for: item.id)
         case .openedFile:
             break
         }
@@ -209,8 +258,14 @@ final class PendingInstallQueue {
     /// Marks an app as failed, and says so in an alert when no list shows it.
     private func fail(_ item: PendingInstall, because reason: String) {
         item.fail(reason)
+        saveItems()
         if reportsFailures {
             coordinator.errorMessage = "zc.onboarding.apps.failedAlert %@ %@".localizeWithFormat(item.name, reason)
         }
+    }
+
+    /// Writes down the apps still on their way in.
+    private func saveItems() {
+        PendingInstallStore.save(items)
     }
 }

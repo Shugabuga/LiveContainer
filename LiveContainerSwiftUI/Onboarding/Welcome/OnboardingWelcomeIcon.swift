@@ -32,6 +32,8 @@ struct OnboardingWelcomeIcon: View {
         if voiceOverEnabled {
             stage = .letter
         } else if reduceMotion {
+            // ZContainerMark keeps its parts whole with Reduce Motion, so
+            // only their opacity changes.
             withAnimation(OnboardingDesign.markFade) {
                 stage = .letter
             }

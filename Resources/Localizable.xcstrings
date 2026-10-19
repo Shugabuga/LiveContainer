@@ -32493,6 +32493,18 @@
         }
       }
     },
+    "zc.onboarding.connect.checking" : {
+      "comment" : "Onboarding, Connect to Zeus: the explanation while zContainer reads which team its certificate belongs to.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "zContainer is making sure its certificate belongs to the team that signed it."
+          }
+        }
+      }
+    },
     "zc.onboarding.connect.connected" : {
       "comment" : "Onboarding, Connect to Zeus: the explanation when everything is in place.",
       "extractionState" : "manual",
@@ -32537,6 +32549,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Install zContainer from Zeus’s official source. Zeus signs it and puts your certificate inside, so zContainer can sign the apps you add."
+          }
+        }
+      }
+    },
+    "zc.onboarding.connect.problem" : {
+      "comment" : "Onboarding, Connect to Zeus: the explanation when the certificate has a problem, which the checklist below names, or belongs to another team.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "zContainer can’t use its certificate, for the reason below. Open Zeus to sign zContainer again, or import the .p12 that signed zContainer."
+          }
+        }
+      }
+    },
+    "zc.onboarding.connect.readyWithoutZeus" : {
+      "comment" : "Onboarding, Connect to Zeus: the explanation when zContainer has a usable certificate but Zeus isn't installed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "zContainer can sign your apps with its certificate. Without Zeus on this iPhone, you can add them from Files."
           }
         }
       }
@@ -32721,6 +32757,18 @@
         }
       }
     },
+    "zc.onboarding.done.readyWithoutZeus" : {
+      "comment" : "Onboarding, last page: the explanation when everything works but Zeus isn't installed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "zContainer is ready. Add apps from Files anytime, and they’ll land on its Home Screen."
+          }
+        }
+      }
+    },
     "zc.onboarding.done.start" : {
       "comment" : "Onboarding, last step: the button that shows the Home Screen.",
       "extractionState" : "manual",
@@ -32741,6 +32789,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "You’re All Set"
+          }
+        }
+      }
+    },
+    "zc.onboarding.done.zeusMissing" : {
+      "comment" : "Onboarding, last page: the Zeus row's value when Zeus isn't installed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not on This iPhone"
           }
         }
       }
@@ -33713,6 +33773,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zeus put this certificate inside zContainer when it signed it, and brings a new one each time it signs zContainer again."
+          }
+        }
+      }
+    },
+    "zc.settings.zeus.getZeus" : {
+      "comment" : "Button in the alert saying Zeus isn't installed; opens Zeus's website.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get Zeus"
           }
         }
       }

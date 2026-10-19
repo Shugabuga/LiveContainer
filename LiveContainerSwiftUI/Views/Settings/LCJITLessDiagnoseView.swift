@@ -368,7 +368,11 @@ struct LCJITLessDiagnoseView : View {
         }
 
         isJITLessTestInProgress = true
-        LCUtils.validateJITLessSetup { success, error in
+        // The shared check, which waits for any other JIT-less check to
+        // finish, since they all sign the same copy of the test library,
+        // and waits for ZSign away from the main thread.
+        Task {
+            let (success, error) = await ZeusCertificate.validateJITLessSetup()
             if success {
                 successInfo = "lc.jitlessSetup.success".loc
                 successShow = true
@@ -378,7 +382,6 @@ struct LCJITLessDiagnoseView : View {
             }
             isJITLessTestInProgress = false
         }
-    
     }
     
     func getHelp() {

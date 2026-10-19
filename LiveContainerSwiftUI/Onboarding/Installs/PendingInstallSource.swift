@@ -31,15 +31,16 @@ enum PendingInstallSource: Equatable {
     }
 
     /// What to call the app until it's installed and its own name is known:
-    /// the IPA's file name, or for a link that doesn't name one, where it
-    /// comes from.
+    /// the IPA's file name, or for a link, where it comes from when the link
+    /// doesn't name the IPA. Zeus's one-time links all end in `app.ipa`, so
+    /// they say they're from Zeus instead.
     var name: String {
         switch self {
         case .link(let url):
-            if Self.isIPA(url) {
-                url.deletingPathExtension().lastPathComponent
-            } else if Self.isLocal(url) {
+            if Self.isLocal(url) {
                 "zc.onboarding.apps.fromZeus".loc
+            } else if Self.isIPA(url) {
+                url.deletingPathExtension().lastPathComponent
             } else {
                 url.host ?? url.absoluteString
             }

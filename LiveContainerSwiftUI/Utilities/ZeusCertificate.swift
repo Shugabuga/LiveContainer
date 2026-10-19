@@ -159,9 +159,10 @@ struct ZeusCertificate {
 
     /// The JIT-less check: signs a test library with the stored certificate
     /// and asks iOS whether it accepts the signature. Settings' Check Setup,
-    /// onboarding and the check after Zeus brings a certificate all run it,
-    /// sometimes at once, and every run signs the same copy of the library in
-    /// the temporary folder, so each one waits for the one before it.
+    /// onboarding, the JIT-less diagnosis and the check after Zeus brings a
+    /// certificate all run it, sometimes at once, and every run signs the
+    /// same copy of the library in the temporary folder, so each one waits
+    /// for the one before it.
     @MainActor
     static func validateJITLessSetup() async -> (Bool, Error?) {
         let previous = runningCheck

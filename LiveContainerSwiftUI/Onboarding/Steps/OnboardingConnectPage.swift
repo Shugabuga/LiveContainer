@@ -9,8 +9,14 @@ import SwiftUI
 /// installed, the certificate Zeus put inside zContainer is stored, and it
 /// belongs to the team that signed zContainer. Installed from Zeus's official
 /// source, all three are ticked on arrival, and Continue is pinned at the
-/// bottom. Otherwise the step says how to get there, with Open Zeus, the
-/// import of a certificate of one's own, and Set Up Later.
+/// bottom. Otherwise the step says what's in the way and how to get past it,
+/// with Open Zeus, the import of a certificate of one's own, and Set Up
+/// Later.
+///
+/// The certificate is what signing takes, so Continue shows once it's usable
+/// and of zContainer's own team, even without Zeus on this iPhone, as for
+/// someone who signed zContainer another way and imported its .p12. The Zeus
+/// row then only says that Zeus isn't there.
 ///
 /// The checklist is read again whenever zContainer comes back to the front,
 /// like after a visit to Zeus.
@@ -42,7 +48,7 @@ struct OnboardingConnectPage: View {
         }
         .onboardingBottomBar {
             OnboardingFooter {
-                if connection.isConnected {
+                if connection.isReadyToSign {
                     OnboardingPrimaryButton(title: "lc.common.continue".loc, action: continueTapped)
                 } else {
                     OnboardingOpenZeusButton(isPrimary: true)
@@ -54,10 +60,10 @@ struct OnboardingConnectPage: View {
                 }
             }
         }
-        .animation(reduceMotion ? nil : OnboardingDesign.spring, value: connection.isConnected)
-        // A tap for getting connected, not for losing it.
-        .sensoryFeedback(.success, trigger: connection.isConnected) { _, isConnected in
-            isConnected
+        .animation(reduceMotion ? nil : OnboardingDesign.spring, value: connection.isReadyToSign)
+        // A tap for getting ready, not for losing it.
+        .sensoryFeedback(.success, trigger: connection.isReadyToSign) { _, isReady in
+            isReady
         }
         .onChange(of: scenePhase, initial: true, refresh)
         // Apple tells whether the certificate was revoked, and when an
@@ -67,10 +73,25 @@ struct OnboardingConnectPage: View {
         }
     }
 
+    /// What the step says under its title: that zContainer is ready, or
+    /// what's in the way, so someone who installed zContainer from Zeus
+    /// isn't told to do it again.
     private var message: String {
-        connection.isConnected
-            ? "zc.onboarding.connect.connected".loc
-            : "zc.onboarding.connect.notConnected".loc
+        if connection.isReadyToSign {
+            connection.isZeusInstalled
+                ? "zc.onboarding.connect.connected".loc
+                : "zc.onboarding.connect.readyWithoutZeus".loc
+        } else if connection.validity == .revoked {
+            "zc.settings.zeus.revokedNotice".loc
+        } else if connection.isExpired {
+            "zc.settings.zeus.expiredNotice".loc
+        } else if connection.problem != nil || connection.isSameTeam == false {
+            "zc.onboarding.connect.problem".loc
+        } else if connection.hasCertificate {
+            "zc.onboarding.connect.checking".loc
+        } else {
+            "zc.onboarding.connect.notConnected".loc
+        }
     }
 
     private var zeusDetail: String {

@@ -12,7 +12,8 @@ import SwiftUI
 /// the last check of the setup passed, as when zContainer was set up before.
 /// Once it's finished, even with steps left for later, it stays away;
 /// Settings' "Finish Setting Up zContainer" row opens it again. While it
-/// shows, install links wait in `pendingInstalls`, so none is lost.
+/// shows, install links wait in `pendingInstalls`, so none is lost, even
+/// when zContainer closes before they're installed.
 @MainActor
 @Observable
 final class OnboardingModel {
@@ -33,13 +34,10 @@ final class OnboardingModel {
     let pendingInstalls: PendingInstallQueue
 
     init(coordinator: AppLaunchCoordinator) {
-        pendingInstalls = PendingInstallQueue(coordinator: coordinator)
         let isNeeded = Self.isNeededAtLaunch(sharedModel: coordinator.sharedModel)
+        pendingInstalls = PendingInstallQueue(coordinator: coordinator, holdsForOnboarding: isNeeded)
         isPresented = isNeeded
         coversHomeScreen = isNeeded
-        if isNeeded {
-            pendingInstalls.holdForOnboarding()
-        }
     }
 
     /// Whether onboarding shows when zContainer opens: on the first launch,
