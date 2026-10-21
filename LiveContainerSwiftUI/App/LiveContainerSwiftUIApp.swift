@@ -29,6 +29,8 @@ struct LiveContainerSwiftUIApp : SwiftUI.App {
         do {
             // load apps
             try fm.createDirectory(at: LCPath.bundlePath, withIntermediateDirectories: true)
+            // Delete what a replace that stopped halfway left behind.
+            AppBundleSwap.recover(in: LCPath.bundlePath)
             let appDirs = try fm.contentsOfDirectory(atPath: LCPath.bundlePath.path)
             for appDir in appDirs {
                 if !appDir.hasSuffix(".app") {
@@ -50,6 +52,12 @@ struct LiveContainerSwiftUIApp : SwiftUI.App {
             }
             if LCPath.lcGroupDocPath != LCPath.docPath {
                 try fm.createDirectory(at: LCPath.lcGroupBundlePath, withIntermediateDirectories: true)
+                // Only the primary zContainer installs shared apps, so only it
+                // cleans up after them: a secondary one starting while the
+                // primary replaces a shared app would delete its new copy.
+                if DataManager.shared.model.multiLCStatus != 2 {
+                    AppBundleSwap.recover(in: LCPath.lcGroupBundlePath)
+                }
                 let appDirsShared = try fm.contentsOfDirectory(atPath: LCPath.lcGroupBundlePath.path)
                 for appDir in appDirsShared {
                     if !appDir.hasSuffix(".app") {

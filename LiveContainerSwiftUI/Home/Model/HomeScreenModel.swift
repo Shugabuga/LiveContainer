@@ -71,7 +71,7 @@ final class HomeScreenModel {
     var presentedScreen: HomePresentedScreen?
     /// Whether a screen covers the Home Screen completely, from the moment it
     /// opens until it has closed. The status bar then follows that screen's
-    /// appearance instead of the black wallpaper's.
+    /// appearance instead of the Home Screen's dark one.
     var isCoveredByScreen = false
 
     /// The app the person asked to remove, while the question shows.
@@ -223,13 +223,13 @@ final class HomeScreenModel {
     }
 
     /// Follows a link zContainer was opened with: links that do something in
-    /// an app, or bring up zContainer, show the Home Screen.
+    /// an app, or bring up zContainer, show the Home Screen, as do
+    /// certificates sent to zContainer and requests from Zeus, whose
+    /// questions show over it.
     func handle(_ route: HomeRoute) {
         switch route {
-        case .home, .app:
+        case .home, .app, .certificate, .certificateFile, .zeusRequests:
             showHomeScreen()
-        case .certificate:
-            break
         }
     }
 }

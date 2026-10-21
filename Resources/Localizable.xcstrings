@@ -31869,6 +31869,258 @@
         }
       }
     },
+    "zc.appIcon.blue" : {
+      "comment" : "Settings > Home Screen: name of an icon color.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blue"
+          }
+        }
+      }
+    },
+    "zc.appIcon.gold" : {
+      "comment" : "Settings > Home Screen: name of an icon color.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gold"
+          }
+        }
+      }
+    },
+    "zc.appIcon.green" : {
+      "comment" : "Settings > Home Screen: name of an icon color.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Green"
+          }
+        }
+      }
+    },
+    "zc.appIcon.light" : {
+      "comment" : "Settings > Home Screen: name of the white icon with pink tiles.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Light"
+          }
+        }
+      }
+    },
+    "zc.appIcon.mono" : {
+      "comment" : "Settings > Home Screen: name of the black and white icon.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mono"
+          }
+        }
+      }
+    },
+    "zc.appIcon.og" : {
+      "comment" : "Settings > Home Screen: name of the icon zContainer had before (the original one). Keep it short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OG"
+          }
+        }
+      }
+    },
+    "zc.appIcon.orange" : {
+      "comment" : "Settings > Home Screen: name of an icon color.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Orange"
+          }
+        }
+      }
+    },
+    "zc.appIcon.purple" : {
+      "comment" : "Settings > Home Screen: name of an icon color.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Purple"
+          }
+        }
+      }
+    },
+    "zc.appIcon.red" : {
+      "comment" : "Settings > Home Screen: name of an icon color.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Red"
+          }
+        }
+      }
+    },
+    "zc.appIcon.teal" : {
+      "comment" : "Settings > Home Screen: name of an icon color.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Teal"
+          }
+        }
+      }
+    },
+    "zc.appIcon.zContainer" : {
+      "comment" : "Settings > Home Screen: name of zContainer’s own icon, the grid of apps on Zeus pink.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "zContainer"
+          }
+        }
+      }
+    },
+    "zc.certificateImport.message %@" : {
+      "comment" : "Certificate sent to zContainer: message of the question whether to use it, when zContainer has no certificate yet. %@ is the team ID.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "zContainer will sign the apps inside it with this certificate, from team %@."
+          }
+        }
+      }
+    },
+    "zc.certificateImport.otherTeam %@ %@" : {
+      "comment" : "Certificate sent to zContainer or imported in Settings, turned down: the first %@ is the certificate’s team ID, the second the team that signed zContainer.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This certificate belongs to team %1$@, but team %2$@ signed zContainer, so the apps it signs wouldn’t open. Install zContainer again with Zeus, or use a certificate of team %2$@."
+          }
+        }
+      }
+    },
+    "zc.certificateImport.readyMessage %@" : {
+      "comment" : "Certificate sent to zContainer: message of the alert after it was stored and signing works. %@ is the team ID.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "zContainer signs the apps inside it with the certificate of team %@ now."
+          }
+        }
+      }
+    },
+    "zc.certificateImport.readyTitle" : {
+      "comment" : "Certificate sent to zContainer: title of the alert after it was stored and signing works.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Certificate Ready"
+          }
+        }
+      }
+    },
+    "zc.certificateImport.replaceMessage %@" : {
+      "comment" : "Certificate sent to zContainer: message of the question whether to use it, when it replaces the certificate zContainer has. %@ is the team ID.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "zContainer will sign the apps inside it with this certificate, from team %@, in place of the one it uses now."
+          }
+        }
+      }
+    },
+    "zc.certificateImport.secondary" : {
+      "comment" : "Certificate sent to a second zContainer, which signs with the first one’s certificate.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This zContainer signs apps with the first zContainer’s certificate. Import the certificate in the first zContainer."
+          }
+        }
+      }
+    },
+    "zc.certificateImport.title" : {
+      "comment" : "Certificate sent to zContainer: title of the question whether to sign apps with it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use This Certificate?"
+          }
+        }
+      }
+    },
+    "zc.certificateImport.unreadable" : {
+      "comment" : "Certificate sent to zContainer: a .p12 file opened with zContainer couldn’t be read.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "zContainer couldn’t read this certificate file."
+          }
+        }
+      }
+    },
+    "zc.certificateImport.use" : {
+      "comment" : "Certificate sent to zContainer: button that stores the certificate and signs apps with it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use Certificate"
+          }
+        }
+      }
+    },
+    "zc.certificateImport.wrongPassword" : {
+      "comment" : "Certificate sent to zContainer: message of the password question after a password that didn’t open the .p12 file.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That password doesn’t open this certificate. Enter the password that protects this .p12 file."
+          }
+        }
+      }
+    },
     "zc.guestTweak.homeButtonHint" : {
       "comment" : "Home button floating over a running app: VoiceOver hint.",
       "extractionState" : "manual",
@@ -31877,6 +32129,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Goes back to zContainer."
+          }
+        }
+      }
+    },
+    "zc.guestTweak.restartToGetFromZeus" : {
+      "comment" : "Shown inside an app running in zContainer when Zeus sends an app or a certificate, which zContainer picks up once its Home Screen is back.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Go back to zContainer’s Home Screen to get what Zeus sent."
+          }
+        }
+      }
+    },
+    "zc.guestTweak.restartToImportCertificate" : {
+      "comment" : "Shown inside an app running in zContainer when a certificate link opens, which only zContainer’s own screens take.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Go back to zContainer’s Home Screen, then open the certificate link again."
           }
         }
       }
@@ -32285,6 +32561,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Search"
+          }
+        }
+      }
+    },
+    "zc.install.busy" : {
+      "comment" : "Shown when an app or an install link arrives while zContainer is installing another app.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "zContainer is installing another app. Try again once it’s done."
           }
         }
       }
@@ -33081,6 +33369,42 @@
         }
       }
     },
+    "zc.settings.appIcon" : {
+      "comment" : "Settings > Home Screen: title of the choice of zContainer’s own icon on the iPhone’s Home Screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "zContainer Icon"
+          }
+        }
+      }
+    },
+    "zc.settings.appIconFailed" : {
+      "comment" : "Settings > Home Screen: title of the alert when iOS doesn’t switch zContainer’s icon. Its message is iOS’s own reason.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn’t Change the Icon"
+          }
+        }
+      }
+    },
+    "zc.settings.appIconFooter" : {
+      "comment" : "Settings > Home Screen: footer under the choice of zContainer’s own icon.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "zContainer’s icon on your Home Screen. OG is the icon zContainer had before."
+          }
+        }
+      }
+    },
     "zc.settings.apps.empty" : {
       "comment" : "Settings > Apps: title shown when no apps are in zContainer.",
       "extractionState" : "manual",
@@ -33664,13 +33988,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "An app’s containers share its sign-ins."
+            "value" : "The apps inside zContainer share their sign-ins with one another."
           }
         }
       }
     },
     "zc.settings.setup.sharedStorage" : {
-      "comment" : "Settings > Zeus: the app group zContainer shares with its extensions.",
+      "comment" : "Settings > Zeus: the app group zContainer shares with its extensions and Zeus.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -33688,19 +34012,19 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Shared apps, multitasking and the share sheet can reach your apps."
+            "value" : "Shared apps, the share sheet, the Launch App shortcut and updates from Zeus use it."
           }
         }
       }
     },
     "zc.settings.setup.sharedStorageMissing" : {
-      "comment" : "Settings > Zeus: why the Shared Storage check failed.",
+      "comment" : "Settings and onboarding, Check Setup: under Shared Storage when zContainer has no app group, which it works without.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "zContainer has no app group. Sign it again in Zeus."
+            "value" : "zContainer has no app group, so shared apps, the share sheet and updates from Zeus are off. Refresh zContainer in Zeus to add one."
           }
         }
       }
@@ -34185,6 +34509,126 @@
         }
       }
     },
+    "zc.update.confirm" : {
+      "comment" : "App sent from Zeus: button that installs the newer version over the copy in zContainer.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Update"
+          }
+        }
+      }
+    },
+    "zc.update.downgradeConfirm" : {
+      "comment" : "App sent from Zeus that is older than the copy in zContainer: red button that installs it over that copy.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Replace"
+          }
+        }
+      }
+    },
+    "zc.update.downgradeMessage %@ %@" : {
+      "comment" : "App sent from Zeus that is older than the copy in zContainer: message of the question whether to replace it. The first %@ is the version Zeus sent, the second the app’s name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ is older than the version in zContainer. %2$@ keeps its data, but some apps can’t read data from a newer version."
+          }
+        }
+      }
+    },
+    "zc.update.downgradeTitle %@ %@ %@" : {
+      "comment" : "App sent from Zeus that is older than the copy in zContainer: title of the question whether to replace it. The first %@ is the app’s name, the second the version in zContainer, the third the version Zeus sent.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Replace %1$@ %2$@ with %3$@?"
+          }
+        }
+      }
+    },
+    "zc.update.message %@" : {
+      "comment" : "App sent from Zeus to replace the copy in zContainer: message of the question whether to update or reinstall it. %@ is the app’s name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ keeps its data and settings."
+          }
+        }
+      }
+    },
+    "zc.update.pickCopyTip" : {
+      "comment" : "App sent from Zeus while zContainer has more than one copy of it: message of the question which copy it replaces. Each button names a copy’s folder.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "There’s more than one copy of this app. Choose the one to replace."
+          }
+        }
+      }
+    },
+    "zc.update.reinstallConfirm" : {
+      "comment" : "App sent from Zeus in the version zContainer already has: button that installs it again over the copy in zContainer.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reinstall"
+          }
+        }
+      }
+    },
+    "zc.update.reinstallTitle %@ %@" : {
+      "comment" : "App sent from Zeus in the version zContainer already has: title of the question whether to install it again. The first %@ is the app’s name, the second its version.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reinstall %1$@ %2$@?"
+          }
+        }
+      }
+    },
+    "zc.update.running %@" : {
+      "comment" : "Why zContainer didn’t replace an app: the app is still open. %@ is the app’s name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is open. Close it, then try again."
+          }
+        }
+      }
+    },
+    "zc.update.title %@ %@ %@" : {
+      "comment" : "App sent from Zeus to replace the copy in zContainer: title of the question whether to update it. The first %@ is the app’s name, the second the version in zContainer, the third the version Zeus sent.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Update %1$@ %2$@ to %3$@?"
+          }
+        }
+      }
+    },
     "zc.wallpaper.failedTitle" : {
       "comment" : "Alert title when a picked photo can't become the wallpaper.",
       "extractionState" : "manual",
@@ -34205,6 +34649,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "This photo can’t be opened. Try another one."
+          }
+        }
+      }
+    },
+    "zc.zeusRequest.expired" : {
+      "comment" : "Zeus sent an app or a certificate through the app group, but it waited too long to be picked up.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What Zeus sent has expired. Send it again from Zeus."
+          }
+        }
+      }
+    },
+    "zc.zeusRequest.mismatch %@ %@" : {
+      "comment" : "Why zContainer didn’t install an app sent from Zeus: the file holds another app than the one Zeus named. The first %@ is the bundle ID Zeus named, the second the one in the file.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zeus sent %2$@ in place of %1$@. Send it again from Zeus."
+          }
+        }
+      }
+    },
+    "zc.zeusRequest.unreachable" : {
+      "comment" : "Zeus sent an app or a certificate through the app group it shares with zContainer, but zContainer can’t reach that group.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "zContainer can’t reach what Zeus sent. Refresh zContainer in Zeus, then try again."
+          }
+        }
+      }
+    },
+    "zc.zeusRequest.unreadable" : {
+      "comment" : "Zeus sent an app or a certificate through the app group, but zContainer couldn’t read it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "zContainer couldn’t read what Zeus sent. Send it again from Zeus."
           }
         }
       }

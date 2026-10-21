@@ -34,8 +34,9 @@ What it checks:
   default) comes first and no livecontainer scheme is declared or queried, the
   queried schemes are only that one and zeus, the name is zContainer (the share
   extension's too, which the share sheet shows), the keychain groups are
-  <team>.app.reiko.zcontainer.shared and .1 to .127 and the app group is named
-  after the bundle ID, and no user-facing string (string tables, InfoPlist.strings,
+  <team>.app.reiko.zcontainer.shared and .1 to .127 and the app group is
+  group.app.reiko.zeus, the one zContainer shares with Zeus (installers add the
+  team), and no user-facing string (string tables, InfoPlist.strings,
   Info.plist values, the Shortcuts action) says LiveContainer, except the About
   page's credits (lc.about.*) and links to LiveContainer's own pages.
 
@@ -96,12 +97,15 @@ LICENSE_LIST = 'LiveContainerSwiftUI/Views/Settings/About/LCLicense.swift'
 LICENSE_FILE = re.compile(r'fileName:\s*"([^"]+)"')
 # zContainer's identity. The keychain groups don't follow the bundle ID: they are
 # the same for every build, as LiveContainer's are, so a test build under another
-# App ID still finds them. The URL scheme is ZC_URL_SCHEME (--url-scheme), and the
-# app queries it (canOpenURL on itself) and Zeus's.
+# App ID still finds them. Neither does the app group, the one shared with Zeus:
+# the entitlements ask for the base name and the installer adds the team. The URL
+# scheme is ZC_URL_SCHEME (--url-scheme), and the app queries it (canOpenURL on
+# itself) and Zeus's.
 OTHER_QUERIED_SCHEMES = ['zeus']
 NAME = 'zContainer'
 KEYCHAIN_GROUP = 'app.reiko.zcontainer.shared'
 KEYCHAIN_GROUP_COUNT = 128
+APP_GROUP = 'group.app.reiko.zeus'
 # The old name, outside URLs and links to LiveContainer's own pages, which may
 # keep it (a link to LiveContainer's FAQ is still called that).
 OLD_NAME = re.compile(r'(?i)live\s?container')
@@ -377,6 +381,15 @@ class Checker:
         lacking = [i for i in icons if not any(n.startswith(i) and n.endswith('.png') for n in names)]
         self.expect(icons and not lacking and 'CFBundleIconName' not in app_info,
                     f'icons {sorted(set(icons))} are loose PNGs', ', '.join(lacking))
+        # The icons Settings > Home Screen offers, which iOS finds by these names.
+        alternates = {}
+        for key in ('CFBundleIcons', 'CFBundleIcons~ipad'):
+            for name, entry in app_info.get(key, {}).get('CFBundleAlternateIcons', {}).items():
+                alternates.setdefault(name, []).extend(entry.get('CFBundleIconFiles', []))
+        missing = sorted({f for files in alternates.values() for f in files
+                          if not any(n.startswith(f) and n.endswith('.png') for n in names)})
+        self.expect(alternates and not missing, f'{len(alternates)} alternate icons are loose PNGs ({", ".join(sorted(alternates))})',
+                    ', '.join(missing))
         intents = os.path.join(self.app, 'PlugIns', 'LaunchAppExtension.appex', 'Metadata.appintents')
         if os.path.isdir(intents):
             try:
@@ -409,7 +422,6 @@ class Checker:
         self.expect(queried == wanted, f'queried schemes {", ".join(wanted)}', ', '.join(queried))
         self.expect(info.get('CFBundleName') == NAME, f'CFBundleName "{NAME}"', str(info.get('CFBundleName')))
         wanted_groups = [KEYCHAIN_GROUP] + [f'{KEYCHAIN_GROUP}.{i}' for i in range(1, KEYCHAIN_GROUP_COUNT)]
-        app_group = f'group.{self.args.bundle_id}'
         for target in sorted(self.signer.targets):
             entitlements = self.signer.entitlements(target)
             if entitlements is None:
@@ -423,7 +435,7 @@ class Checker:
                             ', '.join(sorted(set(suffixes) ^ set(wanted_groups))[:5]))
             app_groups = entitlements.get('com.apple.security.application-groups')
             if app_groups is not None:
-                self.expect(app_groups == [app_group], f'{target}: app group {app_group}', ', '.join(app_groups))
+                self.expect(app_groups == [APP_GROUP], f'{target}: app group {APP_GROUP}', ', '.join(app_groups))
         self.expect(not self.old_names, 'no user-facing string says LiveContainer (credits and links to it aside)',
                     ', '.join(self.old_names[:10]) + (f' and {len(self.old_names) - 10} more'
                                                       if len(self.old_names) > 10 else ''))

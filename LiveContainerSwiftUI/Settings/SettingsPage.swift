@@ -17,7 +17,7 @@ enum SettingsPage: Hashable {
     case attention
     /// Settings > General.
     case general
-    /// Settings > Home Screen, which the list shows on iOS 18 and later.
+    /// Settings > Home Screen.
     case homeScreen
     /// Settings > Wallpaper.
     case wallpaper

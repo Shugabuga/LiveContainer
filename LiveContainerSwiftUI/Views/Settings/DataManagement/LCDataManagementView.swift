@@ -22,9 +22,12 @@ struct LCDataManagementView : View {
     
     @StateObject private var keyChainRemovalAlert = YesNoHelper()
     @StateObject private var tmpRemovalAlert = YesNoHelper()
-    @StateObject private var cacheRemovalAlert = YesNoHelper() 
+    @StateObject private var cacheRemovalAlert = YesNoHelper()
+    // Cleaning deletes off the main thread, so one asked for while another is
+    // still deleting does nothing instead of deleting the same files at once.
+    @State private var isCleaning = false
 
-    
+
     @State var errorShow = false
     @State var errorInfo = ""
     @State var successShow = false
@@ -207,44 +210,76 @@ struct LCDataManagementView : View {
     }
     
     func cleanUpUnusedFolders() async {
-        
+        guard !isCleaning else {
+            return
+        }
+
+        // The containers in memory, which every change to an app's containers
+        // saves. `appInfo.containers` would make each one again, resolving its
+        // bookmark and reading its plist.
         var folderNameToAppDict : [String:LCAppModel] = [:]
         for app in sharedModel.apps {
-            for container in app.appInfo.containers {
+            for container in app.uiContainers {
                 folderNameToAppDict[container.folderName] = app;
             }
         }
         for app in sharedModel.hiddenApps {
-            for container in app.appInfo.containers {
+            for container in app.uiContainers {
                 folderNameToAppDict[container.folderName] = app;
             }
         }
-        
+
+        // A folder can be gone already, such as a removed container's, and a
+        // name can be listed twice. Neither is counted or deleted.
+        let fm = FileManager()
         var foldersToDelete : [String]  = []
-        for appDataFolderName in sharedModel.appDataFolderNames {
-            if folderNameToAppDict[appDataFolderName] == nil {
+        var goneFolders : Set<String> = []
+        for appDataFolderName in sharedModel.appDataFolderNames where folderNameToAppDict[appDataFolderName] == nil {
+            if !fm.fileExists(atPath: LCPath.dataPath.appendingPathComponent(appDataFolderName).path) {
+                goneFolders.insert(appDataFolderName)
+            } else if !foldersToDelete.contains(appDataFolderName) {
                 foldersToDelete.append(appDataFolderName)
             }
         }
+        sharedModel.appDataFolderNames.removeAll(where: { s in
+            return goneFolders.contains(s)
+        })
         folderRemoveCount = foldersToDelete.count
-        
+
         guard let result = await appFolderRemovalAlert.open(), result else {
             return
         }
-        do {
+        isCleaning = true
+        defer { isCleaning = false }
+        // Data folders can hold gigabytes, so they're deleted off the main
+        // thread. One that can't be deleted doesn't stop the others, and the
+        // first error is shown once they're done.
+        let (deletedFolders, failure) = await Task.detached(priority: .userInitiated) { [foldersToDelete] () -> ([String], Error?) in
             let fm = FileManager()
+            var deletedFolders: [String] = []
+            var failure: Error? = nil
             for folder in foldersToDelete {
-                try fm.removeItem(at: LCPath.dataPath.appendingPathComponent(folder))
+                do {
+                    try fm.removeItem(at: LCPath.dataPath.appendingPathComponent(folder))
+                } catch {
+                    if failure == nil {
+                        failure = error
+                    }
+                    continue
+                }
                 LCUtils.removeAppKeychain(dataUUID: folder)
-                sharedModel.appDataFolderNames.removeAll(where: { s in
-                    return s == folder
-                })
+                deletedFolders.append(folder)
             }
-        } catch {
-            errorInfo = error.localizedDescription
+            return (deletedFolders, failure)
+        }.value
+        sharedModel.appDataFolderNames.removeAll(where: { s in
+            return deletedFolders.contains(s)
+        })
+        if let failure {
+            errorInfo = failure.localizedDescription
             errorShow = true
         }
-        
+
     }
     
     func removeKeyChain() async {
@@ -266,27 +301,26 @@ struct LCDataManagementView : View {
     }
 
     func clearTemporaryFiles() async {
-        guard let result = await tmpRemovalAlert.open(), result else {
+        guard !isCleaning, let result = await tmpRemovalAlert.open(), result else {
             return
         }
+        isCleaning = true
+        defer { isCleaning = false }
 
-        let fm = FileManager.default
-        let tmpDirectory = fm.temporaryDirectory
+        let tmpDirectory = FileManager.default.temporaryDirectory
 
         do {
-            let tmpItems = try fm.contentsOfDirectory(at: tmpDirectory, includingPropertiesForKeys: nil)
+            // Deleting many files takes a while, so it runs off the main thread.
+            let hadItems = try await Task.detached(priority: .userInitiated) {
+                let fm = FileManager()
+                let tmpItems = try fm.contentsOfDirectory(at: tmpDirectory, includingPropertiesForKeys: nil)
+                for item in tmpItems {
+                    try fm.removeItem(at: item)
+                }
+                return !tmpItems.isEmpty
+            }.value
 
-            if tmpItems.isEmpty {
-                successInfo = "lc.settings.noTmpToClean".loc
-                successShow = true
-                return
-            }
-
-            for item in tmpItems {
-                try fm.removeItem(at: item)
-            }
-
-            successInfo = "lc.settings.cleanTmpComplete".loc
+            successInfo = hadItems ? "lc.settings.cleanTmpComplete".loc : "lc.settings.noTmpToClean".loc
             successShow = true
         } catch {
             errorInfo = error.localizedDescription
@@ -295,39 +329,34 @@ struct LCDataManagementView : View {
     }
 
     func clearCacheFiles() async {
-        guard let result = await cacheRemovalAlert.open(), result else {
+        guard !isCleaning, let result = await cacheRemovalAlert.open(), result else {
             return
         }
-
-        let fm = FileManager.default
+        isCleaning = true
+        defer { isCleaning = false }
 
         let allApps = sharedModel.apps + sharedModel.hiddenApps
-        
-        var cleanedCount = 0
+        // Every container's caches, then zContainer's own.
+        let cacheFolders = allApps.flatMap { app in
+            app.uiContainers.map { container in
+                container.containerURL.appendingPathComponent("Library/Caches")
+            }
+        } + FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).prefix(1)
 
         do {
-            for app in allApps {
-                for container in app.uiContainers {
-                    let containerPath = container.containerURL
-                    let guestCachePath = containerPath.appendingPathComponent("Library/Caches")
-                    
-                    if fm.fileExists(atPath: guestCachePath.path) {
-                        let cacheItems = try fm.contentsOfDirectory(at: guestCachePath, includingPropertiesForKeys: nil)
-                        for item in cacheItems {
-                            try fm.removeItem(at: item)
-                        }
-                        cleanedCount += 1
+            // Caches can hold gigabytes, so they're deleted off the main thread.
+            let cleanedCount = try await Task.detached(priority: .userInitiated) {
+                let fm = FileManager()
+                var cleanedCount = 0
+                for cacheFolder in cacheFolders where fm.fileExists(atPath: cacheFolder.path) {
+                    let cacheItems = try fm.contentsOfDirectory(at: cacheFolder, includingPropertiesForKeys: nil)
+                    for item in cacheItems {
+                        try fm.removeItem(at: item)
                     }
+                    cleanedCount += 1
                 }
-            }
-            if let lcCaches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first,
-                fm.fileExists(atPath: lcCaches.path) {
-                let cacheItems = try fm.contentsOfDirectory(at: lcCaches, includingPropertiesForKeys: nil)
-                for item in cacheItems {
-                    try fm.removeItem(at: item)
-                }
-                cleanedCount += 1
-            }
+                return cleanedCount
+            }.value
 
             if cleanedCount == 0 {
                 successInfo = "lc.settings.noCacheToClean".loc
@@ -351,11 +380,11 @@ struct LCDataManagementView : View {
                 if !app.appInfo.isShared {
                     continue
                 }
-                for container in app.appInfo.containers {
+                for container in app.uiContainers {
                     appDataFoldersInUse.update(with: container.folderName);
                 }
 
-                
+
                 if let folder = app.appInfo.tweakFolder {
                     tweakFoldersInUse.update(with: folder);
                 }
@@ -366,7 +395,7 @@ struct LCDataManagementView : View {
                 if !app.appInfo.isShared {
                     continue
                 }
-                for container in app.appInfo.containers {
+                for container in app.uiContainers {
                     appDataFoldersInUse.update(with: container.folderName);
                 }
                 if let folder = app.appInfo.tweakFolder {
@@ -381,8 +410,15 @@ struct LCDataManagementView : View {
                 if appDataFoldersInUse.contains(sharedDataFolder) {
                     continue
                 }
-                try fm.moveItem(at: LCPath.lcGroupDataPath.appendingPathComponent(sharedDataFolder), to: LCPath.dataPath.appendingPathComponent(sharedDataFolder))
+                let movedDataURL = LCPath.dataPath.appendingPathComponent(sharedDataFolder)
+                try fm.moveItem(at: LCPath.lcGroupDataPath.appendingPathComponent(sharedDataFolder), to: movedDataURL)
                 movedDataFolderCount += 1
+                // Added the way launch lists the data folders, so it shows
+                // before zContainer opens again.
+                var isDataDirectory : ObjCBool = false
+                if fm.fileExists(atPath: movedDataURL.path, isDirectory: &isDataDirectory), isDataDirectory.boolValue, !sharedModel.appDataFolderNames.contains(sharedDataFolder) {
+                    sharedModel.appDataFolderNames.append(sharedDataFolder)
+                }
             }
             
             var movedTweakFolderCount = 0
@@ -391,8 +427,17 @@ struct LCDataManagementView : View {
                 if tweakFoldersInUse.contains(tweakFolderInUse) || tweakFolderInUse == "TweakLoader.dylib" {
                     continue
                 }
-                try fm.moveItem(at: LCPath.lcGroupTweakPath.appendingPathComponent(tweakFolderInUse), to: LCPath.tweakPath.appendingPathComponent(tweakFolderInUse))
+                let movedTweakURL = LCPath.tweakPath.appendingPathComponent(tweakFolderInUse)
+                try fm.moveItem(at: LCPath.lcGroupTweakPath.appendingPathComponent(tweakFolderInUse), to: movedTweakURL)
                 movedTweakFolderCount += 1
+                // Added the way launch lists the tweak folders: folders only,
+                // since global tweaks are files here, named without
+                // ".disabled", and each once.
+                var isTweakDirectory : ObjCBool = false
+                let tweakFolderName = tweakFolderInUse.hasSuffix(".disabled") ? String(tweakFolderInUse.dropLast(".disabled".count)) : tweakFolderInUse
+                if fm.fileExists(atPath: movedTweakURL.path, isDirectory: &isTweakDirectory), isTweakDirectory.boolValue, !sharedModel.tweakFolderNames.contains(tweakFolderName) {
+                    sharedModel.tweakFolderNames.append(tweakFolderName)
+                }
             }
             successInfo = "lc.settings.moveDanglingFolderComplete %lld %lld".localizeWithFormat(movedDataFolderCount,movedTweakFolderCount)
             successShow = true
@@ -473,8 +518,8 @@ struct LCDataManagementView : View {
                     return app.appInfo.bundleIdentifier() == "com.tigisoftware.Filza"
                 })?.runApp(urlStr: launchURLStr)
             } catch {
-                successInfo = error.localizedDescription
-                successShow = true
+                errorInfo = error.localizedDescription
+                errorShow = true
             }
         }
     }

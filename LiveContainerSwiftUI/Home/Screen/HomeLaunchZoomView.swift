@@ -12,7 +12,7 @@ import SwiftUI
 /// growing icon doesn't lift under a trackpad or mouse pointer the way the
 /// icon it grows from does.
 struct HomeLaunchZoomView: View {
-    /// The icon the app opens from, and where it is.
+    /// The app opening, the icon it opens from, and where it is.
     let zoom: HomeLaunchZoom
     /// Where things go on this screen.
     let metrics: HomeMetrics
@@ -33,7 +33,7 @@ struct HomeLaunchZoomView: View {
 
         ZStack {
             Color.black
-            HomeIconContent(item: zoom.item, app: app, metrics: metrics, showsLabel: false, darkModeIcon: darkModeIcon)
+            HomeIconContent(item: zoom.item, app: zoom.app, metrics: metrics, showsLabel: false, darkModeIcon: darkModeIcon)
                 .scaleEffect(reduceMotion ? 1 : iconScale)
                 .opacity(isOpen || reduceMotion ? 0 : 1)
         }
@@ -44,13 +44,6 @@ struct HomeLaunchZoomView: View {
         .hoverEffectDisabled()
         .accessibilityHidden(true)
         .onAppear(perform: open)
-    }
-
-    private var app: LCAppModel? {
-        guard case .app(let key) = zoom.item else {
-            return nil
-        }
-        return model.apps[key]
     }
 
     private func open() {

@@ -26,7 +26,7 @@ struct LCTweakItem : Hashable {
 
 struct LCTweakFolderView : View {
     @State var baseUrl : URL
-    @State var tweakItems : [LCTweakItem]
+    @State private var tweakItems : [LCTweakItem] = []
     private var isRoot : Bool
     @EnvironmentObject private var sharedModel: SharedModel
     
@@ -40,31 +40,12 @@ struct LCTweakFolderView : View {
     @State private var choosingTweak = false
     
     @State private var isTweakSigning = false
-    
+
+    @State private var hasLoaded = false
+
     init(baseUrl: URL, isRoot: Bool = false) {
         _baseUrl = State(initialValue: baseUrl)
         self.isRoot = isRoot
-        var tmpTweakItems : [LCTweakItem] = []
-        let fm = FileManager()
-        do {
-            let files = try fm.contentsOfDirectory(atPath: baseUrl.path)
-            for fileName in files {
-                let fileUrl = baseUrl.appendingPathComponent(fileName)
-                var isFolder : ObjCBool = false
-                fm.fileExists(atPath: fileUrl.path, isDirectory: &isFolder)
-                let isEnabled = !fileName.hasSuffix(LCTweakItem.disabledSuffix)
-                let baseName = isEnabled ? fileName : String(fileName.dropLast(LCTweakItem.disabledSuffix.count))
-                let isFramework = isFolder.boolValue && baseName.hasSuffix(".framework")
-                let isTweak = !isFolder.boolValue && baseName.hasSuffix(".dylib")
-                tmpTweakItems.append(LCTweakItem(fileUrl: fileUrl, isFolder: isFolder.boolValue, isFramework: isFramework, isTweak: isTweak, isEnabled: isEnabled))
-            }
-            _tweakItems = State(initialValue: tmpTweakItems)
-        } catch {
-            NSLog("[LC] failed to load tweaks \(error.localizedDescription)")
-            _errorShow = State(initialValue: true)
-            _errorInfo = State(initialValue: error.localizedDescription)
-            _tweakItems = State(initialValue: [])
-        }
     }
 
     var body: some View {
@@ -211,13 +192,43 @@ struct LCTweakFolderView : View {
                 renameFileInput.close(result: "")
             }
         )
-        .betterFileImporter(isPresented: $choosingTweak, types: [.dylib, .lcFramework, /*.deb*/], multiple: true, callback: { fileUrls in
+        .betterFileImporter(isPresented: $choosingTweak, types: [.dylib, .lcFramework], multiple: true, callback: { fileUrls in
             Task { await startInstallTweak(fileUrls) }
         }, onDismiss: {
             choosingTweak = false
         })
+        // list once per view identity, before the first frame, so coming back
+        // from a subfolder keeps the order of items added in this session
+        .onAppear {
+            guard !hasLoaded else { return }
+            hasLoaded = true
+            loadItems()
+        }
     }
-    
+
+    func loadItems() {
+        var tmpTweakItems : [LCTweakItem] = []
+        let fm = FileManager()
+        do {
+            let files = try fm.contentsOfDirectory(atPath: baseUrl.path)
+            for fileName in files {
+                let fileUrl = baseUrl.appendingPathComponent(fileName)
+                var isFolder : ObjCBool = false
+                fm.fileExists(atPath: fileUrl.path, isDirectory: &isFolder)
+                let isEnabled = !fileName.hasSuffix(LCTweakItem.disabledSuffix)
+                let baseName = isEnabled ? fileName : String(fileName.dropLast(LCTweakItem.disabledSuffix.count))
+                let isFramework = isFolder.boolValue && baseName.hasSuffix(".framework")
+                let isTweak = !isFolder.boolValue && baseName.hasSuffix(".dylib")
+                tmpTweakItems.append(LCTweakItem(fileUrl: fileUrl, isFolder: isFolder.boolValue, isFramework: isFramework, isTweak: isTweak, isEnabled: isEnabled))
+            }
+            tweakItems = tmpTweakItems
+        } catch {
+            NSLog("[LC] failed to load tweaks \(error.localizedDescription)")
+            errorInfo = error.localizedDescription
+            errorShow = true
+        }
+    }
+
     func setTweakEnabled(tweakItem: LCTweakItem, enabled: Bool) {
         if tweakItem.isEnabled == enabled {
             return
@@ -345,7 +356,7 @@ struct LCTweakFolderView : View {
     }
     
     func createNewFolder() async {
-        guard let newName = await renameFileInput.open(), newName != "" else {
+        guard let newName = await newFolderInput.open(), newName != "" else {
             return
         }
         let fm = FileManager()

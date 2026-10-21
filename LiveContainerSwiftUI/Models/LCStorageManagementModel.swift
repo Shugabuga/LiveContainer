@@ -71,7 +71,7 @@ final class LCStorageManagementModel: ObservableObject {
             allApps = apps
         }
 
-        // Show per-app bundle usage only when every installed app has a reliable bundle path.
+        // Apps without a bundle path report no bundle size.
         let appItems = try await calculateAppItems(
             from: allApps
         )
@@ -79,8 +79,6 @@ final class LCStorageManagementModel: ObservableObject {
         var sizesByCategory: [StorageCategory: Int64] = [:]
         
         let knownRoots = uniquePaths([LCPath.docPath, LCPath.lcGroupDocPath])
-        let bundleRoots = uniquePaths([LCPath.bundlePath, LCPath.lcGroupBundlePath])
-        let containerRoots = uniquePaths([LCPath.dataPath, LCPath.lcGroupDataPath])
         let appGroupRoots = uniquePaths([LCPath.appGroupPath, LCPath.lcGroupAppGroupPath])
         let tweakRoots = uniquePaths([LCPath.tweakPath, LCPath.lcGroupTweakPath])
         

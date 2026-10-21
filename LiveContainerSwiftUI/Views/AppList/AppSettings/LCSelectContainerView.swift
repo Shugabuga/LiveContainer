@@ -88,12 +88,12 @@ struct LCSelectContainerView : View{
         
         var folderNameToAppDict : [String:LCAppModel] = [:]
         for app in sharedModel.apps {
-            for container in app.appInfo.containers {
+            for container in app.uiContainers {
                 folderNameToAppDict[container.folderName] = app;
             }
         }
         for app in sharedModel.hiddenApps {
-            for container in app.appInfo.containers {
+            for container in app.uiContainers {
                 folderNameToAppDict[container.folderName] = app;
             }
         }

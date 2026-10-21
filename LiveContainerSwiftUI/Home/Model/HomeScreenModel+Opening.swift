@@ -31,13 +31,13 @@ extension HomeScreenModel {
     /// the screen when its icon isn't showing. The page showing is saved
     /// then, as zContainer quits on the way into the app and comes back to it.
     func launch(_ app: LCAppModel, from item: HomeItem? = nil) {
-        let zoomItem = item ?? app.homeKey.map(HomeItem.app) ?? .settings
+        let zoomItem = item ?? .app(app.homeKey ?? "")
         let frame = item.flatMap(iconFrame(of:)) ?? centeredIconFrame()
         let returnPage = page ?? 0
         Task {
             await coordinator.open(app) {
                 HomeLayoutStorage.saveReturnPage(returnPage)
-                await self.playLaunchZoom(HomeLaunchZoom(item: zoomItem, iconFrame: frame))
+                await self.playLaunchZoom(HomeLaunchZoom(item: zoomItem, app: app, iconFrame: frame))
             }
         }
     }
@@ -128,9 +128,31 @@ extension HomeScreenModel {
 
     // MARK: Long-press actions
 
-    /// Makes a new container for an app and opens the app in it. Search
-    /// closes first when the app was found there, so its zoom shows.
+    /// Makes a new container for an app and opens the app in it. A locked app
+    /// asks for Face ID before the container is made, so cancelling leaves the
+    /// app as it was. Search closes first when the app was found there, so its
+    /// zoom shows.
     func openInNewContainer(_ app: LCAppModel) {
+        guard app.appInfo.isLocked && !sharedModel.isHiddenAppUnlocked else {
+            makeContainerAndLaunch(app)
+            return
+        }
+        Task {
+            do {
+                guard try await LCUtils.authenticateUser() else {
+                    return
+                }
+            } catch {
+                coordinator.errorMessage = error.localizedDescription
+                return
+            }
+            makeContainerAndLaunch(app)
+        }
+    }
+
+    /// Makes the new container and opens the app in it, once a locked app has
+    /// passed Face ID.
+    private func makeContainerAndLaunch(_ app: LCAppModel) {
         do {
             try app.makeNewContainer(sharedModel: sharedModel)
         } catch {

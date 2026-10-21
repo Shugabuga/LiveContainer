@@ -5,9 +5,10 @@
 
 import Foundation
 
-/// Saves the Home Screen layout as JSON in the app group's defaults, or the
-/// standard defaults when zContainer has no app group, along with the page
-/// to come back to after an app.
+/// Saves the Home Screen layout as JSON in the app group's defaults, along
+/// with the page to come back to after an app. Without an app group they fall
+/// back to the "Unknown" suite in zContainer's own preferences, and
+/// LCSharedUtils copies the layout into the group once zContainer has one.
 enum HomeLayoutStorage {
     /// The defaults key the layout is saved under.
     private static let layoutKey = "ZCHomeScreenLayout"

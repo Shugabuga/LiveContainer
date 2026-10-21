@@ -46,26 +46,8 @@ extension View {
         self.modifier(DocModifier(isPresented: isPresented, types: types, multiple: multiple, callback: callback, onDismiss: onDismiss))
     }
     
-    func onBackground(_ f: @escaping () -> Void) -> some View {
-        self.onReceive(
-            NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification),
-            perform: { _ in f() }
-        )
-    }
-    
-    func onForeground(_ f: @escaping () -> Void) -> some View {
-        self.onReceive(
-            NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification),
-            perform: { _ in f() }
-        )
-    }
-    
     func rainbow() -> some View {
         self.modifier(RainbowAnimation())
-    }
-    
-    func navigationBarProgressBar(show: Binding<Bool>, progress: Binding<Float>) -> some View {
-        self.modifier(NavigationBarProgressModifier(show: show, progress: progress))
     }
     
     func modifier<ModifiedContent: View>(@ViewBuilder body: (_ content: Self) -> ModifiedContent
@@ -110,11 +92,6 @@ public struct DocModifier: ViewModifier {
         }
     }
 
-    private func shutdown() {
-        isPresented = false
-        docController = nil
-    }
-    
     class Coordinator: NSObject, UIDocumentPickerDelegate {
         var callback: ([URL]) -> ()
         private let onDismiss: () -> Void
@@ -185,76 +162,6 @@ public struct TextFieldAlertModifier: ViewModifier {
 
 }
 
-struct NavigationBarProgressModifier: ViewModifier {
-    @Binding var show: Bool
-    @Binding var progress: Float
-
-    func body(content: Content) -> some View {
-        content
-            .background(NavigationBarProgressView(show: $show, progress: $progress))
-    }
-}
-
-private struct NavigationBarProgressView: UIViewControllerRepresentable {
-    @Binding var show: Bool
-    @Binding var progress: Float
-
-    func makeUIViewController(context: Context) -> ProgressInjectorViewController {
-        ProgressInjectorViewController(progress: progress)
-    }
-
-    func updateUIViewController(_ uiViewController: ProgressInjectorViewController, context: Context) {
-        uiViewController.updateProgress(!show, progress)
-    }
-
-    class ProgressInjectorViewController: UIViewController {
-        private var progressView: UIProgressView?
-
-        init(progress: Float) {
-            super.init(nibName: nil, bundle: nil)
-        }
-
-        required init?(coder: NSCoder) {
-            fatalError("init(coder:) has not been implemented")
-        }
-
-        override func viewDidAppear(_ animated: Bool) {
-            super.viewDidAppear(animated)
-            injectProgressView()
-        }
-
-        func updateProgress(_ hidden: Bool, _ progress: Float) {
-            progressView?.setProgress(progress, animated: false)
-            progressView?.isHidden = hidden
-        }
-
-        private func injectProgressView() {
-            guard let navigationBar = self.navigationController?.navigationBar, progressView == nil else { return }
-
-            let barProgress = UIProgressView(progressViewStyle: .bar)
-            barProgress.translatesAutoresizingMaskIntoConstraints = false
-            var contentView : UIView? = nil
-            for curView in navigationBar.subviews {
-                if NSStringFromClass(curView.classForCoder) == "_UINavigationBarContentView" ||
-                    NSStringFromClass(curView.classForCoder) == "UIKit.NavigationBarContentView" {
-                    contentView = curView
-                    break
-                }
-            }
-            if let contentView {
-                contentView.addSubview(barProgress)
-                NSLayoutConstraint.activate([
-                    barProgress.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-                    barProgress.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-                    barProgress.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
-                ])
-            }
-            self.progressView = barProgress
-        }
-
-    }
-}
-
 // https://kieranb662.github.io/blog/2020/04/15/Rainbow
 struct RainbowAnimation: ViewModifier {
     // 1
@@ -292,34 +199,6 @@ struct RainbowAnimation: ViewModifier {
     }
 }
 
-struct BasicButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-    }
-}
-
-struct ActivityViewController: UIViewControllerRepresentable {
-    var activityItems: [Any]
-    var applicationActivities: [UIActivity]? = nil
-
-    func makeUIViewController(context: UIViewControllerRepresentableContext<ActivityViewController>) -> UIActivityViewController {
-        return UIActivityViewController(activityItems: activityItems, applicationActivities: applicationActivities)
-    }
-
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: UIViewControllerRepresentableContext<ActivityViewController>) {}
-}
-
-private class SizedHostingController<Content: View>: UIHostingController<Content> {
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-
-        let size = sizeThatFits(in: UIView.layoutFittingCompressedSize)
-        if preferredContentSize != size {
-            preferredContentSize = size
-        }
-    }
-}
-
 struct IconImageView: View {
     var icon: UIImage
     
@@ -345,57 +224,5 @@ extension UIViewController {
             top = presented
         }
         return top
-    }
-
-    func presentConfirmation(
-        title: String,
-        message: String,
-        confirmTitle: String,
-        cancelTitle: String
-    ) async -> Bool? {
-        guard viewIfLoaded?.window != nil, presentedViewController == nil else {
-            return nil
-        }
-
-        return await withUnsafeContinuation { continuation in
-            let finishConfirmation =  { (result: Bool?, alert: UIAlertController?) in
-                alert?.dismiss(animated: true) {
-                    continuation.resume(returning: result)
-                }
-            }
-            
-            let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: confirmTitle, style: .destructive) { [weak alert] _ in
-                finishConfirmation(true, alert)
-            })
-            alert.addAction(UIAlertAction(title: cancelTitle, style: .cancel) { [weak alert] _ in
-                finishConfirmation(false, alert)
-            })
-            present(alert, animated: true)
-        }
-    }
-
-    func showError(_ message: String) {
-        guard viewIfLoaded?.window != nil else {
-            return
-        }
-
-        let presentError = { [weak self] in
-            guard let self else {
-                return
-            }
-            let alert = UIAlertController(title: "lc.common.error".loc, message: message, preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "lc.common.ok".loc, style: .default))
-            alert.addAction(UIAlertAction(title: "lc.common.copy".loc, style: .default) { _ in
-                UIPasteboard.general.string = message
-            })
-            self.present(alert, animated: true)
-        }
-
-        if let presentedViewController {
-            presentedViewController.dismiss(animated: true, completion: presentError)
-        } else {
-            presentError()
-        }
     }
 }

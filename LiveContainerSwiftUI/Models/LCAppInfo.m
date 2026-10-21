@@ -195,7 +195,10 @@
     
     if([NSFileManager.defaultManager fileExistsAtPath:cachedIconPath]) {
         CGImageRef imageRef = loadCGImageFromURL(cachedIconUrl);
-        uiIcon = [UIImage imageWithCGImage:imageRef];
+        if (imageRef) {
+            uiIcon = [UIImage imageWithCGImage:imageRef];
+            CGImageRelease(imageRef);
+        }
     }
     
     // generate and save icon cache to disk
@@ -225,7 +228,10 @@
     NSURL* cachedIconUrl = [NSURL fileURLWithPath:cachedIconPath];
     if([NSFileManager.defaultManager fileExistsAtPath:cachedIconPath]) {
         CGImageRef imageRef = loadCGImageFromURL(cachedIconUrl);
-        uiIcon = [UIImage imageWithCGImage:imageRef];
+        if (imageRef) {
+            uiIcon = [UIImage imageWithCGImage:imageRef];
+            CGImageRelease(imageRef);
+        }
     }
 
     if(!uiIcon) {
@@ -343,10 +349,21 @@
     if (needPatch || forceSign) {
         // copy-delete-move to avoid EXC_BAD_ACCESS (SIGKILL - CODESIGNING)
         NSString *backupPath = [NSString stringWithFormat:@"%@/%@_LiveContainerPatchBackUp", appPath, _infoPlist[@"CFBundleExecutable"]];
-        NSError *err;
-        [fm copyItemAtPath:execPath toPath:backupPath error:&err];
-        [fm removeItemAtPath:execPath error:&err];
-        [fm moveItemAtPath:backupPath toPath:execPath error:&err];
+        NSError *err = nil;
+        if ([fm fileExistsAtPath:execPath]) {
+            // a backup left by an interrupted run is stale while the executable still exists
+            [fm removeItemAtPath:backupPath error:nil];
+            // only delete the executable once its copy exists
+            if (![fm copyItemAtPath:execPath toPath:backupPath error:&err]) {
+                [fm removeItemAtPath:backupPath error:nil];
+                [NSUserDefaults.standardUserDefaults removeObjectForKey:@"SigningInProgress"];
+                completetionHandler(NO, err.localizedDescription);
+                return;
+            }
+            [fm removeItemAtPath:execPath error:nil];
+        }
+        // also puts the executable back when an earlier run stopped between the delete and the move
+        [fm moveItemAtPath:backupPath toPath:execPath error:nil];
     }
     
     bool is32bit = false;

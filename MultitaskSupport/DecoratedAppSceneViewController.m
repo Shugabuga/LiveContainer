@@ -15,6 +15,7 @@
 @property(nonatomic) CGRect originalFrame;
 @property(nonatomic) UIBarButtonItem *maximizeButton;
 @property(nonatomic) bool isAppTerminationRequested;
+@property(nonatomic) bool isObservingWindowBar;
 @end
 
 @implementation DecoratedAppSceneViewController
@@ -33,24 +34,26 @@
     
     [MultitaskDockManager.shared addRunningApp:windowName appUUID:dataUUID view:self.view];
     
+    // The title menu keeps these, so they hold the window weakly
+    __weak typeof(self) weakSelf = self;
     NSArray *menuItems = @[
         [UIAction actionWithTitle:@"lc.multitask.copyPid".loc image:[UIImage systemImageNamed:@"doc.on.doc"] identifier:nil handler:^(UIAction * _Nonnull action) {
-            UIPasteboard.generalPasteboard.string = @(self.appSceneVC.pid).stringValue;
+            UIPasteboard.generalPasteboard.string = @(weakSelf.appSceneVC.pid).stringValue;
         }],
         [UIAction actionWithTitle:@"lc.multitask.enablePip".loc image:[UIImage systemImageNamed:@"pip.enter"] identifier:nil handler:^(UIAction * _Nonnull action) {
-            if ([PiPManager.shared isPiPWithVC:self.appSceneVC]) {
+            AppSceneViewController *appSceneVC = weakSelf.appSceneVC;
+            if ([PiPManager.shared isPiPWithVC:appSceneVC]) {
                 [PiPManager.shared stopPiP];
             } else {
-                [PiPManager.shared startPiPWithVC:self.appSceneVC];
+                [PiPManager.shared startPiPWithVC:appSceneVC];
             }
         }],
         [UICustomViewMenuElement elementWithViewProvider:^UIView *(UICustomViewMenuElement *element) {
-            return [self scaleSliderViewWithTitle:@"lc.multitask.scale".loc min:0.5 max:2.0 value:self.scaleRatio stepInterval:0.01];
+            return [weakSelf scaleSliderViewWithTitle:@"lc.multitask.scale".loc min:0.5 max:2.0 value:weakSelf.scaleRatio stepInterval:0.01];
         }]
     ];
     
 
-    __weak typeof(self) weakSelf = self;
     [self.navigationItem setTitleMenuProvider:^UIMenu *(NSArray<UIMenuElement *> *suggestedActions){
         if(!weakSelf.appSceneVC.isAppRunning) {
             return [UIMenu menuWithTitle:NSLocalizedString(@"lc.multitaskAppWindow.appTerminated", nil) children:@[]];
@@ -174,6 +177,7 @@
     NSUserDefaults *defaults = NSUserDefaults.lcSharedDefaults;
 
     [defaults addObserver:self forKeyPath:@"LCMultitaskBottomWindowBar" options:NSKeyValueObservingOptionNew context:NULL];
+    self.isObservingWindowBar = true;
     [self updateOriginalFrame];
 }
 
@@ -336,6 +340,10 @@
             self.view.hidden = YES;
         } completion:^(BOOL b){
             [self.view removeFromSuperview];
+            // Let the closed window go: nothing else lays it out or holds it
+            [self stopObservingWindowBar];
+            [self willMoveToParentViewController:nil];
+            [self removeFromParentViewController];
         }];
         
         if(skipTerminationScreen) {
@@ -456,6 +464,17 @@
         }
         [self.view layoutIfNeeded];
     }];
+}
+
+- (void)stopObservingWindowBar {
+    // The exit callback can run twice for one window
+    if(!self.isObservingWindowBar) return;
+    self.isObservingWindowBar = false;
+    [NSUserDefaults.lcSharedDefaults removeObserver:self forKeyPath:@"LCMultitaskBottomWindowBar"];
+}
+
+- (void)dealloc {
+    [self stopObservingWindowBar];
 }
 
 - (void)moveWindow:(UIPanGestureRecognizer*)sender {

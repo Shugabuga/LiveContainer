@@ -46,10 +46,10 @@ enum HomeDesign {
     static let labelWeight = Font.Weight.medium
     /// The height of a name's line.
     static let labelLineHeight = 14.3
-    /// The color of the names, readable on the black wallpaper.
+    /// The color of the names, readable on a dark wallpaper.
     static let labelColor = Color.white
-    /// The soft shadow under the names over a photo, so they read over its
-    /// bright parts, as on iOS.
+    /// The soft shadow under the names over the wallpaper, so they read over
+    /// its bright parts, as on iOS.
     static let labelShadow = Color.black.opacity(0.45)
     /// How far the names' shadow spreads.
     static let labelShadowRadius = 2.0
@@ -219,7 +219,7 @@ enum HomeDesign {
     /// bright dot.
     static let homeButtonRings: [(size: Double, opacity: Double)] = [(40, 0.12), (32, 0.22), (24, 0.92)]
     /// The dark tint of the Home button's glass, so it looks the same over the
-    /// black wallpaper, over Settings in light mode and over apps.
+    /// wallpaper, over Settings in light mode and over apps.
     static let homeButtonTint = Color.black.opacity(0.32)
     /// The light rim of the Home button where Liquid Glass isn't available.
     static let homeButtonRim = Color.white.opacity(0.22)

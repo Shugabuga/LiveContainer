@@ -15,6 +15,7 @@ API_AVAILABLE(ios(16.0))
 @property(nonatomic, strong) AVPictureInPictureVideoCallViewController *pipVideoCallViewController;
 @property(nonatomic, strong) AVPictureInPictureController *pipController;
 @property(nonatomic) AppSceneViewController* displayingVC;
+@property(nonatomic) BOOL audioSessionActivated;
 @end
 
 
@@ -44,14 +45,15 @@ static PiPManager* sharedInstance = nil;
     return self.pipController.isPictureInPictureActive && self.displayingDecoratedVC == vc;
 }
 
-- (instancetype)init {
-    NSError* error = nil;
-    [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryPlayback error:&error];
-    [[AVAudioSession sharedInstance] setActive:YES withOptions:1 error:&error];
-    return self;
-}
-
 - (void)startPiPWithVC:(AppSceneViewController*)vc {
+    // PiP needs the playback audio session, and activating it stops other apps' audio,
+    // so it is set up when PiP first starts rather than when PiPManager.shared is first used
+    if(!self.audioSessionActivated) {
+        self.audioSessionActivated = YES;
+        NSError* error = nil;
+        [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryPlayback error:&error];
+        [[AVAudioSession sharedInstance] setActive:YES withOptions:1 error:&error];
+    }
     [self.pipController stopPictureInPicture];
     if(self.displayingVC) {
         [self.displayingDecoratedVC unminimizeWindowPiP];

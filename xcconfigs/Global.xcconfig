@@ -12,7 +12,9 @@ DEVELOPMENT_TEAM_SUFFIX[config=Debug] = .$(DEVELOPMENT_TEAM)
 DEVELOPMENT_TEAM_SUFFIX[config=Release] =
 
 LIVECONTAINER_BUNDLE_IDENTIFIER = app.reiko.zcontainer$(DEVELOPMENT_TEAM_SUFFIX)
-// The app group the app and its extensions share, named after the app the way
-// Zeus names the one it registers. zContainer reads the group from its own
-// entitlements, so whatever group the installer assigns works.
-APP_GROUP = group.$(LIVECONTAINER_BUNDLE_IDENTIFIER)
+// The app group the app and its extensions share with Zeus, which assigns
+// group.app.reiko.zeus.TEAM. SideStore, AltStore and Impactor append the team
+// the same way. The name stays the same for every build, whatever its bundle
+// ID, and zContainer picks the group from its own entitlements
+// (LCSharedUtils appGroupID).
+APP_GROUP = group.app.reiko.zeus$(DEVELOPMENT_TEAM_SUFFIX)

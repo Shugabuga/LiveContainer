@@ -38,6 +38,20 @@ extern NSUserDefaults *lcUserDefaults;
     return [NSFileManager.defaultManager fileExistsAtPath:self.bundledPath];
 }
 
++ (NSString *)bundledSerialNumber {
+    NSData *contents = [NSData dataWithContentsOfFile:self.bundledPath];
+    id file = contents ? [NSPropertyListSerialization propertyListWithData:contents options:NSPropertyListImmutable format:nil error:nil] : nil;
+    NSString *serialNumber = [file isKindOfClass:NSDictionary.class] ? file[@"SerialNumber"] : nil;
+    return [serialNumber isKindOfClass:NSString.class] && serialNumber.length > 0 ? serialNumber : nil;
+}
+
++ (NSArray<NSString *> *)certificateKeys {
+    return @[LCCertificateDataKey, LCCertificatePasswordKey, LCCertificateUpdateDateKey,
+             LCCertificateFromZeusKey, LCZeusCertificateSerialNumberKey, LCZeusCertificateTeamIDKey,
+             LCZeusCertificateExpiresAtKey, LCZeusCertificateNeedsCheckKey,
+             LCZeusCertificateProblemKey, LCZeusCertificateProblemDetailKey];
+}
+
 + (void)moveCertificateOutOfStandardDefaults {
     NSUserDefaults *standard = lcUserDefaults ?: NSUserDefaults.standardUserDefaults;
     NSUserDefaults *shared = NSUserDefaults.lcSharedDefaults;
@@ -46,10 +60,7 @@ extern NSUserDefaults *lcUserDefaults;
         return;
     }
     BOOL move = ![shared objectForKey:LCCertificateDataKey];
-    for (NSString *key in @[LCCertificateDataKey, LCCertificatePasswordKey, LCCertificateUpdateDateKey,
-                            LCCertificateFromZeusKey, LCZeusCertificateSerialNumberKey, LCZeusCertificateTeamIDKey,
-                            LCZeusCertificateExpiresAtKey, LCZeusCertificateNeedsCheckKey,
-                            LCZeusCertificateProblemKey, LCZeusCertificateProblemDetailKey]) {
+    for (NSString *key in self.certificateKeys) {
         if (move) {
             id value = [standard objectForKey:key];
             if (value) {
@@ -84,6 +95,19 @@ extern NSUserDefaults *lcUserDefaults;
         return NO;
     }
 
+    // Done already, unless the certificate was removed since. A certificate
+    // imported by hand since then stays until Zeus brings a new one, as does
+    // the one Zeus sent through the app group, for which this file was set
+    // aside (ZeusCertificateImport.storeFromZeus). This comes before the other
+    // checks, so the problem of a file set aside isn't reported again.
+    NSString *serialNumber = file[@"SerialNumber"];
+    BOOL stored = [defaults objectForKey:LCCertificateDataKey] && [defaults objectForKey:LCCertificatePasswordKey];
+    NSString *storedSerialNumber = [defaults stringForKey:LCZeusCertificateSerialNumberKey];
+    if (!replace && stored && storedSerialNumber && [serialNumber isKindOfClass:NSString.class] && serialNumber.length > 0 &&
+        [storedSerialNumber caseInsensitiveCompare:serialNumber] == NSOrderedSame) {
+        return NO;
+    }
+
     NSNumber *protocol = file[@"Protocol"];
     if (![protocol isKindOfClass:NSNumber.class]) {
         [self report:LCZeusCertificateProblemUnreadable detail:nil defaults:defaults];
@@ -97,7 +121,6 @@ extern NSUserDefaults *lcUserDefaults;
     NSData *certificate = file[@"Certificate"];
     NSString *password = file[@"Password"];
     NSString *teamID = file[@"TeamID"];
-    NSString *serialNumber = file[@"SerialNumber"];
     NSDate *expiresAt = file[@"ExpiresAt"];
     if (![certificate isKindOfClass:NSData.class] || certificate.length == 0 ||
         ![password isKindOfClass:NSString.class] ||
@@ -108,14 +131,6 @@ extern NSUserDefaults *lcUserDefaults;
     }
     if (![expiresAt isKindOfClass:NSDate.class]) {
         expiresAt = nil;
-    }
-
-    // Done already, unless the certificate was removed since. A certificate
-    // imported by hand since then stays until Zeus brings a new one.
-    BOOL stored = [defaults objectForKey:LCCertificateDataKey] && [defaults objectForKey:LCCertificatePasswordKey];
-    NSString *storedSerialNumber = [defaults stringForKey:LCZeusCertificateSerialNumberKey];
-    if (!replace && stored && storedSerialNumber && [storedSerialNumber caseInsensitiveCompare:serialNumber] == NSOrderedSame) {
-        return NO;
     }
 
     // Apps signed with another team's certificate can't run inside this app.
@@ -139,7 +154,8 @@ extern NSUserDefaults *lcUserDefaults;
     [defaults removeObjectForKey:LCZeusCertificateProblemKey];
     [defaults removeObjectForKey:LCZeusCertificateProblemDetailKey];
     [defaults setBool:YES forKey:LCZeusCertificateNeedsCheckKey];
-    // Like importing by hand: remember the app group, so it isn't looked up again.
+    // Like importing by hand: remember the app group, which LCSharedUtils appGroupID
+    // falls back to when the app has no group shared with Zeus.
     if (LCSharedUtils.hasAppGroup) {
         [lcUserDefaults ?: NSUserDefaults.standardUserDefaults setObject:LCSharedUtils.appGroupID forKey:@"LCAppGroupID"];
     }
@@ -148,7 +164,8 @@ extern NSUserDefaults *lcUserDefaults;
 }
 
 // Records a problem for the UI to show, once: it is found again on every
-// launch until Zeus signs the app again.
+// launch until Zeus signs the app again or sends a certificate through the app
+// group.
 + (void)report:(NSString *)problem detail:(NSString *)detail defaults:(NSUserDefaults *)defaults {
     NSLog(@"[LC] Can't use the certificate Zeus included: %@", problem);
     BOOL known = [[defaults stringForKey:LCZeusCertificateProblemKey] isEqualToString:problem] &&

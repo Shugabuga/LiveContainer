@@ -43,9 +43,9 @@ enum WallpaperFile {
         UIImage(named: isPad ? "DefaultWallpaperPad" : "DefaultWallpaperPhone")?.preparingForDisplay()
     }
 
-    /// Makes a wallpaper from a photo's data, saves it in place of the last
-    /// one, and returns it decoded for drawing.
-    static func save(_ data: Data) throws -> UIImage {
+    /// Makes a wallpaper from a photo's data: the picture decoded for
+    /// drawing, and the JPEG to save it as.
+    static func make(_ data: Data) throws -> (image: UIImage, jpeg: Data) {
         guard let source = CGImageSourceCreateWithData(data as CFData, nil) else {
             throw WallpaperError.unreadable
         }
@@ -61,9 +61,13 @@ enum WallpaperFile {
         guard let jpeg = image.jpegData(compressionQuality: quality) else {
             throw WallpaperError.unreadable
         }
+        return (image.preparingForDisplay() ?? image, jpeg)
+    }
+
+    /// Saves a wallpaper `make` made in place of the last one.
+    static func save(_ jpeg: Data) throws {
         try FileManager.default.createDirectory(at: .applicationSupportDirectory, withIntermediateDirectories: true)
         try jpeg.write(to: url, options: .atomic)
-        return image.preparingForDisplay() ?? image
     }
 
     /// The longest side, in pixels, to make a photo's wallpaper at. On iPhone

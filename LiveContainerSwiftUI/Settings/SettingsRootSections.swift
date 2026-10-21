@@ -42,11 +42,8 @@ struct SettingsRootSections: View {
                 SettingsRow(title: "zc.settings.general".loc, systemImage: "gear", color: .gray)
             }
 
-            // Its one setting, dark app icons, needs iOS 18.
-            if #available(iOS 18.0, *) {
-                SettingsPageLink(page: .homeScreen) {
-                    SettingsRow(title: "zc.settings.homeScreen".loc, systemImage: .homeScreenSymbol, color: .blue)
-                }
+            SettingsPageLink(page: .homeScreen) {
+                SettingsRow(title: "zc.settings.homeScreen".loc, systemImage: .homeScreenSymbol, color: .blue)
             }
 
             SettingsPageLink(page: .wallpaper) {

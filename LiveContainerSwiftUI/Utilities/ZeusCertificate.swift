@@ -5,16 +5,17 @@
 
 import Foundation
 
-/// The certificate Zeus put inside this app when it signed it. LCZeusCertificate
-/// stores it at launch, before anything needs it; this is what the UI shows of
-/// it and the check it runs on it afterwards.
+/// Zeus's certificate: the one it put inside this app when it signed it,
+/// which LCZeusCertificate stores at launch, or the one it sent through the
+/// app group. This is what the UI shows of it and the check it runs on it
+/// afterwards.
 struct ZeusCertificate {
     let teamID: String
     let expiresAt: Date?
 
     private static var defaults: UserDefaults { LCUtils.appGroupUserDefault }
 
-    /// The stored certificate, when it is the one Zeus put inside the app.
+    /// The stored certificate, when it is Zeus's.
     static var stored: ZeusCertificate? {
         guard defaults.bool(forKey: LCCertificateFromZeusKey),
               let teamID = defaults.string(forKey: LCZeusCertificateTeamIDKey) else {

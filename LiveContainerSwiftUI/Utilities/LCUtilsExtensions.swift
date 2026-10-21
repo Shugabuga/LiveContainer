@@ -9,7 +9,20 @@ import LocalAuthentication
 
 extension LCUtils {
     public static let appGroupUserDefault = UserDefaults.init(suiteName: LCSharedUtils.appGroupID()) ?? UserDefaults.standard
-    
+
+    /// Resolves a security-scoped bookmark, like the ones `bookmark(for:)` and the
+    /// share extension make. 1 << 10 is NSURLBookmarkResolutionWithSecurityScope,
+    /// which Swift doesn't offer on iOS.
+    public static func resolveSecurityScopedBookmark(_ data: Data) throws -> URL {
+        var isStale = false
+        return try URL(
+            resolvingBookmarkData: data,
+            options: URL.BookmarkResolutionOptions(rawValue: 1 << 10),
+            relativeTo: nil,
+            bookmarkDataIsStale: &isStale
+        )
+    }
+
     public static func signTweaks(tweakFolderUrl: URL, force : Bool = false, progressHandler : ((Progress) -> Void)? = nil) async throws {
         guard LCSharedUtils.certificatePassword() != nil else {
             return
@@ -331,6 +344,8 @@ extension LCUtils {
                 let launchURL = URL(string: "\(freeScheme)://open-url?url=\(encodedStr)")!
                 LCUtils.appGroupUserDefault.set(freeScheme, forKey: "LCLaunchExtensionScheme")
                 LCUtils.appGroupUserDefault.set(appToLaunch.appInfo.relativeBundlePath, forKey: "LCLaunchExtensionBundleID")
+                LCUtils.appGroupUserDefault.removeObject(forKey: "LCLaunchExtensionContainerName")
+                LCUtils.appGroupUserDefault.removeObject(forKey: "LCLaunchExtensionLaunchURL")
                 LCUtils.appGroupUserDefault.set(Date.now, forKey: "LCLaunchExtensionLaunchDate")
                 onServerMessage?("JIT acquisition will continue in another zContainer.")
                 
@@ -392,6 +407,8 @@ extension LCUtils {
                 launchURL = URL(string: "\(freeScheme)://open-url?url=\(encodedStr)")!
                 LCUtils.appGroupUserDefault.set(freeScheme, forKey: "LCLaunchExtensionScheme")
                 LCUtils.appGroupUserDefault.set(appToLaunch.appInfo.relativeBundlePath, forKey: "LCLaunchExtensionBundleID")
+                LCUtils.appGroupUserDefault.removeObject(forKey: "LCLaunchExtensionContainerName")
+                LCUtils.appGroupUserDefault.removeObject(forKey: "LCLaunchExtensionLaunchURL")
                 LCUtils.appGroupUserDefault.set(Date.now, forKey: "LCLaunchExtensionLaunchDate")
                 onServerMessage?("JIT acquisition will continue in another zContainer.")
                 

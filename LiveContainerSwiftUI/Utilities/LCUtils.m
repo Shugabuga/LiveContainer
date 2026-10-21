@@ -39,8 +39,8 @@
     }
     
     // in LC2, attempt to guess LC1's LiveProcess extension. Only zContainer's own
-    // copies guess: a build under another App ID (the test build) has its own app
-    // group, so zContainer's extension couldn't find the apps it was asked to run.
+    // copies guess, so a build under another App ID (the test build) never runs its
+    // apps in zContainer's extension.
     NSString *ownBundleID = NSBundle.mainBundle.bundleIdentifier;
     if(![ownBundleID isEqualToString:@"app.reiko.zcontainer"] && ![ownBundleID hasPrefix:@"app.reiko.zcontainer."]) {
         return nil;
@@ -157,12 +157,13 @@
 }
 
 + (int)validateCertificateWithCompletionHandler:(void(^)(int status, NSDate *expirationDate, NSString *organizationalUnitName, NSString *error))completionHandler {
-    NSError *error;
-    NSData *certData = [LCUtils certificateData];
+    NSError *error = nil;
+    [self loadStoreFrameworksWithError2:&error];
     if (error) {
+        completionHandler(2, nil, nil, error.localizedDescription);
         return -6;
     }
-    [self loadStoreFrameworksWithError2:&error];
+    NSData *certData = [LCUtils certificateData];
     int ans = [NSClassFromString(@"ZSigner") checkCert:certData pass:[LCSharedUtils certificatePassword] completionHandler:completionHandler];
     return ans;
 }
@@ -175,7 +176,7 @@
         io_registry_entry_t memory_map = IORegistryEntryFromPath(0, "IODeviceTree:/chosen/memory-map");
         if (memory_map == IO_OBJECT_NULL)
             return NO;
-        NSArray *keys = (__bridge NSArray *)IORegistryEntryCreateCFProperty(memory_map, CFSTR(kIORegistryEntryPropertyKeysKey), 0, 0);
+        NSArray *keys = (__bridge_transfer NSArray *)IORegistryEntryCreateCFProperty(memory_map, CFSTR(kIORegistryEntryPropertyKeysKey), 0, 0);
         IOObjectRelease(memory_map);
         return keys && [keys containsObject:@"TXM"];
     }
