@@ -14,8 +14,10 @@ enum OnboardingDesign {
     /// zContainer's pink, from its icon, which tints onboarding the way
     /// Zeus's pink tints Zeus's.
     static let accent = Color(red: 0xDB / 255, green: 0x2C / 255, blue: 0x99 / 255)
-    /// The near black tile of zContainer's icon.
-    static let markTile = Color(red: 0x16 / 255, green: 0x16 / 255, blue: 0x16 / 255)
+    /// The pink gradient behind the apps on zContainer's icon, from its top
+    /// left corner to its bottom right, as `Scripts/zc/art/AppIcon.svg` has it.
+    static let markGradientStart = Color(red: 0xE6 / 255, green: 0x4B / 255, blue: 0xAE / 255)
+    static let markGradientEnd = Color(red: 0xA3 / 255, green: 0x15 / 255, blue: 0x6F / 255)
     /// The page behind onboarding: the grouped background of its forms, so
     /// the welcome screen and the steps share one color. SwiftUI has no
     /// grouped background color of its own.
@@ -77,8 +79,8 @@ enum OnboardingDesign {
     /// The corner radius of a tile or an icon, as a fraction of its size: the
     /// shape of an app icon.
     static let iconCornerRatio = 0.225
-    /// The hairline around zContainer's icon, whose near black tile would
-    /// otherwise melt into a dark page.
+    /// The hairline around zContainer's icon, which keeps its edge crisp on a
+    /// page of any color.
     static let markOutlineWidth = 1.0
     /// The squircle icons beside the features and the rows of a checklist.
     static let iconSize = 44.0
@@ -116,12 +118,12 @@ enum OnboardingDesign {
     /// The gentle spring each part settles in with.
     static let revealSpring = Animation.spring(duration: 0.6, bounce: 0.12)
 
-    /// How zContainer's icon arrives on the welcome screen: its tile swells
-    /// in after a beat, the container's outline draws itself around, and the
-    /// bolt pops into it.
+    /// How zContainer's icon arrives on the welcome screen: its pink tile
+    /// swells in after a beat, then its sixteen apps pop onto it one diagonal
+    /// at a time from the top left, `markAppStagger` seconds apart.
     static let markTileArrival = Animation.spring(duration: 0.5, bounce: 0.2).delay(0.25)
-    static let markFrameDrawing = Animation.easeInOut(duration: 0.55)
-    static let markBoltArrival = Animation.spring(duration: 0.5, bounce: 0.4)
+    static let markAppArrival = Animation.spring(duration: 0.45, bounce: 0.35)
+    static let markAppStagger = 0.05
     /// How the icon comes in with Reduce Motion on: it only fades.
     static let markFade = Animation.easeOut(duration: 0.35)
 

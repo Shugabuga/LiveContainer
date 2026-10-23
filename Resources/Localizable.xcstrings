@@ -33477,6 +33477,18 @@
         }
       }
     },
+    "zc.settings.apps.homeButtonOffEverywhere" : {
+      "comment" : "An app's settings: footer under the Home Button switch while Home Button in Apps is off in Settings > Home Screen, as it is at first.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn on Home Button in Apps in Settings > Home Screen to show it over apps."
+          }
+        }
+      }
+    },
     "zc.settings.apps.strictHidingFooter" : {
       "comment" : "Settings > Apps > Hidden Apps: footer under the Strict Hiding Mode switch.",
       "extractionState" : "manual",
@@ -33725,6 +33737,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Home Screen"
+          }
+        }
+      }
+    },
+    "zc.settings.homeScreen.homeButtonInApps" : {
+      "comment" : "Settings > Home Screen: switch that shows the Home button over the apps zContainer opens.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Home Button in Apps"
+          }
+        }
+      }
+    },
+    "zc.settings.homeScreen.homeButtonInAppsFooter" : {
+      "comment" : "Settings > Home Screen: footer under the Home Button in Apps switch.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shows a round button over the apps you open that takes you back to zContainer. Without it, close an app from the App Switcher to come back. zContainer's own screens always show it."
           }
         }
       }
