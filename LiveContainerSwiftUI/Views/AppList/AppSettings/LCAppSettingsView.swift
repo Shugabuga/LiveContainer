@@ -151,7 +151,9 @@ struct LCAppSettingsView: View {
                     Text("lc.appSettings.launchWithJit".loc)
                 }
                 .disabled(model.uiIs32bit)
-                if #available(iOS 26.0, *), model.uiIsJITNeeded, !model.uiIs32bit {
+                // Only the tools that run a script for the app take one. Zeus
+                // answers what an app asks for itself, so it needs none.
+                if #available(iOS 26.0, *), model.uiIsJITNeeded, !model.uiIs32bit, JITEnablerType.current != .Zeus {
                     HStack {
                         Text("lc.appSettings.jit26.script".loc)
                         Spacer()
@@ -212,7 +214,7 @@ struct LCAppSettingsView: View {
                 }
             } footer: {
 
-                    if #available(iOS 26.0, *), model.uiIsJITNeeded {
+                    if #available(iOS 26.0, *), model.uiIsJITNeeded, JITEnablerType.current != .Zeus {
                         Text("lc.appSettings.launchWithJitDesc".loc + "\n" + "lc.appSettings.jit26.scriptDesc".loc)
 
                     } else {

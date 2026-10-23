@@ -14,7 +14,7 @@ import SwiftUI
 struct AdvancedSettingsView: View {
     @EnvironmentObject private var sharedModel: SharedModel
 
-    @AppStorage("LCJITEnablerType", store: LCUtils.appGroupUserDefault) private var jitEnabler: JITEnablerType = .SideJITServer
+    @AppStorage("LCJITEnablerType", store: LCUtils.appGroupUserDefault) private var jitEnabler: JITEnablerType = .Zeus
     @AppStorage("LCSelected32BitEmulator", store: LCUtils.appGroupUserDefault) private var selected32BitEmulator = ""
     @AppStorage("LCDontSignApp", store: LCUtils.appGroupUserDefault) private var dontSignApp = false
     @AppStorage("LCSwitchAppWithoutAsking") private var silentSwitchApp = false

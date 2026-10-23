@@ -312,6 +312,7 @@ static NSString * const LCZeusGroupBase = @"group.app.reiko.zeus";
     NSString* launchBundleId = nil;
     NSString* openUrl = nil;
     NSString* containerFolderName = nil;
+    NSString* jit = nil;
     for (NSURLQueryItem* queryItem in components.queryItems) {
         if ([queryItem.name isEqualToString:@"bundle-name"]) {
             launchBundleId = queryItem.value;
@@ -320,6 +321,8 @@ static NSString * const LCZeusGroupBase = @"group.app.reiko.zeus";
             openUrl = [[NSString alloc] initWithData:decodedData encoding:NSUTF8StringEncoding];
         } else if ([queryItem.name isEqualToString:@"container-folder-name"]) {
             containerFolderName = queryItem.value;
+        } else if ([queryItem.name isEqualToString:@"jit"]) {
+            jit = queryItem.value;
         }
     }
     if(launchBundleId) {
@@ -337,10 +340,49 @@ static NSString * const LCZeusGroupBase = @"group.app.reiko.zeus";
         NSUInteger classicMode = [appInfo[@"classicMode"] boolValue]
             ? [appInfo[@"LCClassicModeCache"][@"defaultClassicMode"] unsignedIntegerValue]
             : 0;
+        // The app opens with JIT when it always does, or when the link says
+        // so with jit=true, as an icon Add to Home Screen made can; jit=false
+        // opens it without.
+        BOOL needsJIT = [appInfo[@"isJITNeeded"] boolValue] || [appInfo[@"is32bit"] boolValue];
+        if ([jit isEqualToString:@"true"]) {
+            needsJIT = YES;
+        } else if ([jit isEqualToString:@"false"]) {
+            needsJIT = NO;
+        }
+        if (needsJIT && [self askZeusForJITWithClassicMode:classicMode]) {
+            return YES;
+        }
         return [self launchToGuestAppWithClassicMode:classicMode];
     }
     
     return NO;
+}
+
+/// Asks Zeus for JIT for the app selected to launch, when Zeus is the tool set
+/// to enable JIT, as it is unless Settings > Advanced > JIT names another:
+/// Zeus relaunches zContainer with the debugger attached and stays with it,
+/// answering what the app asks for as it runs, and zContainer then opens the
+/// app, as Open with JIT does from zContainer's Home Screen. Zeus needs no
+/// script for that, so none goes with the link. When Zeus can't be opened,
+/// zContainer opens the app without JIT instead. Returns NO, asking for
+/// nothing, when another tool is set.
++ (BOOL)askZeusForJITWithClassicMode:(NSUInteger)classicMode {
+    // JITEnablerType.Zeus, saved under LCJITEnablerType once the person picks a tool.
+    NSNumber* jitEnabler = [NSUserDefaults.lcSharedDefaults objectForKey:@"LCJITEnablerType"];
+    if (jitEnabler && jitEnabler.integerValue != 7) {
+        return NO;
+    }
+    NSURLComponents* zeusLink = [NSURLComponents new];
+    zeusLink.scheme = @"zeus";
+    zeusLink.host = @"enable-jit";
+    zeusLink.queryItems = @[[NSURLQueryItem queryItemWithName:@"bundle-id" value:NSUserDefaults.lcMainBundle.bundleIdentifier]];
+    UIApplication *application = [NSClassFromString(@"UIApplication") sharedApplication];
+    [application openURL:zeusLink.URL options:@{} completionHandler:^(BOOL success) {
+        if (!success) {
+            [self launchToGuestAppWithClassicMode:classicMode];
+        }
+    }];
+    return YES;
 }
 
 + (void)setWebPageUrlForNextLaunch:(NSString*) urlString {

@@ -31870,7 +31870,7 @@
       }
     },
     "zc.appIcon.blue" : {
-      "comment" : "Settings > Home Screen: name of an icon color.",
+      "comment" : "Settings > Appearance: name of an icon color.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -31882,7 +31882,7 @@
       }
     },
     "zc.appIcon.gold" : {
-      "comment" : "Settings > Home Screen: name of an icon color.",
+      "comment" : "Settings > Appearance: name of an icon color.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -31894,7 +31894,7 @@
       }
     },
     "zc.appIcon.green" : {
-      "comment" : "Settings > Home Screen: name of an icon color.",
+      "comment" : "Settings > Appearance: name of an icon color.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -31906,7 +31906,7 @@
       }
     },
     "zc.appIcon.light" : {
-      "comment" : "Settings > Home Screen: name of the white icon with pink tiles.",
+      "comment" : "Settings > Appearance: name of the white icon with pink tiles.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -31918,7 +31918,7 @@
       }
     },
     "zc.appIcon.mono" : {
-      "comment" : "Settings > Home Screen: name of the black and white icon.",
+      "comment" : "Settings > Appearance: name of the black and white icon.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -31930,7 +31930,7 @@
       }
     },
     "zc.appIcon.og" : {
-      "comment" : "Settings > Home Screen: name of the icon zContainer had before (the original one). Keep it short.",
+      "comment" : "Settings > Appearance: name of the icon zContainer had before (the original one). Keep it short.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -31942,7 +31942,7 @@
       }
     },
     "zc.appIcon.orange" : {
-      "comment" : "Settings > Home Screen: name of an icon color.",
+      "comment" : "Settings > Appearance: name of an icon color.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -31954,7 +31954,7 @@
       }
     },
     "zc.appIcon.purple" : {
-      "comment" : "Settings > Home Screen: name of an icon color.",
+      "comment" : "Settings > Appearance: name of an icon color.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -31966,7 +31966,7 @@
       }
     },
     "zc.appIcon.red" : {
-      "comment" : "Settings > Home Screen: name of an icon color.",
+      "comment" : "Settings > Appearance: name of an icon color.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -31978,7 +31978,7 @@
       }
     },
     "zc.appIcon.teal" : {
-      "comment" : "Settings > Home Screen: name of an icon color.",
+      "comment" : "Settings > Appearance: name of an icon color.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -31990,7 +31990,7 @@
       }
     },
     "zc.appIcon.zContainer" : {
-      "comment" : "Settings > Home Screen: name of zContainer’s own icon, the grid of apps on Zeus pink.",
+      "comment" : "Settings > Appearance: name of zContainer’s own icon, the grid of apps on Zeus pink.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -32158,7 +32158,7 @@
       }
     },
     "zc.home.addApp" : {
-      "comment" : "Home Screen edit mode: the plus button at the top left that installs an app.",
+      "comment" : "Home Screen edit mode: the plus button at the top left that installs an app. Also Settings' row under Apps that does the same.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -32325,6 +32325,66 @@
         }
       }
     },
+    "zc.home.folderName" : {
+      "comment" : "Home Screen: the name a new folder gets, and one whose name was cleared.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Folder"
+          }
+        }
+      }
+    },
+    "zc.home.renameFolder" : {
+      "comment" : "Home Screen: long-press menu item on a folder that lets the person change its name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rename"
+          }
+        }
+      }
+    },
+    "zc.home.folderNameField" : {
+      "comment" : "Home Screen: the field an open folder's name is typed into in edit mode.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Folder Name"
+          }
+        }
+      }
+    },
+    "zc.home.clearFolderName" : {
+      "comment" : "Home Screen: the button that clears an open folder's name while it's being typed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear Name"
+          }
+        }
+      }
+    },
+    "zc.home.closeFolder" : {
+      "comment" : "Home Screen: VoiceOver name of the dimmed Home Screen behind an open folder, which closes it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close Folder"
+          }
+        }
+      }
+    },
     "zc.home.hidden" : {
       "comment" : "Home Screen search: section with the hidden apps, shown after Face ID.",
       "extractionState" : "manual",
@@ -32465,6 +32525,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No Hidden Apps"
+          }
+        }
+      }
+    },
+    "zc.home.openWithJIT" : {
+      "comment" : "Home Screen app menu: opens the app with JIT, which the JIT tool chosen in Settings, Zeus at first, gives it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open with JIT"
+          }
+        }
+      }
+    },
+    "zc.home.alwaysOpenWithJIT" : {
+      "comment" : "Home Screen app menu: switch that has a plain tap open the app with JIT too, as its Launch with JIT setting does.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Always Open with JIT"
           }
         }
       }
@@ -33340,7 +33424,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Icons saved or added to the iPhone’s Home Screen from an app’s Add to Home Screen menu get a zContainer frame around them."
+            "value" : "Apps put on the iPhone’s Home Screen with Add to Home Screen get a zContainer frame around their icons."
           }
         }
       }
@@ -33352,7 +33436,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Icons saved or added to the iPad’s Home Screen from an app’s Add to Home Screen menu get a zContainer frame around them."
+            "value" : "Apps put on the iPad’s Home Screen with Add to Home Screen get a zContainer frame around their icons."
           }
         }
       }
@@ -33370,7 +33454,7 @@
       }
     },
     "zc.settings.appIcon" : {
-      "comment" : "Settings > Home Screen: title of the choice of zContainer’s own icon on the iPhone’s Home Screen.",
+      "comment" : "Settings > Appearance: title of the choice of zContainer’s own icon on the iPhone’s Home Screen.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -33382,7 +33466,7 @@
       }
     },
     "zc.settings.appIconFailed" : {
-      "comment" : "Settings > Home Screen: title of the alert when iOS doesn’t switch zContainer’s icon. Its message is iOS’s own reason.",
+      "comment" : "Settings > Appearance: title of the alert when iOS doesn’t switch zContainer’s icon. Its message is iOS’s own reason.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -33394,7 +33478,7 @@
       }
     },
     "zc.settings.appIconFooter" : {
-      "comment" : "Settings > Home Screen: footer under the choice of zContainer’s own icon.",
+      "comment" : "Settings > Appearance: footer under the choice of zContainer’s own icon.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -33478,13 +33562,13 @@
       }
     },
     "zc.settings.apps.homeButtonOffEverywhere" : {
-      "comment" : "An app's settings: footer under the Home Button switch while Home Button in Apps is off in Settings > Home Screen, as it is at first.",
+      "comment" : "An app's settings: footer under the Home Button switch while Home Button in Apps is off in Settings > Appearance, as it is at first.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Turn on Home Button in Apps in Settings > Home Screen to show it over apps."
+            "value" : "Turn on Home Button in Apps in Settings > Appearance to show it over apps."
           }
         }
       }
@@ -33729,20 +33813,20 @@
         }
       }
     },
-    "zc.settings.homeScreen" : {
-      "comment" : "Settings: row and page title for how zContainer’s Home Screen looks.",
+    "zc.settings.appearance" : {
+      "comment" : "Settings: row and page title for how zContainer looks: the Home button over apps, the app icons, and zContainer’s own icon.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Home Screen"
+            "value" : "Appearance"
           }
         }
       }
     },
-    "zc.settings.homeScreen.homeButtonInApps" : {
-      "comment" : "Settings > Home Screen: switch that shows the Home button over the apps zContainer opens.",
+    "zc.settings.appearance.homeButtonInApps" : {
+      "comment" : "Settings > Appearance: switch that shows the Home button over the apps zContainer opens.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -33753,20 +33837,20 @@
         }
       }
     },
-    "zc.settings.homeScreen.homeButtonInAppsFooter" : {
-      "comment" : "Settings > Home Screen: footer under the Home Button in Apps switch.",
+    "zc.settings.appearance.homeButtonInAppsFooter" : {
+      "comment" : "Settings > Appearance: footer under the Home Button in Apps switch.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Shows a round button over the apps you open that takes you back to zContainer. Without it, close an app from the App Switcher to come back. zContainer's own screens always show it."
+            "value" : "Shows a round button over the apps you open that takes you back to zContainer. Without it, close an app from the App Switcher to come back. zContainer’s own screens always show it."
           }
         }
       }
     },
-    "zc.settings.homeScreen.iconStyle" : {
-      "comment" : "Settings > Home Screen: title of the choice of light or dark app icons.",
+    "zc.settings.appearance.iconStyle" : {
+      "comment" : "Settings > Appearance: title of the choice of light or dark app icons.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -33777,8 +33861,8 @@
         }
       }
     },
-    "zc.settings.homeScreen.iconStyle.automatic" : {
-      "comment" : "Settings > Home Screen > App Icons: icons follow Dark Mode.",
+    "zc.settings.appearance.iconStyle.automatic" : {
+      "comment" : "Settings > Appearance > App Icons: icons follow Dark Mode.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -33789,8 +33873,8 @@
         }
       }
     },
-    "zc.settings.homeScreen.iconStyle.dark" : {
-      "comment" : "Settings > Home Screen > App Icons: always the dark icons.",
+    "zc.settings.appearance.iconStyle.dark" : {
+      "comment" : "Settings > Appearance > App Icons: always the dark icons.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -33801,8 +33885,8 @@
         }
       }
     },
-    "zc.settings.homeScreen.iconStyle.light" : {
-      "comment" : "Settings > Home Screen > App Icons: always the light icons.",
+    "zc.settings.appearance.iconStyle.light" : {
+      "comment" : "Settings > Appearance > App Icons: always the light icons.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -33813,8 +33897,8 @@
         }
       }
     },
-    "zc.settings.homeScreen.iconStyleFooter" : {
-      "comment" : "Settings > Home Screen: footer under the App Icons choice.",
+    "zc.settings.appearance.iconStyleFooter" : {
+      "comment" : "Settings > Appearance: footer under the App Icons choice.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -34085,18 +34169,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Apps are signed with this certificate and open without JIT."
-          }
-        }
-      }
-    },
-    "zc.settings.shortcut.iconFileName %@" : {
-      "comment" : "Add to Home Screen > Save App Icon: name Files suggests for the icon. %@ is the app’s name.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ Icon"
           }
         }
       }
@@ -34733,6 +34805,126 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "zContainer couldn’t read what Zeus sent. Send it again from Zeus."
+          }
+        }
+      }
+    },
+    "zc.shortcut.name" : {
+      "comment" : "The name field in Add to Home Screen's sheet, for the name under the icon.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name"
+          }
+        }
+      }
+    },
+    "zc.shortcut.opensIn %@" : {
+      "comment" : "Under the name in Add to Home Screen's sheet. %@ is the app's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens %@ in zContainer"
+          }
+        }
+      }
+    },
+    "zc.shortcut.nextSteps" : {
+      "comment" : "Footer under the icon and name in Add to Home Screen's sheet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When you tap Add, allow the download, then install the profile from Profile Downloaded at the top of Settings."
+          }
+        }
+      }
+    },
+    "zc.shortcut.jitFooter" : {
+      "comment" : "Footer under Open with JIT in Add to Home Screen's sheet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The icon opens the app with JIT each time, as Open with JIT does."
+          }
+        }
+      }
+    },
+    "zc.shortcut.jitFooterAlways" : {
+      "comment" : "Footer under Open with JIT in Add to Home Screen's sheet, for an app that always opens with JIT.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Always Open with JIT is on for this app, so the icon opens it with JIT too."
+          }
+        }
+      }
+    },
+    "zc.shortcut.jitFooter32bit" : {
+      "comment" : "Footer under Open with JIT in Add to Home Screen's sheet, for a 32-bit app.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "32-bit apps always open with JIT, so the icon opens this one with JIT too."
+          }
+        }
+      }
+    },
+    "zc.shortcut.container" : {
+      "comment" : "Picker in Add to Home Screen's sheet: the container the icon opens the app in.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Container"
+          }
+        }
+      }
+    },
+    "zc.shortcut.add" : {
+      "comment" : "The button that makes the icon in Add to Home Screen's sheet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add"
+          }
+        }
+      }
+    },
+    "zc.shortcut.profileSummary %@" : {
+      "comment" : "The profile's description in Settings. %@ is the app's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens %@ in zContainer."
+          }
+        }
+      }
+    },
+    "zc.shortcut.profileSummaryJIT %@" : {
+      "comment" : "The profile's description in Settings, for an icon that opens the app with JIT. %@ is the app's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens %@ in zContainer with JIT."
           }
         }
       }

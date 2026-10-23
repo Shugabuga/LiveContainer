@@ -741,9 +741,10 @@ final class AppLaunchCoordinator {
     /// multitasking window, that window comes forward. Otherwise a locked app
     /// asks for Face ID first, and the app runs: signed if it needs to be, then
     /// in a multitasking window or with zContainer turning into it, as its
-    /// settings say. `willLaunch` runs just before zContainer turns into the
-    /// app, after signing, so the Home Screen can zoom into it.
-    func open(_ app: LCAppModel, willLaunch: (@MainActor () async -> Void)? = nil) async {
+    /// settings say, and with JIT when `forceJIT` asks, as Open with JIT does.
+    /// `willLaunch` runs just before zContainer turns into the app, after
+    /// signing, so the Home Screen can zoom into it.
+    func open(_ app: LCAppModel, forceJIT: Bool? = nil, willLaunch: (@MainActor () async -> Void)? = nil) async {
         if #available(iOS 16.0, *),
            let folderName = app.uiSelectedContainer?.folderName,
            MultitaskManager.isUsing(container: folderName) {
@@ -771,7 +772,7 @@ final class AppLaunchCoordinator {
         }
 
         do {
-            try await app.runApp(willLaunch: willLaunch)
+            try await app.runApp(forceJIT: forceJIT, willLaunch: willLaunch)
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -934,10 +935,14 @@ extension AppLaunchCoordinator: LCAppModelDelegate {
     }
 
     /// Asks the JIT enabler to attach to an app already running in a
-    /// multitasking window, by its process ID: StikDebug or StosDebug, either
-    /// installed on the iPhone or inside zContainer as a shared app.
+    /// multitasking window, by its process ID: Zeus, or StikDebug or StosDebug,
+    /// either installed on the iPhone or inside zContainer as a shared app.
     func jitLaunch(withPID pid: Int, withScript script: String?, appName: String) async {
-        guard let jitEnabler = JITEnablerType(rawValue: LCUtils.appGroupUserDefault.integer(forKey: "LCJITEnablerType")) else {
+        let jitEnabler = JITEnablerType.current
+        if jitEnabler == .Zeus {
+            if !(await LCUtils.askZeusForJIT(withScript: script, pid: pid)) {
+                errorMessage = LCUtils.zeusMissingForJIT
+            }
             return
         }
         let bundleIdentifier = Bundle.main.bundleIdentifier ?? ""

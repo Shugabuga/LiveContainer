@@ -1,18 +1,18 @@
 //
-//  HomeScreenSettingsView.swift
+//  AppearanceSettingsView.swift
 //  LiveContainerSwiftUI
 //
 
 import SwiftUI
 
-/// Settings > Home Screen: whether the Home button floats over the apps you
+/// Settings > Appearance: whether the Home button floats over the apps you
 /// open, which it doesn't until it's turned on here, while zContainer's own
-/// screens always show it; how the icons on
-/// zContainer's Home Screen look, on iOS 18 and later, which draw dark icons,
-/// where by default they follow Dark Mode, as iOS's own do; and zContainer's
-/// own icon on the iPhone's Home Screen, which a second zContainer doesn't
-/// offer, so it keeps the icon that tells it apart.
-struct HomeScreenSettingsView: View {
+/// screens always show it; how the icons on zContainer's Home Screen look, on
+/// iOS 18 and later, which draw dark icons, where by default they follow Dark
+/// Mode, as iOS's own do; and zContainer's own icon on the iPhone's Home
+/// Screen, which a second zContainer doesn't offer, so it keeps the icon that
+/// tells it apart.
+struct AppearanceSettingsView: View {
     @AppStorage(HomeIconStyle.storageKey, store: LCUtils.appGroupUserDefault) private var iconStyle = HomeIconStyle.automatic
 
     /// Whether apps show the Home button, which TweakLoader reads as
@@ -23,14 +23,14 @@ struct HomeScreenSettingsView: View {
     var body: some View {
         List {
             Section {
-                Toggle("zc.settings.homeScreen.homeButtonInApps".loc, isOn: $showsHomeButtonInApps)
+                Toggle("zc.settings.appearance.homeButtonInApps".loc, isOn: $showsHomeButtonInApps)
             } footer: {
-                Text("zc.settings.homeScreen.homeButtonInAppsFooter".loc)
+                Text("zc.settings.appearance.homeButtonInAppsFooter".loc)
             }
 
             if #available(iOS 18.0, *) {
                 Section {
-                    Picker("zc.settings.homeScreen.iconStyle".loc, selection: $iconStyle) {
+                    Picker("zc.settings.appearance.iconStyle".loc, selection: $iconStyle) {
                         ForEach(HomeIconStyle.allCases) { style in
                             Text(style.title)
                                 .tag(style)
@@ -39,9 +39,9 @@ struct HomeScreenSettingsView: View {
                     .pickerStyle(.inline)
                     .labelsHidden()
                 } header: {
-                    Text("zc.settings.homeScreen.iconStyle".loc)
+                    Text("zc.settings.appearance.iconStyle".loc)
                 } footer: {
-                    Text("zc.settings.homeScreen.iconStyleFooter".loc)
+                    Text("zc.settings.appearance.iconStyleFooter".loc)
                 }
             }
 
@@ -55,7 +55,7 @@ struct HomeScreenSettingsView: View {
                 }
             }
         }
-        .navigationTitle("zc.settings.homeScreen".loc)
+        .navigationTitle("zc.settings.appearance".loc)
         .navigationBarTitleDisplayMode(.inline)
     }
 }

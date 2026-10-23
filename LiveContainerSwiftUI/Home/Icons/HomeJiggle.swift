@@ -7,8 +7,9 @@ import SwiftUI
 
 /// The wobble icons make in edit mode: a small tilt one way and the other,
 /// repeating. Each icon starts its own way and at its own pace, so they don't
-/// move in step. The animation runs outside the view's body, so jiggling
-/// doesn't redraw the icons.
+/// move in step. Every loop starts and ends level, so it repeats without a
+/// jump. The animation runs outside the view's body, so jiggling doesn't
+/// redraw the icons.
 struct HomeJiggle: ViewModifier {
     /// Whether the icon jiggles. It comes to rest when this turns false.
     let isActive: Bool

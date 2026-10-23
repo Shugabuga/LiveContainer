@@ -5,7 +5,7 @@
 
 import SwiftUI
 
-/// zContainer's icons in Settings > Home Screen, each a small picture of
+/// zContainer's icons in Settings > Appearance, each a small picture of
 /// itself, in a grid. Choosing one asks iOS to put it on the Home Screen,
 /// which iOS confirms with an alert of its own.
 struct AppIconPicker: View {

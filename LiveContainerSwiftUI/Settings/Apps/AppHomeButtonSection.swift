@@ -8,14 +8,14 @@ import SwiftUI
 /// The Home Button switch in an app's settings. The button floats over the
 /// app while it runs and brings back zContainer. TweakLoader draws it, so the
 /// switch is off limits while TweakLoader is turned off for the app, and until
-/// Settings > Home Screen turns the button on for apps, which it isn't at
+/// Settings > Appearance turns the button on for apps, which it isn't at
 /// first.
 struct AppHomeButtonSection: View {
     /// The app whose settings show.
     @ObservedObject var model: LCAppModel
 
-    /// Whether Settings > Home Screen lets apps show the Home button, which
-    /// it doesn't until it's turned on there.
+    /// Whether Settings > Appearance lets apps show the Home button, which it
+    /// doesn't until it's turned on there.
     @AppStorage("LCShowHomeButtonInApps") private var showsHomeButtonInApps = false
 
     var body: some View {

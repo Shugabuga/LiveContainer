@@ -6,8 +6,9 @@
 import SwiftUI
 
 /// Everything on the Home Screen itself, laid out on the whole screen: the
-/// pages, the dock, the search pill (or the Home button in its place), edit
-/// mode's buttons, the icon being dragged and the launch zoom. Positions come
+/// pages, the dock, the search pill (or the Home button in its place), the
+/// open folder, edit mode's buttons over it, the icon being dragged over
+/// everything, and the launch zoom. Positions come
 /// from HomeMetrics, in the screen's coordinate space, which the drag gesture
 /// uses too.
 struct HomeSpringboard: View {
@@ -28,6 +29,8 @@ struct HomeSpringboard: View {
 
             HomePillRow(homeButtonScale: metrics.pillButtonScale)
                 .position(metrics.pillCenter)
+
+            HomeFolderView(metrics: metrics, zoomNamespace: zoomNamespace)
 
             if model.isEditing {
                 HomeEditControls(metrics: metrics)

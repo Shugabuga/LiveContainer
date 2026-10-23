@@ -11,8 +11,16 @@ import SwiftUI
 extension HomeScreenModel {
     /// Opens what an icon stands for, unless edit mode is on or search covers
     /// the icons: Settings, or the app, after Face ID when the app is locked.
+    /// A folder opens in edit mode too, as on iOS.
     func open(_ item: HomeItem) {
-        guard !isEditing, !isSearching, drag == nil else {
+        guard !isSearching, drag == nil else {
+            return
+        }
+        if case .folder(let id) = item {
+            openFolder(id)
+            return
+        }
+        guard !isEditing else {
             return
         }
         switch item {
@@ -23,6 +31,8 @@ extension HomeScreenModel {
                 return
             }
             launch(app, from: item)
+        case .folder:
+            break
         }
     }
 
@@ -66,7 +76,8 @@ extension HomeScreenModel {
         launchZoomContinuation = nil
     }
 
-    /// An icon's frame on screen, when it shows on the page in view or in the dock.
+    /// An icon's frame on screen, when it shows on the page in view, in the
+    /// dock, or on the open folder's page showing.
     func iconFrame(of item: HomeItem) -> CGRect? {
         guard let metrics else {
             return nil
@@ -84,6 +95,11 @@ extension HomeScreenModel {
             let size = metrics.dockIconSize(count: count)
             let center = metrics.dockIconCenter(at: index, count: count)
             return CGRect(x: center.x - size / 2, y: center.y - size / 2, width: size, height: size)
+        case .folder(let id, let index)?:
+            guard id == openFolderID, isFolderShown, index / HomeFolder.iconsPerPage == (folderPage ?? 0) else {
+                return nil
+            }
+            return metrics.iconFrame(around: folderIconCenter(at: index, metrics: metrics))
         case nil:
             return nil
         }
@@ -109,9 +125,20 @@ extension HomeScreenModel {
     }
 
     /// Hands the status bar back to the Home Screen once the screen over it
-    /// has closed.
+    /// has closed, and opens Files or the link question if the screen asked
+    /// to add an app.
     func presentedScreenDidClose() {
         isCoveredByScreen = false
+        guard let addition = pendingAddition else {
+            return
+        }
+        pendingAddition = nil
+        switch addition {
+        case .ipaFile:
+            chooseIPA()
+        case .link:
+            askForInstallURL()
+        }
     }
 
     /// Opens an app's settings, zooming out of its icon.
@@ -127,6 +154,25 @@ extension HomeScreenModel {
     }
 
     // MARK: Long-press actions
+
+    /// Opens Add to Home Screen's sheet for an app, as its long-press menu
+    /// does, once the menu has closed, so the sheet can open over the Home
+    /// Screen. `style` is its icon's.
+    func addToHomeScreen(_ app: LCAppModel, style: GeneratedIconStyle) {
+        Task { [weak self] in
+            try? await Task.sleep(for: HomeDesign.menuCloseDuration)
+            self?.shortcutRequest = AppShortcutRequest(app: app, style: style)
+        }
+    }
+
+    /// Opens an app with JIT, as Open with JIT in its long-press menu does:
+    /// zContainer asks the JIT tool set in Settings, Zeus unless another was
+    /// chosen, to give it JIT, then turns into the app.
+    func openWithJIT(_ app: LCAppModel) {
+        Task {
+            await coordinator.open(app, forceJIT: true)
+        }
+    }
 
     /// Makes a new container for an app and opens the app in it. A locked app
     /// asks for Face ID before the container is made, so cancelling leaves the
@@ -195,6 +241,14 @@ extension HomeScreenModel {
     }
 
     // MARK: Adding apps
+
+    /// Adds an app from the screen open over the Home Screen, as Settings'
+    /// Add App row does: the screen closes, then Files or the link question
+    /// open over the Home Screen, where the new app shows as it installs.
+    func addApp(_ addition: HomeAddition) {
+        pendingAddition = addition
+        presentedScreen = nil
+    }
 
     /// Opens Files to pick an IPA, from the add button in edit mode.
     func chooseIPA() {

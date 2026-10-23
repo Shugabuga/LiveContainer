@@ -5,9 +5,9 @@
 
 import SwiftUI
 
-/// What an icon shows: the app's icon or the Settings icon, with its name
-/// under it unless it is in the dock, in a frame the width of its column so
-/// long names have room.
+/// What an icon shows: the app's icon, the Settings icon or a folder's, with
+/// its name under it unless it is in the dock, in a frame the width of its
+/// column so long names have room.
 struct HomeIconContent: View {
     /// The icon to show.
     let item: HomeItem
@@ -25,6 +25,8 @@ struct HomeIconContent: View {
     /// such as in search.
     var zoomNamespace: Namespace.ID?
 
+    @Environment(HomeScreenModel.self) private var model
+
     var body: some View {
         Group {
             switch item {
@@ -34,6 +36,8 @@ struct HomeIconContent: View {
                 if let app {
                     HomeAppIcon(app: app, metrics: metrics, showsLabel: showsLabel, darkModeIcon: darkModeIcon, zoomSource: zoomSource)
                 }
+            case .folder(let id):
+                HomeFolderIcon(folder: model.displayedLayout.folders[id], metrics: metrics, showsLabel: showsLabel, darkModeIcon: darkModeIcon)
             }
         }
         .frame(

@@ -61,8 +61,9 @@ struct HomeMetrics: Equatable {
 
     /// The center of the first icon on a page.
     private let firstIconCenter: CGPoint
-    /// The distance between neighboring columns and rows.
-    private let pitch: CGSize
+    /// The distance between neighboring columns and rows, which an open
+    /// folder's icons keep too.
+    let pitch: CGSize
     /// The distance between neighboring icons in the dock. On an iPad it is
     /// the most they can be apart; a narrow window brings them closer.
     private let dockPitch: Double
@@ -363,14 +364,6 @@ struct HomeMetrics: Equatable {
         let column = Self.steps(point.x - firstIconCenter.x, of: pitch.width)
         let row = Self.steps(point.y - firstIconCenter.y, of: pitch.height)
         return min(max(row, 0), rows - 1) * columns + min(max(column, 0), columns - 1)
-    }
-
-    /// Where an icon dropped at a point goes in a dock that holds `count`
-    /// other icons: before the icon it lands on, or at either end.
-    func dockIndex(nearest point: CGPoint, count: Int) -> Int {
-        let first = dockIconCenter(at: 0, count: count + 1)
-        let distance = isDockVertical ? point.y - first.y : point.x - first.x
-        return min(max(Self.steps(distance, of: dockSpacing(count: count + 1).pitch), 0), count)
     }
 
     /// How many whole steps of `step` points fit in `distance`, rounded, or 0

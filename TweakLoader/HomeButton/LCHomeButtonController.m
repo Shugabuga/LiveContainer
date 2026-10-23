@@ -161,8 +161,8 @@ static const NSTimeInterval LCHomeButtonLeaveTimeout = 4;
 
 @end
 
-// Shows the Home button in apps zContainer runs itself, once Settings > Home
-// Screen turns it on for apps, which it isn't until then, unless the app's
+// Shows the Home button in apps zContainer runs itself, once Settings >
+// Appearance turns it on for apps, which it isn't until then, unless the app's
 // settings turn it off. TweakLoader also loads into zContainer's own screens
 // when tweaks are set to load there, which have no app chosen and keep their
 // own Home button.
