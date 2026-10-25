@@ -111,6 +111,15 @@ class AppInfoProvider {
     @objc public func keepWindowsAboveHomeScreen() {
         attachWindowHostingView()
     }
+
+    /// Whether the manager was made, which reading `shared` does.
+    private static var isCreated = false
+
+    /// Whether any app's window is on screen, those of apps that ended
+    /// included, without making the manager when it hasn't been.
+    @objc public static var hasWindows: Bool {
+        isCreated && !shared.hostView.subviews.isEmpty
+    }
     private let hostView = VirtualWindowsHostView()
     internal var hostingController: UIHostingController<AnyView>?
 
@@ -268,6 +277,7 @@ class AppInfoProvider {
     
     override init() {
         super.init()
+        Self.isCreated = true
         attachWindowHostingView()
         setupDockView()
         NotificationCenter.default.addObserver(
@@ -289,17 +299,6 @@ class AppInfoProvider {
         NotificationCenter.default.removeObserver(self, name: UIDevice.orientationDidChangeNotification, object: nil)
     }
 
-    /// Puts the virtual windows' host view on the main window, and waits
-    /// while no main window is known.
-    ///
-    /// On iPhone it goes where it always has, once: into the first view of
-    /// the window's root view, sized to the window, and it stays there.
-    ///
-    /// On iPad it goes on the root view itself, sized to it and above the
-    /// Home Screen, and comes back to the front when something covered it.
-    /// zContainer's root is its own SwiftUI view rather than a tab bar
-    /// controller whose view came first, so the first view there could be one
-    /// that scrolls with the Home Screen's pages.
     /// Puts the apps' windows on the window, just above the Home Screen,
     /// rather than inside it. The Home Screen is SwiftUI, which adds views of
     /// its own as it redraws, like the dock's glass, and inside it those could

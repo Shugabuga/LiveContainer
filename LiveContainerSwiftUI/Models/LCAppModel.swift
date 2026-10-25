@@ -5,6 +5,10 @@ import Foundation
 /// AppLaunchCoordinator is the delegate of every app.
 @MainActor
 protocol LCAppModelDelegate: AnyObject {
+    /// Whether an install is running, which an app can't start during:
+    /// zContainer would quit into it, cutting the install short, or sign it
+    /// alongside the install.
+    var isInstalling: Bool { get }
     func closeNavigationView()
     func changeAppVisibility(app : LCAppModel)
     func jitLaunch(appName: String, classicMode: UInt) async
@@ -18,6 +22,9 @@ class LCAppModel: ObservableObject, Hashable {
     @Published var appInfo : LCAppInfo
     
     @Published var isAppRunning = false
+    /// Goes up when the app's icons are cleared from the cache, so the views
+    /// showing them draw them again.
+    @Published var iconGeneration = 0
     @Published var isSigningInProgress = false
     @Published var signProgress = 0.0
     private var observer : NSKeyValueObservation?
@@ -257,6 +264,10 @@ class LCAppModel: ObservableObject, Hashable {
                 return
             }
             
+        }
+
+        if await MainActor.run(body: { delegate?.isInstalling ?? false }) {
+            throw "zc.install.busy".loc
         }
         
         // this is rerouted to bringing app to front, so not needed here?

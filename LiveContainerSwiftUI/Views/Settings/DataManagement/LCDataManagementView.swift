@@ -531,6 +531,8 @@ struct LCDataManagementView : View {
     func clearIconCache() async {
         for app in sharedModel.apps {
             app.appInfo.clearIconCache()
+            // The views showing the app draw its icons again.
+            app.iconGeneration += 1
         }
     }
 

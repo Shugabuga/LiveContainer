@@ -13,4 +13,6 @@ struct HomeAppIconKey: Equatable {
     let app: LCAppModel
     /// Whether the icon is the dark version.
     let isDark: Bool
+    /// The app's icon generation, which Clear Icon Cache moves on.
+    let generation: Int
 }

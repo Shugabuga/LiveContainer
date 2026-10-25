@@ -73,7 +73,7 @@ struct AppLaunchPresentations: ViewModifier {
             .fullScreenCover(isPresented: $coordinator.isShowingWebPage, onDismiss: {
                 // The page covered the Home Screen full screen, which took it
                 // off the window until now.
-                if #available(iOS 16.0, *), MultitaskManager.isMultitasking() {
+                if #available(iOS 16.0, *), MultitaskDockManager.hasWindows {
                     MultitaskDockManager.shared.keepWindowsAboveHomeScreen()
                 }
             }) {

@@ -28,7 +28,7 @@ struct HomeAppIconImage: View {
                 HomeDesign.iconPlaceholder
             }
         }
-        .task(id: HomeAppIconKey(app: app, isDark: isDark)) {
+        .task(id: HomeAppIconKey(app: app, isDark: isDark, generation: app.iconGeneration)) {
             await app.drawHomeScreenIcon(isDark: isDark)
         }
     }

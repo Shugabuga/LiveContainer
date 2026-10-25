@@ -369,6 +369,8 @@
             if (self.pidAvailableHandler) {
                 self.pidAvailableHandler(nil, error);
                 self.pidAvailableHandler = nil;
+                // The launch shows the error itself.
+                return;
             }
             UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"lc.common.error".loc message:error.localizedDescription preferredStyle:UIAlertControllerStyleAlert];
             [alert addAction:[UIAlertAction actionWithTitle:@"lc.common.ok".loc style:UIAlertActionStyleCancel handler:nil]];

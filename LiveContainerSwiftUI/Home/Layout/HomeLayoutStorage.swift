@@ -45,7 +45,11 @@ enum HomeLayoutStorage {
 
     /// The saved layout, or nil on the first launch or when it can't be read.
     static func load() -> HomeLayout? {
-        guard let data = defaults.data(forKey: layoutKey) else {
+        // A second zContainer saved under the shared key before it had its
+        // own, so it starts from that, folders and all, until it saves.
+        let saved = defaults.data(forKey: layoutKey)
+            ?? (isSecondCopy ? defaults.data(forKey: "ZCHomeScreenLayout") : nil)
+        guard let data = saved else {
             return nil
         }
         return try? JSONDecoder().decode(HomeLayout.self, from: data)

@@ -426,6 +426,12 @@ final class AppLaunchCoordinator {
               let bundleIdentifier = newAppInfo.bundleIdentifier() else {
             throw "lc.appList.infoPlistCannotReadError".loc
         }
+        // An executable zContainer can't run, like an encrypted one, is turned
+        // away before anything is asked about it, and before it could take
+        // the place of a copy that works.
+        if let problem = newAppInfo.executableProblem() {
+            throw problem
+        }
         // The bundle ID names the app's folder.
         let folderStem = bundleIdentifier.sanitizeNonACSII()
         guard Self.canNameFolder(folderStem) else {
@@ -485,11 +491,6 @@ final class AppLaunchCoordinator {
         // works while the new app signs, so what changes on it then follows the
         // new app below.
         var settingsAtSwap: NSDictionary?
-        // An executable zContainer can't run, like an encrypted one, is turned
-        // away here, before it takes the place of a copy that works.
-        if let problem = LCAppInfo(bundlePath: appFolderPath.path)?.executableProblem() {
-            throw problem
-        }
         if let appToReplace {
             settingsAtSwap = NSDictionary(dictionary: appToReplace.appInfo.info())
             finalNewApp = try await replaceBundle(of: appToReplace, withAppAt: appFolderPath)
@@ -802,12 +803,6 @@ final class AppLaunchCoordinator {
     /// apps aren't found while Strict Hiding is on.
     func launchAppWithBundleId(bundleId: String, container: String?, urlStr: String? = nil, forceJIT: Bool? = nil) async {
         if bundleId.isEmpty {
-            return
-        }
-        // Opening an app can quit zContainer to turn into it, which would cut
-        // the install short.
-        guard !isInstalling else {
-            errorMessage = "zc.install.busy".loc
             return
         }
         var appFound = sharedModel.apps.first { $0.appInfo.relativeBundlePath == bundleId }

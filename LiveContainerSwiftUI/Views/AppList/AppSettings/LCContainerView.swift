@@ -45,6 +45,10 @@ struct LCContainerView : View {
         self._uiDefaultDataFolder = Binding(projectedValue: uiDefaultDataFolder)
     }
     
+    /// Whether the container was removed or unbound from this page, so what's
+    /// typed isn't saved as it closes.
+    @State private var isRemoved = false
+
     var body: some View {
         Form {
             if !(container.storageBookMark != nil && container.resolvedContainerURL == nil) {
@@ -238,6 +242,10 @@ struct LCContainerView : View {
     /// Keeps a name or UUID typed without pressing Return once the page goes
     /// away, as the Settings app keeps what's typed.
     private func saveTypedFields() {
+        // A container just removed or unbound isn't written back.
+        guard !isRemoved else {
+            return
+        }
         if typingContainerName != container.name {
             container.name = typingContainerName
             saveContainer()
@@ -322,6 +330,7 @@ struct LCContainerView : View {
         // Its folder is gone, so Clean Unused Data Folders mustn't count it.
         sharedModel.appDataFolderNames.removeAll { $0 == container.folderName }
 
+        isRemoved = true
         dismiss()
         delegate.unbindContainer(container: container)
     }
@@ -333,6 +342,7 @@ struct LCContainerView : View {
             return
         }
         
+        isRemoved = true
         dismiss()
         delegate.unbindContainer(container: container)
     }
