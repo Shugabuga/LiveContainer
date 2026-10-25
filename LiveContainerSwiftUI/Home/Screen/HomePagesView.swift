@@ -42,6 +42,11 @@ struct HomePagesView: View {
         .scrollPosition(id: $model.page)
         .scrollDisabled(model.drag != nil)
         .modifier(HomeScrollPhaseTracking(model: model))
+        // A page held for an app being installed goes again when the install
+        // fails, and the last page shows instead, as when other pages go.
+        .onChange(of: pageCount) {
+            model.clampPage()
+        }
         // On the scroll view, which holds the icons as well as the wallpaper,
         // so a pull that starts on an icon counts too. Edit mode leaves the
         // pages to dragging icons.

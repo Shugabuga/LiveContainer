@@ -27,6 +27,9 @@ enum HomeDesign {
     /// An icon's corner radius as a fraction of its size, the Home Screen
     /// icon shape.
     static let iconCornerFraction = 0.225
+    /// The plain tile an app's icon shows as until IconServices has drawn
+    /// it, and that a new app's place shows while it installs.
+    static let iconPlaceholder = Color(white: 0.3)
     /// The distance between the centers of neighboring columns.
     static let columnPitch = 98.6
     /// How far the grid sits right of the screen's center on a real Home
@@ -271,6 +274,10 @@ enum HomeDesign {
     static let folderTitleSize = 36.0
     static let folderTitleGap = 38.0
     static let folderTitleOverhang = 3.0
+    /// The least space under an open folder's panel on a screen too short
+    /// to center the panel with its name above it, such as an iPhone's in
+    /// landscape, where the panel moves down under the name instead.
+    static let folderShortScreenMargin = 16.0
     /// How dark the blurred Home Screen gets behind an open folder.
     static let folderDim = 0.3
     /// How far beside an open folder a dragged icon can go and still be over

@@ -54,18 +54,20 @@
 }
 
 + (void)launchMultitaskGuestApp:(NSString *)displayName completionHandler:(void (^)(NSNumber *pid, NSError *error))completionHandler {
-    if(!self.liveProcessBundleIdentifier) {
-        NSError *error = [NSError errorWithDomain:displayName code:2 userInfo:@{NSLocalizedDescriptionKey: @"LiveProcess extension not found. Please reinstall zContainer and select Keep Extensions"}];
-        if (completionHandler) completionHandler(nil, error);
-        return;
-    }
-    
+    // Taken before anything can fail: left behind, zContainer's next start
+    // would turn into the app, without asking for Face ID for a locked one.
     NSUserDefaults *lcUserDefaults = NSUserDefaults.standardUserDefaults;
     NSString* bundleId = [lcUserDefaults stringForKey:@"selected"];
     NSString* dataUUID = [lcUserDefaults stringForKey:@"selectedContainer"];
     
     [lcUserDefaults removeObjectForKey:@"selected"];
     [lcUserDefaults removeObjectForKey:@"selectedContainer"];
+
+    if(!self.liveProcessBundleIdentifier) {
+        NSError *error = [NSError errorWithDomain:displayName code:2 userInfo:@{NSLocalizedDescriptionKey: @"LiveProcess extension not found. Please reinstall zContainer and select Keep Extensions"}];
+        if (completionHandler) completionHandler(nil, error);
+        return;
+    }
     
     dispatch_async(dispatch_get_main_queue(), ^{
         if (@available(iOS 16.1, *)) {

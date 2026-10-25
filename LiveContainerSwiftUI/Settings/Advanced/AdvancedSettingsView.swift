@@ -17,8 +17,9 @@ struct AdvancedSettingsView: View {
     @AppStorage("LCJITEnablerType", store: LCUtils.appGroupUserDefault) private var jitEnabler: JITEnablerType = .Zeus
     @AppStorage("LCSelected32BitEmulator", store: LCUtils.appGroupUserDefault) private var selected32BitEmulator = ""
     @AppStorage("LCDontSignApp", store: LCUtils.appGroupUserDefault) private var dontSignApp = false
-    @AppStorage("LCSwitchAppWithoutAsking") private var silentSwitchApp = false
-    @AppStorage("LCOpenWebPageWithoutAsking") private var silentOpenWebPage = false
+    // In the app group, where apps in multitasking windows read them too.
+    @AppStorage("LCSwitchAppWithoutAsking", store: LCUtils.appGroupUserDefault) private var silentSwitchApp = false
+    @AppStorage("LCOpenWebPageWithoutAsking", store: LCUtils.appGroupUserDefault) private var silentOpenWebPage = false
     @AppStorage("LCFrameShortcutIcons") private var frameShortcutIcons = false
 
     var body: some View {

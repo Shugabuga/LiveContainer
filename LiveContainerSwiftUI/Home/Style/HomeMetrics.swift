@@ -162,9 +162,19 @@ struct HomeMetrics: Equatable {
                 width: thickness,
                 height: size.height - edge * 2
             )
+            editControlsCenterY = max(safeArea.top * 0.54, 24)
+            editControlsInset = max(safeArea.leading, safeArea.trailing) + 16
+            editButtonSize = HomeDesign.editButtonSize
             let left = max(safeArea.leading, 16 * scale) + 8 * scale
             let right = dockFrame.minX - 8 * scale
-            let top = max(safeArea.top, 8 * scale) + 6 * scale
+            // Below edit mode's buttons with room for the first row's minus
+            // badges, as on iPad. The buttons don't move when edit mode
+            // starts, so neither do the icons.
+            let badgeReach = HomeDesign.minusBadgeSize / 2 - HomeDesign.minusBadgeInset
+            let top = max(
+                max(safeArea.top, 8 * scale) + 6 * scale,
+                editControlsCenterY + editButtonSize / 2 + badgeReach + 4
+            )
             pillCenter = CGPoint(
                 x: (left + right) / 2,
                 y: size.height - max(safeArea.bottom, 8 * scale) - HomeDesign.pillHeight / 2 - 2 * scale
@@ -176,10 +186,14 @@ struct HomeMetrics: Equatable {
                 x: left + pitch.width / 2,
                 y: top + (pitch.height - iconSize - labelBlock) / 2 + iconSize / 2
             )
-            dockPitch = min(HomeDesign.columnPitch * scale, (dockFrame.height - 24 * scale) / 4)
-            editControlsCenterY = max(safeArea.top * 0.54, 24)
-            editControlsInset = max(safeArea.leading, safeArea.trailing) + 16
-            editButtonSize = HomeDesign.editButtonSize
+            // The first of a full dock's four icons, one and a half steps
+            // above the dock's middle, starts no higher than the first row,
+            // so Done leaves its minus badge clear too.
+            dockPitch = min(
+                HomeDesign.columnPitch * scale,
+                (dockFrame.height - 24 * scale) / 4,
+                (dockFrame.midY - iconSize / 2 - top) / 1.5
+            )
         } else if isDockFlush {
             // An iPhone with a Home button: fixed sizes, the dock along the
             // bottom edge and the rows as close as the search pill needs.

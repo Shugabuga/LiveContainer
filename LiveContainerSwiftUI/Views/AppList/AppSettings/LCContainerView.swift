@@ -175,6 +175,7 @@ struct LCContainerView : View {
         }
         .navigationTitle(container.name)
         .navigationBarTitleDisplayMode(.inline)
+        .onDisappear(perform: saveTypedFields)
         .alert("lc.common.error".loc, isPresented: $errorShow){
         } message: {
             Text(errorInfo)
@@ -234,6 +235,18 @@ struct LCContainerView : View {
         
     }
     
+    /// Keeps a name or UUID typed without pressing Return once the page goes
+    /// away, as the Settings app keeps what's typed.
+    private func saveTypedFields() {
+        if typingContainerName != container.name {
+            container.name = typingContainerName
+            saveContainer()
+        }
+        if container.spoofIdentifierForVendor, typingIDFV != (container.spoofedIdentifier ?? ""), UUID(uuidString: typingIDFV) != nil {
+            saveIDFV()
+        }
+    }
+
     func saveIDFV() {
         guard let newIDFV = UUID(uuidString: typingIDFV) else {
             errorInfo = "lc.container.invalidIDFV".loc

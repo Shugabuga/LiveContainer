@@ -43,10 +43,10 @@ extension HomeScreenModel {
     func launch(_ app: LCAppModel, from item: HomeItem? = nil) {
         let zoomItem = item ?? .app(app.homeKey ?? "")
         let frame = item.flatMap(iconFrame(of:)) ?? centeredIconFrame()
-        let returnPage = page ?? 0
+        // Saved now, since an app that needs JIT goes to it without the zoom.
+        HomeLayoutStorage.saveReturnPage(page ?? 0)
         Task {
             await coordinator.open(app) {
-                HomeLayoutStorage.saveReturnPage(returnPage)
                 await self.playLaunchZoom(HomeLaunchZoom(item: zoomItem, app: app, iconFrame: frame))
             }
         }
@@ -129,6 +129,11 @@ extension HomeScreenModel {
     /// to add an app.
     func presentedScreenDidClose() {
         isCoveredByScreen = false
+        // Settings and app settings cover the Home Screen full screen, which
+        // takes it off the window until now.
+        if #available(iOS 16.0, *), MultitaskManager.isMultitasking() {
+            MultitaskDockManager.shared.keepWindowsAboveHomeScreen()
+        }
         guard let addition = pendingAddition else {
             return
         }
@@ -169,6 +174,7 @@ extension HomeScreenModel {
     /// zContainer asks the JIT tool set in Settings, Zeus unless another was
     /// chosen, to give it JIT, then turns into the app.
     func openWithJIT(_ app: LCAppModel) {
+        HomeLayoutStorage.saveReturnPage(page ?? 0)
         Task {
             await coordinator.open(app, forceJIT: true)
         }

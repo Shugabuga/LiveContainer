@@ -12,6 +12,8 @@ import SwiftUI
 /// what the router and the AppLaunchCoordinator ask for, including a
 /// certificate sent to zContainer. `onRoute` hears each route after the
 /// router sent it on, so the root view can bring up the screen it concerns.
+/// It also hears the requests from Zeus that the window finds as it comes
+/// to the front, just before the router takes them.
 struct HomeRouting: ViewModifier {
     let router: HomeRouter
     let onRoute: @MainActor (HomeRoute) -> Void
@@ -56,12 +58,14 @@ struct HomeRouting: ViewModifier {
     /// active one, as when the person starts switching to Zeus, or went to
     /// the background. The list of apps is written both of those times, so
     /// Zeus, which reads it as it becomes active, finds what zContainer holds
-    /// now. Passing through inactive on the way back changes nothing.
+    /// now. Passing through inactive on the way back changes nothing. When
+    /// coming to the front takes requests Zeus left, `onRoute` hears them
+    /// before they're taken, as it hears a link from Zeus.
     private func scenePhaseChanged(from oldPhase: ScenePhase, to newPhase: ScenePhase) {
         switch newPhase {
         case .active:
             Task {
-                await router.sceneBecameActive()
+                await router.sceneBecameActive(onRoute: onRoute)
             }
         case .inactive where oldPhase == .active, .background:
             router.sceneEnteredBackground()

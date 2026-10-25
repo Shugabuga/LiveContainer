@@ -38,6 +38,12 @@ struct PSTextField: View {
                 }
                 .multilineTextAlignment(.trailing)
         }
+        // What's typed is kept without Return too, when the page goes away.
+        .onDisappear {
+            if val != (delegate.get(key: key) as? String ?? defaultValue ?? "") {
+                delegate.set(key: key, val: val)
+            }
+        }
     }
     
 }

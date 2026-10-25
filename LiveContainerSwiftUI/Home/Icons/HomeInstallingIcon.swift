@@ -19,7 +19,7 @@ struct HomeInstallingIcon: View {
     var body: some View {
         VStack(spacing: HomeDesign.labelSpacing) {
             RoundedRectangle(cornerRadius: metrics.iconCornerRadius)
-                .fill(Color(white: 0.3))
+                .fill(HomeDesign.iconPlaceholder)
                 .frame(width: metrics.iconSize, height: metrics.iconSize)
                 .overlay {
                     HomeProgressPie(progress: progress, cornerRadius: metrics.iconCornerRadius)

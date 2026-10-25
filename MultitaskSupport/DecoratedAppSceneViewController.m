@@ -364,6 +364,12 @@
     dispatch_async(dispatch_get_main_queue(), ^{
         if(error) {
             [vc appTerminationCleanUp];
+            // The launch waiting on this window ends with the error, rather
+            // than waiting forever and leaving the app marked as running.
+            if (self.pidAvailableHandler) {
+                self.pidAvailableHandler(nil, error);
+                self.pidAvailableHandler = nil;
+            }
             UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"lc.common.error".loc message:error.localizedDescription preferredStyle:UIAlertControllerStyleAlert];
             [alert addAction:[UIAlertAction actionWithTitle:@"lc.common.ok".loc style:UIAlertActionStyleCancel handler:nil]];
             [alert addAction:[UIAlertAction actionWithTitle:@"lc.common.copy".loc style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
@@ -375,6 +381,7 @@
             [self updateOriginalFrame];
             if (self.pidAvailableHandler) {
                 self.pidAvailableHandler(@(self.pid), nil);
+                self.pidAvailableHandler = nil;
             }
         }
     });

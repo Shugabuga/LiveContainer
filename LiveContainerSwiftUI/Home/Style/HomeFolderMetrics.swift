@@ -9,7 +9,10 @@ import SwiftUI
 /// glass panel in the middle of the screen holding three rows of three
 /// icons, at the Home Screen's icon size and spacing, as far in from the
 /// panel's edges as the icons are apart, with the folder's name in large
-/// type above it, lined up with the first column.
+/// type above it, lined up with the first column. On a screen too short to
+/// keep the name on screen above a centered panel, such as an iPhone's in
+/// landscape, the panel sits lower, just under the name, and its rows come
+/// closer to its top and bottom edges as far as it needs to fit.
 struct HomeFolderMetrics: Equatable {
     /// The panel the icons sit in, on screen.
     let panel: CGRect
@@ -20,8 +23,11 @@ struct HomeFolderMetrics: Equatable {
     let cellHeight: Double
     /// The distance between neighboring columns and rows.
     let pitch: CGSize
-    /// The distance from the panel's edges to its first icons.
+    /// The distance from the panel's sides to its first and last columns.
     let inset: Double
+    /// The distance from the panel's top and bottom edges to its rows: the
+    /// same as `inset`, except on a short screen.
+    let verticalInset: Double
 
     init(_ metrics: HomeMetrics) {
         iconSize = metrics.iconSize
@@ -31,10 +37,19 @@ struct HomeFolderMetrics: Equatable {
         cornerRadius = metrics.iconSize / 2
         let columns = Double(HomeFolderMetrics.columns)
         let width = 2 * inset + (columns - 1) * pitch.width + iconSize
-        let height = 2 * inset + (columns - 1) * pitch.height + cellHeight
+        let rowsHeight = (columns - 1) * pitch.height + cellHeight
+        // The name needs its gap above the panel and its own height above
+        // that: its size, with the padding of the field it's typed into in
+        // edit mode.
+        let titleRoom = HomeDesign.folderTitleGap + HomeDesign.folderTitleSize + HomeDesign.folderNameFieldVerticalPadding
+        let room = metrics.size.height - titleRoom - HomeDesign.folderShortScreenMargin
+        // Never so close that the page dots would reach the last row's names.
+        let leastInset = HomeDesign.folderPageDotsInset + HomeDesign.folderPageDotSize
+        verticalInset = min(inset, max((room - rowsHeight) / 2, leastInset))
+        let height = 2 * verticalInset + rowsHeight
         panel = CGRect(
             x: (metrics.size.width - width) / 2,
-            y: (metrics.size.height - height) / 2,
+            y: max((metrics.size.height - height) / 2, titleRoom),
             width: width,
             height: height
         )
@@ -57,7 +72,7 @@ struct HomeFolderMetrics: Equatable {
         let row = index / Self.columns
         return CGPoint(
             x: inset + iconSize / 2 + Double(column) * pitch.width,
-            y: inset + iconSize / 2 + Double(row) * pitch.height
+            y: verticalInset + iconSize / 2 + Double(row) * pitch.height
         )
     }
 

@@ -70,7 +70,13 @@ struct AppLaunchPresentations: ViewModifier {
             .sheet(isPresented: $jitPrompt.isPresented, onDismiss: { jitPrompt.answer(false) }) {
                 JITWaitView(log: coordinator.jitLog, prompt: jitPrompt)
             }
-            .fullScreenCover(isPresented: $coordinator.isShowingWebPage) {
+            .fullScreenCover(isPresented: $coordinator.isShowingWebPage, onDismiss: {
+                // The page covered the Home Screen full screen, which took it
+                // off the window until now.
+                if #available(iOS 16.0, *), MultitaskManager.isMultitasking() {
+                    MultitaskDockManager.shared.keepWindowsAboveHomeScreen()
+                }
+            }) {
                 if let webPageURL = coordinator.webPageURL {
                     LCWebView(url: .constant(webPageURL), isPresent: $coordinator.isShowingWebPage) { address in
                         await coordinator.installFromPlist(urlStr: address)

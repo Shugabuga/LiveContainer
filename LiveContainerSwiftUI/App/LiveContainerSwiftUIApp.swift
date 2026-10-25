@@ -25,6 +25,7 @@ struct LiveContainerSwiftUIApp : SwiftUI.App {
         var tempArm32EmuApps: [LCAppModel] = []
         var tempHiddenApps: [LCAppModel] = []
         var tempURLSchemes: Set<String>? = DataManager.shared.model.multiLCStatus != 2 ? Set() : nil
+        Self.moveGuestSettingsToAppGroup()
 
         do {
             // load apps
@@ -44,7 +45,7 @@ struct LiveContainerSwiftUIApp : SwiftUI.App {
                     tempHiddenApps.append(model)
                 } else {
                     tempApps.append(model)
-                    tempURLSchemes?.formUnion(newApp.urlSchemes() as! [String])
+                    tempURLSchemes?.formUnion(newApp.urlSchemes() as? [String] ?? [])
                 }
                 if newApp.is32bitEmulator {
                     tempArm32EmuApps.append(model)
@@ -71,7 +72,7 @@ struct LiveContainerSwiftUIApp : SwiftUI.App {
                         tempHiddenApps.append(model)
                     } else {
                         tempApps.append(model)
-                        tempURLSchemes?.formUnion(newApp.urlSchemes() as! [String])
+                        tempURLSchemes?.formUnion(newApp.urlSchemes() as? [String] ?? [])
                     }
                     if newApp.is32bitEmulator {
                         tempArm32EmuApps.append(model)
@@ -151,4 +152,20 @@ struct LiveContainerSwiftUIApp : SwiftUI.App {
         }
     }
     
+
+    /// Moves the settings apps read as they run, saved in zContainer's own
+    /// defaults before 1.0 (5), into the app group, where apps in multitasking
+    /// windows, which run in the LiveProcess extension, can read them too.
+    private static func moveGuestSettingsToAppGroup() {
+        let group = LCUtils.appGroupUserDefault
+        for key in ["LCSwitchAppWithoutAsking", "LCOpenWebPageWithoutAsking"] {
+            guard let value = UserDefaults.standard.object(forKey: key) else {
+                continue
+            }
+            if group.object(forKey: key) == nil {
+                group.set(value, forKey: key)
+            }
+            UserDefaults.standard.removeObject(forKey: key)
+        }
+    }
 }

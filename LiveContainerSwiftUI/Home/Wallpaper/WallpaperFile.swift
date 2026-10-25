@@ -99,11 +99,15 @@ enum WallpaperFile {
         }
         let small = CIImage(cgImage: picture).transformed(by: CGAffineTransform(scaleX: blurScale, y: blurScale))
         let blurred = small.clampedToExtent().applyingGaussianBlur(sigma: blurRadius).cropped(to: small.extent)
-        guard let output = CIContext().createCGImage(blurred, from: blurred.extent) else {
+        guard let output = blurContext.createCGImage(blurred, from: blurred.extent) else {
             return nil
         }
         return UIImage(cgImage: output).preparingForDisplay()
     }
+
+    /// The Core Image context every blurred copy is made in. Making one is
+    /// slow, so it's made once and shared.
+    private static let blurContext = CIContext()
 
     /// How much smaller the blurred copy is made.
     private static let blurScale = 0.25

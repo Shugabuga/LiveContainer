@@ -122,6 +122,10 @@ final class PendingInstallQueue {
     /// the group once the apps before it are, and installs once its turn
     /// comes. A request that sends no app, such as Zeus's certificate, is
     /// left alone. A request already on its way in isn't taken twice.
+    ///
+    /// When Zeus sends an app again while an earlier request for it still
+    /// waits, Zeus takes that request back, so the app from it that hasn't
+    /// started installing is let go of, and only the new one installs.
     func receive(zeusRequest request: ZeusRequest) {
         guard request.kind == .app else {
             return
@@ -129,6 +133,16 @@ final class PendingInstallQueue {
         let isOnItsWay = items.contains { $0.source == .zeusRequest(request.id) && !$0.state.isFinished }
         guard !isOnItsWay else {
             return
+        }
+        if let bundleIdentifier = request.bundleIdentifier {
+            let replaced = items.filter { earlier in
+                earlier.zeusRequest?.bundleIdentifier == bundleIdentifier
+                    && earlier.state != .installing
+                    && !earlier.state.isFinished
+            }
+            for earlier in replaced {
+                letGo(of: earlier)
+            }
         }
         // A name of only spaces would leave the app's row blank.
         let name = request.name.flatMap { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : $0 }
@@ -253,22 +267,39 @@ final class PendingInstallQueue {
     /// Copies the app a request from Zeus sends into the app's own folder,
     /// and checks the copy against the size and SHA-256 Zeus gave. When it
     /// can't be copied, or the copy doesn't match, the app fails and Zeus is
-    /// told why: damaged for a copy that doesn't match, else unreadable,
-    /// with the system's own words when the copy itself failed, as on a full
-    /// disk.
+    /// told why: damaged for a copy that doesn't match, unreadable for a
+    /// request it can't read, or, when the copy itself failed, as on a full
+    /// disk, only the system's own words, which Zeus then shows. When Zeus
+    /// took the request back, as it does when it sends the app again, the app
+    /// is let go of without a word.
     private func copy(_ item: PendingInstall, of request: ZeusRequest) async {
+        // An app let go of while it waited for the copies before it isn't
+        // copied at all.
+        guard isQueued(item) else {
+            return
+        }
         do {
             let folder = try PendingInstallStore.makeFolder(for: item.id)
             let copy = try await ZeusGroup.copyAppPayload(of: request, into: folder)
-            item.downloaded(to: copy)
-            saveItems()
+            if isQueued(item) {
+                item.downloaded(to: copy)
+                saveItems()
+            } else {
+                // Let go of while it was copied, so nothing of it is kept.
+                PendingInstallStore.removeFolder(for: item.id)
+            }
         } catch {
             PendingInstallStore.removeFolder(for: item.id)
             let groupError = error as? ZeusGroupError
-            let reason = groupError == nil ? error.localizedDescription : "zc.zeusRequest.unreadable".loc
-            fail(item, because: reason)
-            let failure: ZeusRequestFailure = groupError == .damaged ? .damaged : .unreadable
-            ZeusGroup.writeResult(ZeusRequestResult(id: request.id, outcome: .failed, failure: failure, message: reason))
+            // Zeus took the request back, or sent the app again meanwhile.
+            if groupError == .missing || !isQueued(item) {
+                letGo(of: item)
+            } else {
+                let reason = groupError == nil ? error.localizedDescription : "zc.zeusRequest.unreadable".loc
+                fail(item, because: reason)
+                let failure: ZeusRequestFailure? = groupError.map { $0 == .damaged ? .damaged : .unreadable }
+                ZeusGroup.writeResult(ZeusRequestResult(id: request.id, outcome: .failed, failure: failure, message: reason))
+            }
         }
         installNext()
     }
@@ -303,8 +334,9 @@ final class PendingInstallQueue {
             return
         }
         await coordinator.waitForInstallTurn()
-        // Onboarding may have opened again while this app waited for its turn.
-        guard !holdsInstalls else {
+        // Onboarding may have opened again while this app waited for its
+        // turn, or Zeus may have sent the app again, which let this one go.
+        guard !holdsInstalls, isQueued(item) else {
             return
         }
         item.startInstalling()
@@ -403,6 +435,20 @@ final class PendingInstallQueue {
         if reportsFailures {
             coordinator.errorMessage = "zc.onboarding.apps.failedAlert %@ %@".localizeWithFormat(item.name, reason)
         }
+    }
+
+    /// Lets go of an app from Zeus whose request Zeus took back, as it does
+    /// when it sends the app again: its copy is deleted and it leaves the
+    /// list without a word. Zeus hears nothing, since it no longer asks.
+    private func letGo(of item: PendingInstall) {
+        PendingInstallStore.removeFolder(for: item.id)
+        items.removeAll { $0.id == item.id }
+        saveItems()
+    }
+
+    /// Whether an app is still in the queue, rather than let go of.
+    private func isQueued(_ item: PendingInstall) -> Bool {
+        items.contains { $0.id == item.id }
     }
 
     /// Writes down the apps still on their way in.

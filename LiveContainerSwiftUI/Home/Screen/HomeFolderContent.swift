@@ -36,6 +36,9 @@ struct HomeFolderContent: View {
         let panel = folderMetrics.panel
         let isShown = isOut && model.isFolderShown
         let showsPanel = model.isFolderSettled && model.isFolderShown
+        // Back in its icon for an icon dragged out of it, the folder draws
+        // nothing while it holds that drag.
+        let isLetOut = model.isFolderLetOut && !model.isFolderShown
         // The folder's icon on screen, where it zooms out of and back into.
         let icon = model.iconFrame(of: .folder(id)) ?? metrics.iconFrame(around: CGPoint(x: panel.midX, y: panel.midY))
         let page = model.folderPage ?? 0
@@ -61,6 +64,7 @@ struct HomeFolderContent: View {
                 .frame(width: glass.width, height: glass.height)
                 .homeFolderGlass(cornerRadius: isShown ? folderMetrics.cornerRadius : metrics.iconCornerRadius)
                 .position(x: glass.midX, y: glass.midY)
+                .opacity(isLetOut ? 0 : 1)
                 .allowsHitTesting(false)
 
             HomeFolderPanel(id: id, folder: folder, metrics: metrics, folderMetrics: folderMetrics, zoomNamespace: zoomNamespace)
@@ -71,10 +75,13 @@ struct HomeFolderContent: View {
                 .allowsHitTesting(showsPanel || model.drag != nil)
 
             HomeFolderZoom(items: pageItems, iconFrame: icon, isOut: isShown, metrics: metrics, folderMetrics: folderMetrics)
-                .opacity(showsPanel ? 0 : 1)
+                .opacity(showsPanel || isLetOut ? 0 : 1)
                 .animation(nil, value: showsPanel)
         }
         .frame(width: metrics.size.width, height: metrics.size.height, alignment: .topLeading)
+        // While it shows, VoiceOver stays in the folder, as it stays in search.
+        .accessibilityElement(children: .contain)
+        .accessibilityAddTraits(isShown ? .isModal : [])
         .onAppear(perform: zoomOut)
     }
 

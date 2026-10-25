@@ -35,17 +35,31 @@ extension HomeRouter {
     /// guest app got the link: those not taken or answered yet. One that ran
     /// out is left alone, without a word, for Zeus to clear away. A second
     /// zContainer leaves them all to the first.
-    func rescanZeusRequests() async {
+    ///
+    /// When it takes any, `onRoute` hears them just before the first one is
+    /// taken, as it hears a link from Zeus, so the root view can bring up the
+    /// Home Screen their questions show over. It hears nothing otherwise.
+    func rescanZeusRequests(onRoute: @MainActor (HomeRoute) -> Void = { _ in }) async {
         guard sharedModel.multiLCStatus != 2 else {
             return
         }
-        await take(ZeusGroup.requestIDsOnDisk(), fromLink: false)
+        await take(ZeusGroup.requestIDsOnDisk(), fromLink: false, onRoute: onRoute)
     }
 
     /// Reads each request, marks it taken, and hands it on by what it sends.
     /// What goes wrong reading them shows once, however many go wrong.
-    private func take(_ ids: [UUID], fromLink: Bool) async {
+    /// `onRoute` hears the requests once, before the first one is taken.
+    private func take(_ ids: [UUID], fromLink: Bool, onRoute: @MainActor (HomeRoute) -> Void = { _ in }) async {
         var hasShownProblem = false
+        var hasTakenAny = false
+        // Marks a request taken, once `onRoute` has heard the requests.
+        func markTaken(_ id: UUID) {
+            if !hasTakenAny {
+                hasTakenAny = true
+                onRoute(.zeusRequests(ids))
+            }
+            ZeusGroup.markTaken(id)
+        }
         for id in ids where !ZeusGroup.hasTaken(id) && !ZeusGroup.hasResult(for: id) {
             let request: ZeusRequest
             do {
@@ -58,7 +72,7 @@ extension HomeRouter {
                 if !fromLink, groupError == .expired || groupError == .missing {
                     continue
                 }
-                ZeusGroup.markTaken(id)
+                markTaken(id)
                 let problem = groupError == .expired ? "zc.zeusRequest.expired".loc : "zc.zeusRequest.unreadable".loc
                 if groupError != .missing {
                     ZeusGroup.writeResult(ZeusRequestResult(id: id, outcome: .failed, failure: .unreadable, message: problem))
@@ -70,7 +84,7 @@ extension HomeRouter {
                 continue
             }
 
-            ZeusGroup.markTaken(id)
+            markTaken(id)
             switch request.kind {
             case .app:
                 onboarding.pendingInstalls.receive(zeusRequest: request)

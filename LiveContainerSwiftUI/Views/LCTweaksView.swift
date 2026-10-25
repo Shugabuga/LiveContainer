@@ -328,6 +328,16 @@ struct LCTweakFolderView : View {
         tweakItems.insert(newTweakItem, at: indexToRename)
 
         if isRoot {
+            // The apps set to the folder follow it to its new name.
+            if tweakItem.isFolder {
+                let followers = (sharedModel.apps + sharedModel.hiddenApps).filter { app in
+                    let base = app.appInfo.isShared ? LCPath.lcGroupTweakPath : LCPath.tweakPath
+                    return app.uiTweakFolder == tweakItem.displayName && base.standardizedFileURL == baseUrl.standardizedFileURL
+                }
+                for app in followers {
+                    app.uiTweakFolder = newName
+                }
+            }
             let indexToRename2 = sharedModel.tweakFolderNames.firstIndex(of: tweakItem.displayName)
             guard let indexToRename2 = indexToRename2 else {
                 return

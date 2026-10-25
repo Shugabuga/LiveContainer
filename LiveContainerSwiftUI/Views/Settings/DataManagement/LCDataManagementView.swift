@@ -13,6 +13,8 @@ struct LCFolderPath {
 }
 
 struct LCDataManagementView : View {
+    /// Whether an install is running, which uses temporary files.
+    @Environment(AppLaunchCoordinator.self) private var coordinator
     @State var folderPaths : [LCFolderPath]
     @State var filzaInstalled = false
     @State var appeared = false
@@ -82,6 +84,8 @@ struct LCDataManagementView : View {
                 } label: {
                     Text("lc.settings.cleanTmp".loc)
                 }
+                // An install unpacks and signs in temporary files.
+                .disabled(coordinator.isInstalling)
                 
                 Button(role:.destructive) {
                     Task { await clearCacheFiles() }

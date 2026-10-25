@@ -98,7 +98,9 @@ void LCShowSwitchAppConfirmation(NSURL *url, NSString* bundleId, bool isSharedAp
     }
     
     // if LCSwitchAppWithoutAsking is enabled we directly open the app in current lc
-    if ([NSUserDefaults.lcUserDefaults boolForKey:@"LCSwitchAppWithoutAsking"]) {
+    // In the app group, so apps in multitasking windows, which run in the
+    // LiveProcess extension, read it too.
+    if ([NSUserDefaults.lcSharedDefaults boolForKey:@"LCSwitchAppWithoutAsking"]) {
         [NSClassFromString(@"LCSharedUtils") launchToGuestAppWithURL:url];
         return;
     }
@@ -185,7 +187,7 @@ void openUniversalLink(NSString* decodedUrl) {
 }
 
 void LCOpenWebPage(NSString* webPageUrlString, NSString* originalUrl) {
-    if ([NSUserDefaults.lcUserDefaults boolForKey:@"LCOpenWebPageWithoutAsking"]) {
+    if ([NSUserDefaults.lcSharedDefaults boolForKey:@"LCOpenWebPageWithoutAsking"]) {
         openUniversalLink(webPageUrlString);
         return;
     }

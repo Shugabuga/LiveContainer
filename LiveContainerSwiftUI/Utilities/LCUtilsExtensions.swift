@@ -28,12 +28,11 @@ extension LCUtils {
             return
         }
         let fm = FileManager.default
-        // a disabled folder is renamed to .disabled; skip it, it gets signed again once re-enabled
-        if !fm.fileExists(atPath: tweakFolderUrl.path) {
-            let disabledUrl = tweakFolderUrl.deletingLastPathComponent().appendingPathComponent(tweakFolderUrl.lastPathComponent + ".disabled")
-            if fm.fileExists(atPath: disabledUrl.path) {
-                return
-            }
+        // Nothing to sign in a folder that isn't there: a disabled one, renamed
+        // to .disabled and signed again once it's back, or one renamed or
+        // deleted in Tweaks, which mustn't keep the apps set to it from opening.
+        guard fm.fileExists(atPath: tweakFolderUrl.path) else {
+            return
         }
         var isFolder :ObjCBool = false
         if(fm.fileExists(atPath: tweakFolderUrl.path, isDirectory: &isFolder) && !isFolder.boolValue) {

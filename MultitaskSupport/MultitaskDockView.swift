@@ -98,11 +98,18 @@ class AppInfoProvider {
 
     /// The view the virtual windows live in, on the main window. Reading it
     /// first puts it there when it isn't yet, since the main window may not
-    /// have been known when the manager was made. On iPad it also brings it
-    /// back above the Home Screen.
+    /// have been known when the manager was made, and puts it back just above
+    /// the Home Screen when it isn't.
     @objc public var windowHostingView: VirtualWindowsHostView {
         attachWindowHostingView()
         return hostView
+    }
+
+    /// Puts the apps' windows back above the Home Screen, after a screen that
+    /// covered it, like Settings, has closed and given the Home Screen back
+    /// to the window.
+    @objc public func keepWindowsAboveHomeScreen() {
+        attachWindowHostingView()
     }
     private let hostView = VirtualWindowsHostView()
     internal var hostingController: UIHostingController<AnyView>?
@@ -293,17 +300,35 @@ class AppInfoProvider {
     /// zContainer's root is its own SwiftUI view rather than a tab bar
     /// controller whose view came first, so the first view there could be one
     /// that scrolls with the Home Screen's pages.
+    /// Puts the apps' windows on the window, just above the Home Screen,
+    /// rather than inside it. The Home Screen is SwiftUI, which adds views of
+    /// its own as it redraws, like the dock's glass, and inside it those could
+    /// land on top of the windows, showing over them and taking their taps.
+    /// Up here only what's presented, like alerts and sheets, and the
+    /// multitasking dock go over them. A screen that covers the Home Screen
+    /// full screen, like Settings, takes the Home Screen off the window and
+    /// puts it back when it closes, so the order is checked each time.
     private func attachWindowHostingView() {
         guard let window = keyWindow, let rootView = window.rootViewController?.view else { return }
-        if SharedModel.isPhone {
-            guard hostView.superview == nil else { return }
+        if rootView.superview === window {
+            let subviews = window.subviews
+            let isAboveHomeScreen = hostView.superview === window
+                && (subviews.firstIndex(of: hostView) ?? 0) > (subviews.firstIndex(of: rootView) ?? 0)
+            if !isAboveHomeScreen {
+                hostView.frame = window.bounds
+                window.insertSubview(hostView, aboveSubview: rootView)
+            }
+        } else if hostView.superview !== window {
+            // Under the screen covering the Home Screen, which the Home
+            // Screen goes back under too.
             hostView.frame = window.bounds
-            (rootView.subviews.first ?? rootView).addSubview(hostView)
-        } else if hostView.superview !== rootView {
-            hostView.frame = rootView.bounds
-            rootView.addSubview(hostView)
-        } else if rootView.subviews.last !== hostView {
-            rootView.bringSubviewToFront(hostView)
+            window.insertSubview(hostView, at: 0)
+        }
+        // The multitasking dock stays above the windows.
+        if let dockView = hostingController?.view, dockView.superview === window,
+           let dockIndex = window.subviews.firstIndex(of: dockView),
+           let hostIndex = window.subviews.firstIndex(of: hostView), dockIndex < hostIndex {
+            window.insertSubview(dockView, aboveSubview: hostView)
         }
     }
 

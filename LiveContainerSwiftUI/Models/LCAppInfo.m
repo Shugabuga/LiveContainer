@@ -75,25 +75,28 @@
 }
 
 - (NSMutableArray<NSString *>*)urlSchemes {
-    // find all url schemes
-    NSMutableArray* urlSchemes = [[NSMutableArray alloc] init];
-    int nowSchemeCount = 0;
-    if (_infoPlist[@"CFBundleURLTypes"]) {
-        NSMutableArray* urlTypes = _infoPlist[@"CFBundleURLTypes"];
-
-        for(int i = 0; i < [urlTypes count]; ++i) {
-            NSMutableDictionary* nowUrlType = [urlTypes objectAtIndex:i];
-            if (!nowUrlType[@"CFBundleURLSchemes"]){
-                continue;
-            }
-            NSMutableArray *schemes = nowUrlType[@"CFBundleURLSchemes"];
-            for(int j = 0; j < [schemes count]; ++j) {
-                [urlSchemes insertObject:[schemes objectAtIndex:j] atIndex:nowSchemeCount];
-                ++nowSchemeCount;
+    // Every URL scheme the app declares, in order. The types are checked, as
+    // a value an app got wrong would otherwise crash zContainer each time it
+    // starts, before the app could be removed.
+    NSMutableArray<NSString *> *urlSchemes = [[NSMutableArray alloc] init];
+    NSArray *urlTypes = _infoPlist[@"CFBundleURLTypes"];
+    if (![urlTypes isKindOfClass:NSArray.class]) {
+        return urlSchemes;
+    }
+    for (NSDictionary *urlType in urlTypes) {
+        if (![urlType isKindOfClass:NSDictionary.class]) {
+            continue;
+        }
+        NSArray *schemes = urlType[@"CFBundleURLSchemes"];
+        if (![schemes isKindOfClass:NSArray.class]) {
+            continue;
+        }
+        for (NSString *scheme in schemes) {
+            if ([scheme isKindOfClass:NSString.class]) {
+                [urlSchemes addObject:scheme];
             }
         }
     }
-    
     return urlSchemes;
 }
 
@@ -110,15 +113,17 @@
 }
 
 - (NSString*)version {
-    NSString* version = _infoPlist[@"CFBundleShortVersionString"];
-    if (!version) {
-        version = _infoPlist[@"CFBundleVersion"];
+    // A version some apps write as a number is read as one.
+    for (NSString *key in @[@"CFBundleShortVersionString", @"CFBundleVersion"]) {
+        id version = _infoPlist[key];
+        if ([version isKindOfClass:NSString.class]) {
+            return version;
+        }
+        if ([version isKindOfClass:NSNumber.class]) {
+            return [version stringValue];
+        }
     }
-    if(version) {
-        return version;
-    } else {
-        return @"Unknown";
-    }
+    return @"Unknown";
 }
 
 - (NSString*)bundleIdentifier {
@@ -218,33 +223,99 @@
 
 }
 
-- (UIImage*)homeScreenIconIsDarkIcon:(BOOL)isDarkIcon {
+// The queue every app's Home Screen icon is drawn on, one at a time, off the
+// main thread.
+static dispatch_queue_t LCHomeScreenIconQueue(void) {
+    static dispatch_queue_t queue;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        queue = dispatch_queue_create("LCHomeScreenIcons", dispatch_queue_attr_make_with_qos_class(DISPATCH_QUEUE_SERIAL, QOS_CLASS_USER_INITIATED, 0));
+    });
+    return queue;
+}
+
+// The file the app at `bundlePath` keeps its Home Screen icon in.
+static NSString* LCHomeScreenIconPath(NSString* bundlePath, BOOL isDarkIcon) {
+    return [bundlePath stringByAppendingPathComponent:isDarkIcon ? @"LCAppHomeScreenIconDark.png" : @"LCAppHomeScreenIconLight.png"];
+}
+
+// The icon saved at `path`, or nil when there's none.
+static UIImage* LCLoadSavedIcon(NSString* path) {
+    if(![NSFileManager.defaultManager fileExistsAtPath:path]) {
+        return nil;
+    }
+    CGImageRef imageRef = loadCGImageFromURL([NSURL fileURLWithPath:path]);
+    if(!imageRef) {
+        return nil;
+    }
+    UIImage* icon = [UIImage imageWithCGImage:imageRef];
+    CGImageRelease(imageRef);
+    return icon;
+}
+
+// Draws the Home Screen icon of the app at `bundlePath` with IconServices and
+// saves it. The file is written in one step, so it's never read half written.
+// Nil when IconServices drew nothing.
+static UIImage* LCDrawHomeScreenIcon(NSString* bundlePath, BOOL isDarkIcon) {
+    UIImage* icon = [UIImage generateIconForBundleURL:[NSURL fileURLWithPath:bundlePath] style:isDarkIcon hasBorder:NO];
+    if(!icon.CGImage) {
+        return nil;
+    }
+    [UIImagePNGRepresentation(icon) writeToFile:LCHomeScreenIconPath(bundlePath, isDarkIcon) atomically:YES];
+    return icon;
+}
+
+- (UIImage*)cachedHomeScreenIconIsDarkIcon:(BOOL)isDarkIcon {
     UIImage* uiIcon = isDarkIcon ? _cachedHomeScreenIconDark : _cachedHomeScreenIcon;
     if(uiIcon) {
         return uiIcon;
     }
 
-    NSString* cachedIconPath = [_bundlePath stringByAppendingPathComponent:isDarkIcon ? @"LCAppHomeScreenIconDark.png" : @"LCAppHomeScreenIconLight.png"];
-    NSURL* cachedIconUrl = [NSURL fileURLWithPath:cachedIconPath];
-    if([NSFileManager.defaultManager fileExistsAtPath:cachedIconPath]) {
-        CGImageRef imageRef = loadCGImageFromURL(cachedIconUrl);
-        if (imageRef) {
-            uiIcon = [UIImage imageWithCGImage:imageRef];
-            CGImageRelease(imageRef);
-        }
-    }
-
-    if(!uiIcon) {
-        uiIcon = [UIImage generateIconForBundleURL:[NSURL fileURLWithPath:_bundlePath] style:isDarkIcon hasBorder:NO];
-        saveCGImage([uiIcon CGImage], cachedIconUrl);
-    }
-
+    uiIcon = LCLoadSavedIcon(LCHomeScreenIconPath(_bundlePath, isDarkIcon));
     if(isDarkIcon) {
         _cachedHomeScreenIconDark = uiIcon;
     } else {
         _cachedHomeScreenIcon = uiIcon;
     }
     return uiIcon;
+}
+
+- (UIImage*)homeScreenIconIsDarkIcon:(BOOL)isDarkIcon {
+    UIImage* uiIcon = [self cachedHomeScreenIconIsDarkIcon:isDarkIcon];
+    if(uiIcon) {
+        return uiIcon;
+    }
+
+    uiIcon = LCDrawHomeScreenIcon(_bundlePath, isDarkIcon);
+    if(isDarkIcon) {
+        _cachedHomeScreenIconDark = uiIcon;
+    } else {
+        _cachedHomeScreenIcon = uiIcon;
+    }
+    return uiIcon;
+}
+
+- (void)drawHomeScreenIconIsDarkIcon:(BOOL)isDarkIcon completion:(void (^)(void))completion {
+    // Only the path goes to the queue: the icons in memory are only read and
+    // changed on the main thread.
+    NSString* bundlePath = _bundlePath;
+    dispatch_async(LCHomeScreenIconQueue(), ^{
+        // An icon asked for again while it waited has been saved by now.
+        UIImage* icon = LCLoadSavedIcon(LCHomeScreenIconPath(bundlePath, isDarkIcon));
+        if(!icon) {
+            icon = LCDrawHomeScreenIcon(bundlePath, isDarkIcon);
+        }
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if(icon) {
+                if(isDarkIcon) {
+                    self->_cachedHomeScreenIconDark = icon;
+                } else {
+                    self->_cachedHomeScreenIcon = icon;
+                }
+            }
+            completion();
+        });
+    });
 }
 
 - (void)clearIconCache {
@@ -327,6 +398,21 @@
         [_info writeBinToFile:[NSString stringWithFormat:@"%@/LCAppInfo.plist", _bundlePath] atomically:YES];
     }
 
+}
+
+- (NSString *)executableProblem {
+    NSString *execPath = [NSString stringWithFormat:@"%@/%@", self.bundlePath, _infoPlist[@"CFBundleExecutable"]];
+    __block bool isEncrypted = false;
+    NSString *error = LCParseMachO(execPath.UTF8String, true, ^(const char *path, struct mach_header_64 *header, int fd, void *filePtr) {
+        isEncrypted |= LCIsMachOEncrypted(header);
+    });
+    if (error) {
+        return error;
+    }
+    if (isEncrypted) {
+        return @"The app you tried to install is encrypted. Please provide decrypted app.";
+    }
+    return nil;
 }
 
 - (void)patchExecAndSignIfNeedWithCompletionHandler:(void(^)(bool success, NSString* errorInfo))completetionHandler progressHandler:(void(^)(NSProgress* progress))progressHandler forceSign:(BOOL)forceSign {

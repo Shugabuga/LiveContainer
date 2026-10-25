@@ -17,7 +17,8 @@ final class WallpaperStore {
     private(set) var image: UIImage?
 
     /// The wallpaper blurred, shown behind search. Blurring it once here
-    /// spares search a live blur of a full screen picture.
+    /// spares search a live blur of a full screen picture. Nil until it's
+    /// made, a moment after the wallpaper shows.
     private(set) var blurredImage: UIImage?
 
     /// Whether the wallpaper is a photo the person chose, rather than the
@@ -78,17 +79,19 @@ final class WallpaperStore {
         isCustom = true
     }
 
-    /// Goes back to the halo zContainer comes with.
+    /// Goes back to the halo zContainer comes with. The photo stays, dimmed as
+    /// it was, until the halo has loaded and takes its place.
     func useDefault() {
         generation += 1
         isPreparing = false
         WallpaperFile.remove()
-        isCustom = false
         load()
     }
 
     /// Loads the saved photo, or the halo when there's none: the iPad's
-    /// square one on an iPad, which fills the screen either way up.
+    /// square one on an iPad, which fills the screen either way up. The
+    /// wallpaper shows as soon as it's decoded, and the blurred copy for
+    /// search follows once it's made.
     private func load() {
         let loading = generation
         let isPad = UIDevice.current.userInterfaceIdiom == .pad
@@ -96,7 +99,7 @@ final class WallpaperStore {
             let loaded = await Task.detached(priority: .userInitiated) {
                 let photo = WallpaperFile.load()
                 return (photo ?? WallpaperFile.loadDefault(isPad: isPad)).map { image in
-                    (image, WallpaperFile.blurred(image), photo != nil)
+                    (image, photo != nil)
                 }
             }.value
             // A wallpaper set meanwhile is newer than this one.
@@ -104,8 +107,16 @@ final class WallpaperStore {
                 return
             }
             image = loaded.0
-            blurredImage = loaded.1
-            isCustom = loaded.2
+            blurredImage = nil
+            isCustom = loaded.1
+
+            let blurred = await Task.detached(priority: .userInitiated) {
+                WallpaperFile.blurred(loaded.0)
+            }.value
+            guard loading == generation else {
+                return
+            }
+            blurredImage = blurred
         }
     }
 }

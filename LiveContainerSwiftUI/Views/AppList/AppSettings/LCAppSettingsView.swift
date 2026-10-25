@@ -756,6 +756,15 @@ struct LCAppSettingsView: View {
     }
     
     func forceResign() async {
+        // An app open in a multitasking window runs from the files signing
+        // rewrites, which would end it.
+        for container in model.uiContainers {
+            if let usingLC = LCSharedUtils.getContainerUsingLCScheme(withFolderName: container.folderName) {
+                errorInfo = "lc.container.inUseBy %@".localizeWithFormat(usingLC)
+                errorShow = true
+                return
+            }
+        }
         if model.uiDontSign {
             guard let result = await signUnsignedAlert.open(), result else {
                 return

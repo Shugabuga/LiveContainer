@@ -11,10 +11,14 @@ import Foundation
 /// LCSharedUtils copies the layout into the group once zContainer has one.
 enum HomeLayoutStorage {
     /// The defaults key the layout is saved under.
-    private static let layoutKey = "ZCHomeScreenLayout"
+    private static var layoutKey: String {
+        forThisCopy("ZCHomeScreenLayout")
+    }
     /// The page an app was opened from. zContainer quits on the way into the
     /// app, so its state can't be restored any other way.
-    private static let returnPageKey = "ZCHomeScreenPage"
+    private static var returnPageKey: String {
+        forThisCopy("ZCHomeScreenPage")
+    }
     /// LiveContainer's custom app order, which the share extension still reads
     /// to list the apps.
     private static let customOrderKey = "LCCustomSortOrder"
@@ -24,6 +28,19 @@ enum HomeLayoutStorage {
 
     private static var defaults: UserDefaults {
         LCUtils.appGroupUserDefault
+    }
+
+    /// Whether this is a second zContainer, which shares the app group with
+    /// the first but not the apps each keeps to itself, so it keeps its own
+    /// layout, rather than one that leaves out the first one's apps.
+    private static var isSecondCopy: Bool {
+        DataManager.shared.model.multiLCStatus == 2
+    }
+
+    /// `key` for this copy of zContainer: as it is for the first, and with the
+    /// copy's URL scheme after it for a second.
+    private static func forThisCopy(_ key: String) -> String {
+        isSecondCopy ? "\(key).\(LCUtils.appUrlScheme() ?? "second")" : key
     }
 
     /// The saved layout, or nil on the first launch or when it can't be read.
@@ -41,6 +58,10 @@ enum HomeLayoutStorage {
             return
         }
         defaults.set(data, forKey: layoutKey)
+        // The share extension lists the first zContainer's apps.
+        guard !isSecondCopy else {
+            return
+        }
         defaults.set(layout.appKeysInOrder, forKey: customOrderKey)
         defaults.set("custom", forKey: sortTypeKey)
     }

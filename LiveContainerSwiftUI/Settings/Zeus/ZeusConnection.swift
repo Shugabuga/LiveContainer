@@ -215,6 +215,10 @@ final class ZeusConnection {
     /// signs a test library with the certificate, the way apps are signed, and
     /// checks that iOS accepts it, as it has to for apps to open without JIT.
     /// When that works, a failed check recorded at launch no longer stands.
+    ///
+    /// When a different certificate is stored before the check is done, what
+    /// it found is dropped and it checks again, for the new certificate. A
+    /// page that asks for a check meanwhile gets that one.
     func checkSetup() async {
         guard !isCheckingSetup else {
             return
@@ -223,6 +227,17 @@ final class ZeusConnection {
         defer {
             isCheckingSetup = false
         }
+        var checkedVersion: Int
+        repeat {
+            checkedVersion = certificateVersion
+            await checkSetupOnce()
+        } while checkedVersion != certificateVersion
+    }
+
+    /// One run of Check Setup, for the certificate stored as it starts. It
+    /// keeps nothing it found about signing once a different certificate is
+    /// stored before it's done, since `checkSetup()` then runs again.
+    private func checkSetupOnce() async {
         reload()
 
         guard hasCertificate else {
@@ -230,8 +245,12 @@ final class ZeusConnection {
             ZeusCertificate.lastCheckPassed = false
             return
         }
+        let version = certificateVersion
         results[.signing] = .checking
         let (passed, error) = await ZeusCertificate.validateJITLessSetup()
+        guard version == certificateVersion else {
+            return
+        }
         ZeusCertificate.lastCheckPassed = passed
         if passed {
             results[.signing] = .passed

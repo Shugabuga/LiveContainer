@@ -45,9 +45,16 @@ static const NSTimeInterval LCHomeButtonLeaveTimeout = 4;
 
 // The button moves to the screen the person is using.
 - (void)sceneDidActivate:(NSNotification *)notification {
-    if ([notification.object isKindOfClass:UIWindowScene.class]) {
+    if ([notification.object isKindOfClass:UIWindowScene.class] && [self isOwnScreen:notification.object]) {
         [self showSoonInScene:notification.object];
     }
+}
+
+// Whether a scene is on the iPhone's or iPad's own screen, rather than an
+// external display an app shows video or slides on, where the button would
+// leave the iPhone with no way back to zContainer.
+- (BOOL)isOwnScreen:(UIWindowScene *)scene {
+    return [scene.session.role isEqualToString:UIWindowSceneSessionRoleApplication];
 }
 
 // Screens often come up before the app has put its window on them, so the
@@ -58,7 +65,7 @@ static const NSTimeInterval LCHomeButtonLeaveTimeout = 4;
         return;
     }
     UIWindowScene *scene = window.windowScene;
-    if (scene && (scene.activationState == UISceneActivationStateForegroundActive ||
+    if (scene && [self isOwnScreen:scene] && (scene.activationState == UISceneActivationStateForegroundActive ||
                   scene.activationState == UISceneActivationStateForegroundInactive)) {
         [self showSoonInScene:scene];
     }

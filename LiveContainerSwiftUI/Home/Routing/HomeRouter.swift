@@ -121,9 +121,11 @@ final class HomeRouter {
     }
 
     /// Runs when the main window comes to the front: takes the requests Zeus
-    /// left while a guest app had the link that named them.
-    func sceneBecameActive() async {
-        await rescanZeusRequests()
+    /// left while a guest app had the link that named them. When it takes
+    /// any, `onRoute` hears them first, as it would have heard the link, so
+    /// the root view brings up the Home Screen their questions show over.
+    func sceneBecameActive(onRoute: @MainActor (HomeRoute) -> Void) async {
+        await rescanZeusRequests(onRoute: onRoute)
     }
 
     /// Runs as the main window stops being the active one, as when the person

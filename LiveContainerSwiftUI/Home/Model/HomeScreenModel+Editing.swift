@@ -151,6 +151,11 @@ extension HomeScreenModel {
         isFolderSettled = false
         withAnimation(HomeDesign.folderZoom) {
             isFolderShown = false
+        } completion: { [weak self] in
+            guard let self, !isFolderShown, self.openFolderID == openFolderID else {
+                return
+            }
+            isFolderLetOut = true
         }
         blockedMerge = .folder(openFolderID)
         followOnHomeScreen(center: liftedIconCenter, finger: liftedIconCenter, metrics: metrics)
@@ -160,6 +165,10 @@ extension HomeScreenModel {
     /// held and let go without moving opens, as a tap on it does, however long
     /// it was held; anything else that was picked up drops.
     func iconReleased(_ item: HomeItem) {
+        // Another finger letting go of another icon leaves the drag alone.
+        guard drag == nil || drag?.item == item else {
+            return
+        }
         if case .folder(let id) = item, drag == nil || (drag?.item == item && drag?.hasMoved == false), !isDropping {
             cancelDrag()
             openFolder(id)
@@ -521,6 +530,13 @@ extension HomeScreenModel {
     /// to begin with, so it stays in wherever it's let go while the folder is
     /// open; held outside the folder, the folder lets it out again.
     private func openFolderWithDrag(_ id: String) {
+        // An icon dragged out of a folder has its drag in that folder's view,
+        // which another folder opening would take away, freezing the drag.
+        // It goes into the end of the folder it's held over instead, when let
+        // go there.
+        guard openFolderID == nil || openFolderID == id else {
+            return
+        }
         guard var drag, let items = layout.folders[id]?.items else {
             return
         }

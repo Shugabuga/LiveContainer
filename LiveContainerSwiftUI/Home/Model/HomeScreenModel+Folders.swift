@@ -18,6 +18,7 @@ extension HomeScreenModel {
         guard !isSearching, displayedLayout.folders[id] != nil else {
             return
         }
+        isFolderLetOut = false
         if openFolderID == id && !isFolderShown {
             withAnimation(HomeDesign.folderZoom) {
                 isFolderShown = true

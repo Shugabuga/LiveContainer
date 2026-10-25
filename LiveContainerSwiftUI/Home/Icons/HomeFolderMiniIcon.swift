@@ -24,9 +24,7 @@ struct HomeFolderMiniIcon: View {
             switch item {
             case .app(let key)?:
                 if let app = model.apps[key] {
-                    Image(uiImage: app.appInfo.homeScreenIconIsDarkIcon(darkModeIcon) ?? UIImage())
-                        .resizable()
-                        .scaledToFill()
+                    HomeAppIconImage(app: app, isDark: darkModeIcon)
                         .clipShape(.rect(cornerRadius: cornerRadius))
                 } else {
                     Color.clear

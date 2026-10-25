@@ -24,12 +24,9 @@ struct HomeAppIcon: View {
     var body: some View {
         VStack(spacing: HomeDesign.labelSpacing) {
             // LCAppInfo keeps each icon in memory after drawing it once, and on
-            // disk after the first launch, so reading it here is cheap after
-            // the first time. Only the pages near the one showing build their
-            // icons, which keeps that first time short.
-            Image(uiImage: app.appInfo.homeScreenIconIsDarkIcon(darkModeIcon) ?? UIImage())
-                .resizable()
-                .scaledToFill()
+            // disk after the first launch, so it shows at once after the first
+            // time. That first time it's drawn off the main thread.
+            HomeAppIconImage(app: app, isDark: darkModeIcon)
                 .frame(width: metrics.iconSize, height: metrics.iconSize)
                 .clipShape(.rect(cornerRadius: metrics.iconCornerRadius))
                 .overlay {

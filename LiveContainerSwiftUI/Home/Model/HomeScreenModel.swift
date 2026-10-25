@@ -82,6 +82,10 @@ final class HomeScreenModel {
     /// panel's own icons, which can be tapped and dragged, take over from
     /// the ones that zoom.
     var isFolderSettled = false
+    /// Whether the open folder has gone back into its icon for an icon dragged
+    /// out of it. Its view stays to hold that drag, but draws nothing, rather
+    /// than a copy of the folder's icon where it was as the Home Screen moves.
+    var isFolderLetOut = false
     /// The page of the open folder that shows, as its paging scroll view
     /// reports it.
     var folderPage: Int? = 0
@@ -249,10 +253,13 @@ final class HomeScreenModel {
             }
             HomeLayoutStorage.save(updated)
         }
-        // A folder whose last app went away closes with it.
+        // A folder whose last app went away closes with it, and one that lost
+        // its last page shows the page now last.
         if let openFolderID, updated.folders[openFolderID] == nil, drag == nil {
             self.openFolderID = nil
             isFolderShown = false
+        } else if let openFolderID, let folder = updated.folders[openFolderID], let folderPage, folderPage >= folder.pageCount {
+            self.folderPage = folder.pageCount - 1
         }
 
         guard var drag else {

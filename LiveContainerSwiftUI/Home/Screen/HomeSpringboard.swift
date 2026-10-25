@@ -23,12 +23,16 @@ struct HomeSpringboard: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            HomePagesView(metrics: metrics, zoomNamespace: zoomNamespace)
+            // An open folder covers the Home Screen for VoiceOver, as search does.
+            Group {
+                HomePagesView(metrics: metrics, zoomNamespace: zoomNamespace)
 
-            HomeDock(metrics: metrics, zoomNamespace: zoomNamespace)
+                HomeDock(metrics: metrics, zoomNamespace: zoomNamespace)
 
-            HomePillRow(homeButtonScale: metrics.pillButtonScale)
-                .position(metrics.pillCenter)
+                HomePillRow(homeButtonScale: metrics.pillButtonScale)
+                    .position(metrics.pillCenter)
+            }
+            .accessibilityHidden(model.isFolderShown)
 
             HomeFolderView(metrics: metrics, zoomNamespace: zoomNamespace)
 
