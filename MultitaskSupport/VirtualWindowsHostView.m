@@ -9,9 +9,10 @@
 
 @implementation VirtualWindowsHostView
 - (instancetype)init {
-    // MultitaskDockManager sizes it to the main window when it puts it there,
-    // just above the Home Screen. Any connected scene could come first here,
-    // which on iPad may not be the main window's, or may have no window at all.
+    // MultitaskDockManager sizes it to the main window's root view when it puts
+    // it there, above the Home Screen. Any connected scene could come first
+    // here, which on iPad may not be the main window's, or may have no window
+    // at all.
     self = [super initWithFrame:CGRectZero];
     self.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     self.shouldForwardTapAction = YES;
@@ -23,7 +24,9 @@
     UIView *frontmostView = self.subviews.lastObject;
     if(!frontmostView.hidden) {
         DecoratedAppSceneViewController *decoratedVC = (id)frontmostView._viewDelegate;
-        [decoratedVC.appSceneVC handleStatusBarTapAction:action];
+        if(![decoratedVC revealWindowControlsForStatusBarTap:action]) {
+            [decoratedVC.appSceneVC handleStatusBarTapAction:action];
+        }
     }
     return !frontmostView.hidden;
 }

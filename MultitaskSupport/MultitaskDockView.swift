@@ -98,8 +98,8 @@ class AppInfoProvider {
 
     /// The view the virtual windows live in, on the main window. Reading it
     /// first puts it there when it isn't yet, since the main window may not
-    /// have been known when the manager was made, and puts it back just above
-    /// the Home Screen when it isn't.
+    /// have been known when the manager was made, and brings it back above
+    /// the Home Screen.
     @objc public var windowHostingView: VirtualWindowsHostView {
         attachWindowHostingView()
         return hostView
@@ -299,35 +299,24 @@ class AppInfoProvider {
         NotificationCenter.default.removeObserver(self, name: UIDevice.orientationDidChangeNotification, object: nil)
     }
 
-    /// Puts the apps' windows on the window, just above the Home Screen,
-    /// rather than inside it. The Home Screen is SwiftUI, which adds views of
-    /// its own as it redraws, like the dock's glass, and inside it those could
-    /// land on top of the windows, showing over them and taking their taps.
-    /// Up here only what's presented, like alerts and sheets, and the
-    /// multitasking dock go over them. A screen that covers the Home Screen
-    /// full screen, like Settings, takes the Home Screen off the window and
-    /// puts it back when it closes, so the order is checked each time.
+    /// Puts the virtual windows' host view on the main window, and waits
+    /// while no main window is known.
+    ///
+    /// It goes on the root view itself, sized to it and above the Home
+    /// Screen, and comes back to the front when something covered it.
+    /// zContainer's root is its own SwiftUI view rather than a tab bar
+    /// controller whose view came first, so the first view there could be one
+    /// that scrolls with the Home Screen's pages, and anything the Home Screen
+    /// adds later, like its dock, would be drawn over the windows. The host
+    /// view passes touches through wherever there's no window, so being on
+    /// top costs the Home Screen nothing.
     private func attachWindowHostingView() {
         guard let window = keyWindow, let rootView = window.rootViewController?.view else { return }
-        if rootView.superview === window {
-            let subviews = window.subviews
-            let isAboveHomeScreen = hostView.superview === window
-                && (subviews.firstIndex(of: hostView) ?? 0) > (subviews.firstIndex(of: rootView) ?? 0)
-            if !isAboveHomeScreen {
-                hostView.frame = window.bounds
-                window.insertSubview(hostView, aboveSubview: rootView)
-            }
-        } else if hostView.superview !== window {
-            // Under the screen covering the Home Screen, which the Home
-            // Screen goes back under too.
-            hostView.frame = window.bounds
-            window.insertSubview(hostView, at: 0)
-        }
-        // The multitasking dock stays above the windows.
-        if let dockView = hostingController?.view, dockView.superview === window,
-           let dockIndex = window.subviews.firstIndex(of: dockView),
-           let hostIndex = window.subviews.firstIndex(of: hostView), dockIndex < hostIndex {
-            window.insertSubview(dockView, aboveSubview: hostView)
+        if hostView.superview !== rootView {
+            hostView.frame = rootView.bounds
+            rootView.addSubview(hostView)
+        } else if rootView.subviews.last !== hostView {
+            rootView.bringSubviewToFront(hostView)
         }
     }
 
@@ -726,10 +715,11 @@ class AppInfoProvider {
     
     @objc public func notifyDockCollapseChanged() {
         self.updateDockFrame()
-        // find fullscreen apps and hide its UINavigationBar
+        // Full-screen windows have no title bar; tapping the dock shows
+        // their window controls for a moment.
         self.apps.forEach { app in
             if let vc = app.view?._viewDelegate() as? DecoratedAppSceneViewController, vc.isMaximized {
-                vc.updateVerticalConstraints()
+                vc.revealWindowControls()
             }
         }
     }
