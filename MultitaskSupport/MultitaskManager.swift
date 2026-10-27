@@ -11,6 +11,7 @@ enum MultitaskMode : Int {
 }
 
 @objc class MultitaskManager : NSObject {
+    // Changed only on the main thread
     static private var usingMultitaskContainers : [String] = []
     
     @objc class func registerMultitaskContainer(container: String) {

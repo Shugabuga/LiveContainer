@@ -513,7 +513,8 @@ void *dlopen_nolock(const char *path, int mode) {
     mach_vm_address_t vtablePageStart = (mach_vm_address_t)((uint64_t)lockPtr & ~(16384 - 1));
     
     ret = builtin_vm_protect(mach_task_self(), vtablePageStart, 16384, false, PROT_READ | PROT_WRITE | VM_PROT_COPY);
-    if(ret != KERN_SUCCESS) {
+    bool tproUnlocked = ret != KERN_SUCCESS;
+    if(tproUnlocked) {
         assert(os_tpro_is_supported());
         os_thread_self_restrict_tpro_to_rw();
     }
@@ -525,10 +526,9 @@ void *dlopen_nolock(const char *path, int mode) {
         *trylockPtr = hook_libdyld_os_unfair_recursive_lock_trylock;
     }
     
-    ret = builtin_vm_protect(mach_task_self(), vtablePageStart, 16384, false, PROT_READ);
-    if(ret != KERN_SUCCESS) {
-        assert(os_tpro_is_supported());
-        os_thread_self_restrict_tpro_to_rw();
+    builtin_vm_protect(mach_task_self(), vtablePageStart, 16384, false, PROT_READ);
+    if(tproUnlocked) {
+        os_thread_self_restrict_tpro_to_ro();
     }
     
     void *result;
@@ -539,7 +539,8 @@ void *dlopen_nolock(const char *path, int mode) {
     }
     
     ret = builtin_vm_protect(mach_task_self(), vtablePageStart, 16384, false, PROT_READ | PROT_WRITE);
-    if(ret != KERN_SUCCESS) {
+    tproUnlocked = ret != KERN_SUCCESS;
+    if(tproUnlocked) {
         assert(os_tpro_is_supported());
         os_thread_self_restrict_tpro_to_rw();
     }
@@ -549,10 +550,9 @@ void *dlopen_nolock(const char *path, int mode) {
         *trylockPtr = origTryLockPtr;
     }
     
-    ret = builtin_vm_protect(mach_task_self(), vtablePageStart, 16384, false, PROT_READ);
-    if(ret != KERN_SUCCESS) {
-        assert(os_tpro_is_supported());
-        os_thread_self_restrict_tpro_to_rw();
+    builtin_vm_protect(mach_task_self(), vtablePageStart, 16384, false, PROT_READ);
+    if(tproUnlocked) {
+        os_thread_self_restrict_tpro_to_ro();
     }
 #else
     litehook_rebind_symbol(libdyldHeader, os_unfair_recursive_lock_lock_with_options, hook_libdyld_os_unfair_recursive_lock_lock_with_options, nil);

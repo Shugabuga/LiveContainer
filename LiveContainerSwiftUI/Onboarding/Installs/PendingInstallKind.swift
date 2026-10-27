@@ -15,4 +15,9 @@ enum PendingInstallKind: String, Codable {
 
     /// An IPA picked in Files, whose copy moved into the app's folder.
     case pickedFile
+
+    /// An app Zeus left in the app group the two apps share, copied into the
+    /// app's folder. Its request is read again from the group when the app
+    /// comes back.
+    case zeusRequest
 }

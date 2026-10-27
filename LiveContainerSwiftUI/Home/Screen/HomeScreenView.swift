@@ -32,7 +32,7 @@ struct HomeScreenView: View {
                         metrics: HomeMetrics(
                             size: screen.size,
                             safeArea: Self.insets(of: safeArea.size, within: screen.frame(in: .named(Self.safeAreaSpace))),
-                            isPhone: isPhone
+                            isPhone: SharedModel.isPhone
                         ),
                         zoomNamespace: zoomNamespace
                     )
@@ -95,12 +95,5 @@ struct HomeScreenView: View {
             bottom: max(screen.maxY - safeArea.height, 0),
             trailing: max(screen.maxX - safeArea.width, 0)
         )
-    }
-
-    /// Whether zContainer runs on an iPhone, whose Home Screen has its own
-    /// layout when the iPhone has a Home button. SwiftUI has no way to tell
-    /// an iPhone from an iPad by itself.
-    private var isPhone: Bool {
-        UIDevice.current.userInterfaceIdiom == .phone
     }
 }

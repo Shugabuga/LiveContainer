@@ -6,15 +6,17 @@
 import SwiftUI
 
 /// Shows what AppLaunchCoordinator's flows ask for, wherever they start:
-/// errors, which app an install replaces, whether to stop the multitasking
-/// apps, the JIT wait, download progress and the built-in browser. The root
-/// view applies it once, through `appLaunchPresentations(_:)`.
+/// errors, which app an install replaces, whether to update or replace an
+/// installed app, whether to stop the multitasking apps, the JIT wait,
+/// download progress and the built-in browser. The root view applies it once,
+/// through `appLaunchPresentations(_:)`.
 struct AppLaunchPresentations: ViewModifier {
     let coordinator: AppLaunchCoordinator
 
     func body(content: Content) -> some View {
         @Bindable var coordinator = coordinator
         @Bindable var installReplacePrompt = coordinator.installReplacePrompt
+        @Bindable var updatePrompt = coordinator.updatePrompt
         @Bindable var runWhenMultitaskPrompt = coordinator.runWhenMultitaskPrompt
         @Bindable var jitPrompt = coordinator.jitPrompt
 
@@ -39,7 +41,21 @@ struct AppLaunchPresentations: ViewModifier {
                     installReplacePrompt.answer(nil)
                 }
             } message: {
-                Text("lc.appList.installReplaceTip".loc)
+                // An update from Zeus offers only the copies it can replace.
+                Text(coordinator.installOptions.contains(where: { !$0.isReplace })
+                     ? "lc.appList.installReplaceTip".loc
+                     : "zc.update.pickCopyTip".loc)
+            }
+            .alert(coordinator.updateConfirmation?.title ?? "", isPresented: $updatePrompt.isPresented,
+                   presenting: coordinator.updateConfirmation) { confirmation in
+                Button(confirmation.confirmTitle, role: confirmation.isDestructive ? .destructive : nil) {
+                    updatePrompt.answer(true)
+                }
+                Button("lc.common.cancel".loc, role: .cancel) {
+                    updatePrompt.answer(false)
+                }
+            } message: { confirmation in
+                Text(confirmation.message)
             }
             .alert("lc.webView.runApp".loc, isPresented: $runWhenMultitaskPrompt.isPresented) {
                 Button("lc.common.continue".loc, role: .destructive) {
@@ -54,7 +70,13 @@ struct AppLaunchPresentations: ViewModifier {
             .sheet(isPresented: $jitPrompt.isPresented, onDismiss: { jitPrompt.answer(false) }) {
                 JITWaitView(log: coordinator.jitLog, prompt: jitPrompt)
             }
-            .fullScreenCover(isPresented: $coordinator.isShowingWebPage) {
+            .fullScreenCover(isPresented: $coordinator.isShowingWebPage, onDismiss: {
+                // The page covered the Home Screen full screen, which took it
+                // off the window until now.
+                if #available(iOS 16.0, *), MultitaskDockManager.hasWindows {
+                    MultitaskDockManager.shared.keepWindowsAboveHomeScreen()
+                }
+            }) {
                 if let webPageURL = coordinator.webPageURL {
                     LCWebView(url: .constant(webPageURL), isPresent: $coordinator.isShowingWebPage) { address in
                         await coordinator.installFromPlist(urlStr: address)

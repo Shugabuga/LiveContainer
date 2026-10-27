@@ -24,7 +24,7 @@ struct HomeAppSettingsScreen: View {
                         Button("lc.common.done".loc, action: close)
                     }
                     ToolbarItem(placement: .primaryAction) {
-                        AppShortcutMenu(app: app)
+                        AddToHomeScreenButton(app: app)
                     }
                 }
         }

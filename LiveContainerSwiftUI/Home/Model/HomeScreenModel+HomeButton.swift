@@ -11,14 +11,17 @@ import SwiftUI
 extension HomeScreenModel {
     /// Does what pressing Home does on iOS, one step at a time. A screen open
     /// over the Home Screen closes, along with search behind it, as opening an
-    /// app from search would have closed it. Otherwise search closes, then
-    /// edit mode ends, and otherwise the first page comes back.
+    /// app from search would have closed it. Otherwise an open folder closes,
+    /// then search, then edit mode ends, and otherwise the first page comes
+    /// back.
     func goHome() {
         if presentedScreen != nil {
             presentedScreen = nil
             if isSearching {
                 closeSearch()
             }
+        } else if openFolderID != nil && isFolderShown {
+            closeFolder()
         } else if isSearching {
             closeSearch()
         } else if isEditing {

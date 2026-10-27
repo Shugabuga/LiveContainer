@@ -57,6 +57,40 @@ final class HomeScreenModel {
     /// Where the dragged icon's center is, on screen. Only the dragged icon's
     /// copy reads it, so moving the finger doesn't redraw the other icons.
     var liftedIconCenter: CGPoint = .zero
+    /// Whether the dragged icon has been let go and is flying to its place,
+    /// settling back to the size and look of the icon it is about to become.
+    var isDropping = false
+    /// Whether the dragged icon has been let go over another icon and is
+    /// shrinking into the folder it makes or joins there.
+    var isDroppingIntoFolder = false
+    @ObservationIgnored var pendingMerge: HomeItem?
+    @ObservationIgnored var mergeTask: Task<Void, Never>?
+    @ObservationIgnored var folderLeaveTask: Task<Void, Never>?
+    /// A folder that has just let the dragged icon out, which the icon goes
+    /// into again only once it has moved off the folder's icon, so the folder
+    /// doesn't open again at once under a finger still over it.
+    @ObservationIgnored var blockedMerge: HomeItem?
+
+    /// The folder open over the Home Screen, by its id, or nil.
+    var openFolderID: String?
+    /// Whether the open folder shows, out of its icon. It goes back into its
+    /// icon before `openFolderID` clears, and while an icon dragged out of it
+    /// is still being moved, when the folder's view stays, hidden, holding
+    /// the drag.
+    var isFolderShown = false
+    /// Whether the open folder has finished zooming out of its icon, when its
+    /// panel's own icons, which can be tapped and dragged, take over from
+    /// the ones that zoom.
+    var isFolderSettled = false
+    /// Whether the open folder has gone back into its icon for an icon dragged
+    /// out of it. Its view stays to hold that drag, but draws nothing, rather
+    /// than a copy of the folder's icon where it was as the Home Screen moves.
+    var isFolderLetOut = false
+    /// The page of the open folder that shows, as its paging scroll view
+    /// reports it.
+    var folderPage: Int? = 0
+    /// Whether the open folder's name is being typed.
+    var isEditingFolderName = false
     @ObservationIgnored var pendingTarget: HomeSlot?
     @ObservationIgnored var reflowTask: Task<Void, Never>?
     @ObservationIgnored var pageTurnDirection = 0
@@ -74,17 +108,23 @@ final class HomeScreenModel {
     var presentedScreen: HomePresentedScreen?
     /// Whether a screen covers the Home Screen completely, from the moment it
     /// opens until it has closed. The status bar then follows that screen's
-    /// appearance instead of the black wallpaper's.
+    /// appearance instead of the Home Screen's dark one.
     var isCoveredByScreen = false
 
     /// The app the person asked to remove, while the question shows.
     var pendingRemoval: LCAppModel?
     /// Whether Files is open to pick an IPA to install.
     var isChoosingIPA = false
+    /// How to add an app once the screen over the Home Screen has closed,
+    /// as Settings' Add App row asks.
+    @ObservationIgnored var pendingAddition: HomeAddition?
     /// Whether the question asking for an install link shows.
     var isEnteringInstallURL = false
     /// The install link being typed.
     var installURL = ""
+    /// An app asked to go on the iPhone's own Home Screen from its long-press
+    /// menu, for AppShortcutPresenter to put there.
+    var shortcutRequest: AppShortcutRequest?
 
     /// The app zooming open from its icon, just before zContainer turns into it.
     var launchZoom: HomeLaunchZoom?
@@ -131,8 +171,23 @@ final class HomeScreenModel {
                 placements.append(HomePlacement(item: item, slot: .page(page, index: index), isLifted: false))
             }
         }
-        if let drag, !drag.origin.isInDock {
-            let slot = drag.target.isInDock ? drag.origin : drag.target
+        if let drag, drag.origin.page != nil {
+            let slot = drag.target.page != nil ? drag.target : drag.origin
+            placements.append(HomePlacement(item: drag.item, slot: slot, isLifted: true))
+        }
+        return placements
+    }
+
+    /// The icons in a folder and where each one shows. An icon dragged out of
+    /// the folder keeps its view here, hidden, so its drag goes on.
+    func folderPlacements(_ id: String) -> [HomePlacement] {
+        let items = displayedLayout.folders[id]?.items ?? []
+        var placements: [HomePlacement] = []
+        for (index, item) in items.enumerated() where item != drag?.item {
+            placements.append(HomePlacement(item: item, slot: .folder(id, index: index), isLifted: false))
+        }
+        if let drag, drag.origin.folder == id {
+            let slot = drag.target.folder == id ? drag.target : drag.origin
             placements.append(HomePlacement(item: drag.item, slot: slot, isLifted: true))
         }
         return placements
@@ -201,6 +256,14 @@ final class HomeScreenModel {
             }
             HomeLayoutStorage.save(updated)
         }
+        // A folder whose last app went away closes with it, and one that lost
+        // its last page shows the page now last.
+        if let openFolderID, updated.folders[openFolderID] == nil, drag == nil {
+            self.openFolderID = nil
+            isFolderShown = false
+        } else if let openFolderID, let folder = updated.folders[openFolderID], let folderPage, folderPage >= folder.pageCount {
+            self.folderPage = folder.pageCount - 1
+        }
 
         guard var drag else {
             return
@@ -226,13 +289,13 @@ final class HomeScreenModel {
     }
 
     /// Follows a link zContainer was opened with: links that do something in
-    /// an app, or bring up zContainer, show the Home Screen.
+    /// an app, or bring up zContainer, show the Home Screen, as do
+    /// certificates sent to zContainer and requests from Zeus, whose
+    /// questions show over it.
     func handle(_ route: HomeRoute) {
         switch route {
-        case .home, .app:
+        case .home, .app, .certificate, .certificateFile, .zeusRequests:
             showHomeScreen()
-        case .certificate:
-            break
         }
     }
 }

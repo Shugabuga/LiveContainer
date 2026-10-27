@@ -45,6 +45,10 @@ struct LCContainerView : View {
         self._uiDefaultDataFolder = Binding(projectedValue: uiDefaultDataFolder)
     }
     
+    /// Whether the container was removed or unbound from this page, so what's
+    /// typed isn't saved as it closes.
+    @State private var isRemoved = false
+
     var body: some View {
         Form {
             if !(container.storageBookMark != nil && container.resolvedContainerURL == nil) {
@@ -175,6 +179,7 @@ struct LCContainerView : View {
         }
         .navigationTitle(container.name)
         .navigationBarTitleDisplayMode(.inline)
+        .onDisappear(perform: saveTypedFields)
         .alert("lc.common.error".loc, isPresented: $errorShow){
         } message: {
             Text(errorInfo)
@@ -234,6 +239,22 @@ struct LCContainerView : View {
         
     }
     
+    /// Keeps a name or UUID typed without pressing Return once the page goes
+    /// away, as the Settings app keeps what's typed.
+    private func saveTypedFields() {
+        // A container just removed or unbound isn't written back.
+        guard !isRemoved else {
+            return
+        }
+        if typingContainerName != container.name {
+            container.name = typingContainerName
+            saveContainer()
+        }
+        if container.spoofIdentifierForVendor, typingIDFV != (container.spoofedIdentifier ?? ""), UUID(uuidString: typingIDFV) != nil {
+            saveIDFV()
+        }
+    }
+
     func saveIDFV() {
         guard let newIDFV = UUID(uuidString: typingIDFV) else {
             errorInfo = "lc.container.invalidIDFV".loc
@@ -255,8 +276,14 @@ struct LCContainerView : View {
     }
     
     func openDataFolder() {
-        let url = URL(string:"shareddocuments://\(LCPath.dataPath.path)/\(container.folderName)")
-        UIApplication.shared.open(url!)
+        // containerURL is the bookmarked folder for external containers. Their
+        // paths have spaces ("File Provider Storage", "Mobile Documents"), which
+        // URL(string:) rejects before iOS 17, so the path is percent encoded.
+        guard let path = container.containerURL.path.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed),
+              let url = URL(string: "shareddocuments://" + path) else {
+            return
+        }
+        UIApplication.shared.open(url)
     }
     
     func setAsDefault() {
@@ -272,15 +299,38 @@ struct LCContainerView : View {
         guard let ans = await removeContainerAlert.open(), ans else {
             return
         }
-        do {
-            let fm = FileManager.default
-            try fm.removeItem(at: container.containerURL)
-        } catch {
-            errorInfo = error.localizedDescription
-            errorShow = true
-            return
+        let containerURL = container.containerURL
+        let folderName = container.folderName
+        // A folder name that isn't one folder in the data folder, such as
+        // "../../Applications", would lead outside it, so nothing is deleted
+        // for it, as when its app is removed with its data.
+        let isOneFolder = !folderName.isEmpty && folderName != "." && folderName != ".."
+            && !folderName.contains("/") && !folderName.contains("\0")
+        if isOneFolder {
+            // The folder leaves in one rename and is deleted in the background,
+            // as an uninstalled app's data is, so nothing can use it in the
+            // meantime. Where it can't be renamed into tmp, it's deleted off
+            // the main thread.
+            if container.storageBookMark == nil, let removing = AppLaunchCoordinator.moveToTmp(containerURL) {
+                Task.detached(priority: .utility) {
+                    try? FileManager().removeItem(at: removing)
+                }
+            } else {
+                do {
+                    try await Task.detached(priority: .userInitiated) {
+                        try FileManager().removeItem(at: containerURL)
+                    }.value
+                } catch {
+                    errorInfo = error.localizedDescription
+                    errorShow = true
+                    return
+                }
+            }
         }
-        
+        // Its folder is gone, so Clean Unused Data Folders mustn't count it.
+        sharedModel.appDataFolderNames.removeAll { $0 == container.folderName }
+
+        isRemoved = true
         dismiss()
         delegate.unbindContainer(container: container)
     }
@@ -292,6 +342,7 @@ struct LCContainerView : View {
             return
         }
         
+        isRemoved = true
         dismiss()
         delegate.unbindContainer(container: container)
     }
@@ -318,13 +369,40 @@ struct LCContainerView : View {
         guard let ans = await deleteDataAlert.open(), ans else {
             return
         }
+        let renamesIntoTmp = container.storageBookMark == nil
         do {
             let fm = FileManager.default
+            // Each item leaves in one rename and is deleted in the background,
+            // as an uninstalled app's data is, so the app can't open half of
+            // it meanwhile. Items that can't be renamed into tmp are deleted
+            // off the main thread.
+            var removing: [URL] = []
+            var deleting: [URL] = []
             for file in try fm.contentsOfDirectory(at: container.containerURL, includingPropertiesForKeys: nil) {
                 if file.lastPathComponent == "LCContainerInfo.plist" {
                     continue
                 }
-                try fm.removeItem(at: file)
+                if renamesIntoTmp, let moved = AppLaunchCoordinator.moveToTmp(file) {
+                    removing.append(moved)
+                } else {
+                    deleting.append(file)
+                }
+            }
+            if !removing.isEmpty {
+                Task.detached(priority: .utility) { [removing] in
+                    let fm = FileManager()
+                    for url in removing {
+                        try? fm.removeItem(at: url)
+                    }
+                }
+            }
+            if !deleting.isEmpty {
+                try await Task.detached(priority: .userInitiated) { [deleting] in
+                    let fm = FileManager()
+                    for file in deleting {
+                        try fm.removeItem(at: file)
+                    }
+                }.value
             }
         } catch {
             errorInfo = error.localizedDescription

@@ -17,8 +17,8 @@ struct SettingsPageView: View {
             ZeusSettingsView()
         case .general:
             GeneralSettingsView()
-        case .homeScreen:
-            HomeScreenSettingsView()
+        case .appearance:
+            AppearanceSettingsView()
         case .wallpaper:
             WallpaperSettingsView()
         case .apps:

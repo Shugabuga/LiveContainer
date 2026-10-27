@@ -6,7 +6,8 @@
 import Foundation
 
 /// An icon being moved in edit mode: where it came from, where it would land
-/// if dropped now, and the layout the other icons show to make room for it.
+/// if dropped now, the layout the other icons show to make room for it, and
+/// the icon it would make a folder with or go into instead.
 struct HomeDrag: Equatable {
     /// The icon being moved.
     let item: HomeItem
@@ -19,4 +20,11 @@ struct HomeDrag: Equatable {
     var target: HomeSlot
     /// The layout with the icon at `target`.
     var preview: HomeLayout
+    /// The icon the dragged one has hovered over long enough to go into if
+    /// dropped now: a folder, or an app or Settings that a new folder would
+    /// hold along with it.
+    var mergeTarget: HomeItem?
+    /// Whether the finger has moved further than a tap would since it picked
+    /// the icon up. A folder held and let go without moving opens instead.
+    var hasMoved = false
 }

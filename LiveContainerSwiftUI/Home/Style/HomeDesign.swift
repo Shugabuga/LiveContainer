@@ -27,6 +27,9 @@ enum HomeDesign {
     /// An icon's corner radius as a fraction of its size, the Home Screen
     /// icon shape.
     static let iconCornerFraction = 0.225
+    /// The plain tile an app's icon shows as until IconServices has drawn
+    /// it, and that a new app's place shows while it installs.
+    static let iconPlaceholder = Color(white: 0.3)
     /// The distance between the centers of neighboring columns.
     static let columnPitch = 98.6
     /// How far the grid sits right of the screen's center on a real Home
@@ -46,10 +49,10 @@ enum HomeDesign {
     static let labelWeight = Font.Weight.medium
     /// The height of a name's line.
     static let labelLineHeight = 14.3
-    /// The color of the names, readable on the black wallpaper.
+    /// The color of the names, readable on a dark wallpaper.
     static let labelColor = Color.white
-    /// The soft shadow under the names over a photo, so they read over its
-    /// bright parts, as on iOS.
+    /// The soft shadow under the names over the wallpaper, so they read over
+    /// its bright parts, as on iOS.
     static let labelShadow = Color.black.opacity(0.45)
     /// How far the names' shadow spreads.
     static let labelShadowRadius = 2.0
@@ -186,8 +189,18 @@ enum HomeDesign {
     /// How long an icon must be held in edit mode before it can be dragged,
     /// so a quick swipe still turns the page.
     static let pickUpDelay = 0.15
+    /// How far a finger can move on an icon in edit mode and still count as a
+    /// tap, which opens a folder however long it was held.
+    static let tapSlop = 10.0
+    /// How long a long-press menu takes to close, which Edit Home Screen waits
+    /// out before the icons start to jiggle.
+    static let menuCloseDuration = Duration.milliseconds(400)
     /// How much a dragged icon grows.
     static let liftedScale = 1.12
+    /// The shadow under a dragged icon, which lifts it off the others.
+    static let liftedShadowOpacity = 0.4
+    static let liftedShadowRadius = 12.0
+    static let liftedShadowOffset = 6.0
     /// How close to the side of the screen a dragged icon turns the page.
     static let pageTurnEdge = 28.0
     /// How long a dragged icon waits at the side before the page turns.
@@ -219,7 +232,7 @@ enum HomeDesign {
     /// bright dot.
     static let homeButtonRings: [(size: Double, opacity: Double)] = [(40, 0.12), (32, 0.22), (24, 0.92)]
     /// The dark tint of the Home button's glass, so it looks the same over the
-    /// black wallpaper, over Settings in light mode and over apps.
+    /// wallpaper, over Settings in light mode and over apps.
     static let homeButtonTint = Color.black.opacity(0.32)
     /// The light rim of the Home button where Liquid Glass isn't available.
     static let homeButtonRim = Color.white.opacity(0.22)
@@ -256,10 +269,80 @@ enum HomeDesign {
     /// The corner radius of search's panels.
     static let searchPanelCornerRadius = 26.0
 
+    // MARK: Folders
+
+    /// How big a folder icon's small icons are, and the space between them,
+    /// as a share of the folder icon: 13 and 3 points on a 68 point icon, as
+    /// iOS 27 draws them.
+    static let folderMiniRatio = 13.0 / 68.0
+    static let folderMiniGapRatio = 3.0 / 68.0
+    /// An open folder's name: its size, how far its baseline sits above the
+    /// panel, and how far large type's own spacing puts it before the first
+    /// column, as iOS 27 has it.
+    static let folderTitleSize = 36.0
+    static let folderTitleGap = 38.0
+    static let folderTitleOverhang = 3.0
+    /// The least space under an open folder's panel on a screen too short
+    /// to center the panel with its name above it, such as an iPhone's in
+    /// landscape, where the panel moves down under the name instead.
+    static let folderShortScreenMargin = 16.0
+    /// How dark the blurred Home Screen gets behind an open folder.
+    static let folderDim = 0.3
+    /// How far beside an open folder a dragged icon can go and still be over
+    /// it, and how long it waits further out before the folder closes and
+    /// lets it out onto the Home Screen. A folder that opened under a dragged
+    /// icon starts waiting only once it's out, so the finger has time to
+    /// reach it.
+    static let folderDragMargin = 24.0
+    static let folderLeaveDelay = Duration.milliseconds(500)
+    /// How far from another icon's center, across and down, a dragged icon
+    /// can be and still go into it rather than beside it, as a share of an
+    /// icon's size: most of the icon. Beside it, the dragged icon goes before
+    /// it over its left half and after it over its right half.
+    static let mergeZone = 0.4
+    /// How long a dragged icon hovers over another before they'd make or fill
+    /// a folder, and how much longer over a folder before the folder opens to
+    /// take it at a place of its choosing.
+    static let mergeDelay = Duration.milliseconds(350)
+    static let folderHoverOpenDelay = Duration.milliseconds(650)
+    /// The glass a new folder would be, growing behind the icon it would
+    /// hold, and how small that icon gets inside it.
+    static let mergeTileScale = 1.25
+    static let mergeIconScale = 0.82
+    /// How much a folder grows while an icon hovers over it to go in.
+    static let mergeFolderScale = 1.12
+    /// How small a dropped icon gets as it goes into a folder.
+    static let intoFolderScale = 0.3
+    /// The light rim around a folder icon's glass, and its width.
+    static let folderGlassRim = Color.white.opacity(0.16)
+    static let folderGlassRimWidth = 0.75
+    /// An open folder's page dots: their size, the space between them, how
+    /// faint the other pages' dots are, and how far up from the panel's
+    /// bottom edge they sit.
+    static let folderPageDotSize = 7.0
+    static let folderPageDotSpacing = 8.0
+    static let folderPageDotDimming = 0.35
+    static let folderPageDotsInset = 10.0
+    /// The field a folder's name is typed into in edit mode: the space beside
+    /// the name, the room its clear button takes, and its corner radius.
+    static let folderNameFieldPadding = 16.0
+    static let folderNameFieldVerticalPadding = 4.0
+    static let folderNameClearSize = 28.0
+    static let folderNameFieldCornerRadius = 22.0
+
     // MARK: Animations
 
     /// Icons moving to new places.
     static let reflow = Animation.spring(duration: 0.35, bounce: 0.12)
+    /// A picked up icon rising under the finger, its name fading as it goes.
+    static let lift = Animation.spring(duration: 0.25, bounce: 0.2)
+    /// A dropped icon flying to its place, shrinking back to size and its
+    /// name fading back in on the way, so it lands as the icon it becomes.
+    static let drop = Animation.spring(duration: 0.4, bounce: 0.12)
+    /// A folder zooming out of its icon, or back into it.
+    static let folderZoom = Animation.spring(duration: 0.42, bounce: 0.1)
+    /// An icon making ready to go into another, or giving up on it.
+    static let mergeHighlight = Animation.spring(duration: 0.3, bounce: 0.2)
     /// Edit mode, search and the page dots appearing or going away.
     static let modeChange = Animation.spring(duration: 0.3)
     /// A tapped app zooming open before zContainer turns into it.

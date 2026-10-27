@@ -19,11 +19,17 @@ enum PendingInstallSource: Equatable {
     /// An IPA picked in Files, which Files copied for zContainer.
     case pickedFile(URL)
 
+    /// An app Zeus left in the app group the two apps share, under the
+    /// request with this id. zContainer copies it into the app's folder and
+    /// checks the copy before installing it.
+    case zeusRequest(UUID)
+
     /// Whether the IPA is a copy of zContainer's own, which it deletes once
-    /// installed. A downloaded link's copy is, and so is Files' copy.
+    /// installed. A downloaded link's copy is, and so are Files' copy and the
+    /// copy of an app from Zeus.
     var isOwnCopy: Bool {
         switch self {
-        case .link, .pickedFile:
+        case .link, .pickedFile, .zeusRequest:
             true
         case .openedFile:
             false
@@ -33,7 +39,9 @@ enum PendingInstallSource: Equatable {
     /// What to call the app until it's installed and its own name is known:
     /// the IPA's file name, or for a link, where it comes from when the link
     /// doesn't name the IPA. Zeus's one-time links all end in `app.ipa`, so
-    /// they say they're from Zeus instead.
+    /// they say they're from Zeus instead. An app Zeus left in the app group
+    /// goes by the name its request gives, and by Zeus's only when it gives
+    /// none.
     var name: String {
         switch self {
         case .link(let url):
@@ -46,14 +54,31 @@ enum PendingInstallSource: Equatable {
             }
         case .openedFile(let url), .pickedFile(let url):
             url.deletingPathExtension().lastPathComponent
+        case .zeusRequest:
+            "Zeus"
         }
     }
 
     /// The name to save a link's download under: its own when it names an
-    /// IPA, or a stand-in, since the install reads the file whatever it's
-    /// called.
+    /// IPA and can only name a file in the app's folder, or a stand-in,
+    /// since the install reads the file whatever it's called. The address's
+    /// last path component is percent-decoded, so `..%2F..%2Fx.ipa` reads as
+    /// `../../x.ipa` and gets the stand-in.
     static func downloadName(for url: URL) -> String {
-        isIPA(url) ? url.lastPathComponent : "App.ipa"
+        let name = url.lastPathComponent
+        return isFileName(name) && isIPA(url) ? name : "App.ipa"
+    }
+
+    /// Whether a name read from an address or a record names a file right
+    /// inside a folder and nothing else: a single path component that isn't
+    /// empty, doesn't start with a dot (which also rules out `.` and `..`),
+    /// holds no NUL, and fits the file system's 255 bytes.
+    static func isFileName(_ name: String) -> Bool {
+        !name.isEmpty
+            && !name.hasPrefix(".")
+            && !name.contains("/")
+            && !name.contains("\0")
+            && name.utf8.count <= 255
     }
 
     private static func isIPA(_ url: URL) -> Bool {

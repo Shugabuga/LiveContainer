@@ -7,7 +7,8 @@ import SwiftUI
 
 /// Moving icons in edit mode without dragging them, for VoiceOver, Switch
 /// Control and Voice Control: one place earlier or later in reading order,
-/// across the pages or within the dock, and into or out of the dock.
+/// across the pages, within the dock or within a folder, and into or out of
+/// the dock.
 extension HomeScreenModel {
     /// Whether icons can be moved by these actions now: in edit mode, while
     /// no icon is being dragged.
@@ -16,13 +17,20 @@ extension HomeScreenModel {
     }
 
     /// The icon an icon trades places with when it moves one place earlier
-    /// (`offset` -1) or later (1): its neighbor in the dock, or on the pages
-    /// read one after another. Nil when there is none that way.
+    /// (`offset` -1) or later (1): its neighbor in the dock, in its folder, or
+    /// on the pages read one after another. Nil when there is none that way.
     func accessibilityNeighbor(of item: HomeItem, by offset: Int) -> HomeItem? {
         guard let slot = layout.slot(of: item) else {
             return nil
         }
-        let order = slot.isInDock ? layout.dock : layout.pages.flatMap { $0 }
+        let order = switch slot {
+        case .dock:
+            layout.dock
+        case .page:
+            layout.pages.flatMap { $0 }
+        case .folder(let id, _):
+            layout.folders[id]?.items ?? []
+        }
         guard let position = order.firstIndex(of: item) else {
             return nil
         }
@@ -35,7 +43,7 @@ extension HomeScreenModel {
         guard let slot = layout.slot(of: item) else {
             return false
         }
-        return !slot.isInDock && layout.dock.count < HomeLayout.dockCapacity
+        return slot.page != nil && layout.dock.count < HomeLayout.dockCapacity
     }
 
     /// Whether an icon is in the dock, so it can move out onto a page.
@@ -43,13 +51,16 @@ extension HomeScreenModel {
         layout.slot(of: item)?.isInDock ?? false
     }
 
-    /// The name of an icon, as VoiceOver reads it.
+    /// The name of an icon, as it shows under it and as VoiceOver reads it,
+    /// even in the dock, where it doesn't show.
     func title(of item: HomeItem) -> String {
         switch item {
         case .settings:
             "lc.tabView.settings".loc
         case .app(let key):
             apps[key]?.displayName ?? ""
+        case .folder(let id):
+            displayedLayout.folders[id]?.name ?? ""
         }
     }
 
@@ -71,6 +82,8 @@ extension HomeScreenModel {
             .page(page, index: index + step)
         case .dock(let index):
             .dock(index + step)
+        case .folder(let id, let index):
+            .folder(id, index: index + step)
         }
         commitAccessibilityMove(of: item, to: target)
     }

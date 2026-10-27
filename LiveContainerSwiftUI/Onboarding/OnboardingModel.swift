@@ -13,7 +13,9 @@ import SwiftUI
 /// Once it's finished, even with steps left for later, it stays away;
 /// Settings' "Finish Setting Up zContainer" row opens it again. While it
 /// shows, install links wait in `pendingInstalls`, so none is lost, even
-/// when zContainer closes before they're installed.
+/// when zContainer closes before they're installed. Install links that
+/// arrive while another app installs wait there too, as do the apps Zeus
+/// leaves in the app group the two apps share.
 @MainActor
 @Observable
 final class OnboardingModel {
@@ -30,7 +32,8 @@ final class OnboardingModel {
     /// step back, as it does when Settings opens it.
     private(set) var startsAtConnect = false
 
-    /// The apps sent to zContainer while onboarding shows.
+    /// The apps on their way in: those sent while onboarding shows or while
+    /// another app installs, and the apps Zeus leaves in the app group.
     let pendingInstalls: PendingInstallQueue
 
     init(coordinator: AppLaunchCoordinator) {
@@ -79,12 +82,18 @@ final class OnboardingModel {
         }
     }
 
-    /// Takes an install link while onboarding shows, or while apps it took
-    /// are still coming in, so the link waits its turn rather than being
-    /// turned away by an install that's running. Returns false when
-    /// AppLaunchCoordinator should handle the link as usual.
-    func takeInstallLink(_ address: String) -> Bool {
-        guard isPresented || pendingInstalls.hasUnfinishedItems else {
+    /// Takes an install link while onboarding shows, while apps it took are
+    /// still coming in, or while another app installs, so the link waits its
+    /// turn rather than being turned away by the install that's running.
+    /// Returns false for any other link, and whenever AppLaunchCoordinator
+    /// should handle the link as usual.
+    /// - Parameters:
+    ///   - link: An app link zContainer was opened with.
+    ///   - whileInstalling: Whether AppLaunchCoordinator is installing an
+    ///     app, which onboarding can't see for itself.
+    func takeLink(_ link: AppLink, whileInstalling: Bool) -> Bool {
+        guard case .install(let address) = link,
+              isPresented || pendingInstalls.hasUnfinishedItems || whileInstalling else {
             return false
         }
         return pendingInstalls.receive(address: address)
