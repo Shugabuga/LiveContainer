@@ -778,10 +778,11 @@ class AppInfoProvider {
     
     @objc public func notifyDockCollapseChanged() {
         self.updateDockFrame()
-        // find fullscreen apps and hide its UINavigationBar
+        // Full-screen windows have no title bar; tapping the dock shows
+        // their window controls for a moment.
         self.apps.forEach { app in
             if let vc = app.view?._viewDelegate() as? DecoratedAppSceneViewController, vc.isMaximized {
-                vc.updateVerticalConstraints()
+                vc.revealWindowControls()
             }
         }
     }

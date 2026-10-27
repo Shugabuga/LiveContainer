@@ -6,16 +6,66 @@
 //
 #import "ResizeHandleView.h"
 
-@implementation ResizeHandleView
+/// How far inside the window's edge the arc runs.
+static const CGFloat ResizeHandleInset = 6.0;
+static const CGFloat ResizeHandleLineWidth = 5.0;
+/// How much of the corner's quarter turn the arc covers, centered on it.
+static const CGFloat ResizeHandleSweep = M_PI / 3.0;
+
+@implementation ResizeHandleView {
+    CAShapeLayer *_arcLayer;
+}
+
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
-    self.layer.masksToBounds = YES;
     self.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleTopMargin;
-    UIView *backgroundView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, frame.size.width*sqrt(2), frame.size.height*sqrt(2))];
-    backgroundView.backgroundColor = [UIColor colorWithWhite:1 alpha:0.2];
-    backgroundView.center = CGPointMake(frame.size.width, frame.size.height);
-    backgroundView.transform = CGAffineTransformMakeRotation(M_PI_4);
-    [self addSubview:backgroundView];
+    _windowCornerRadius = 22.0;
+    _arcLayer = [CAShapeLayer layer];
+    _arcLayer.fillColor = nil;
+    _arcLayer.lineWidth = ResizeHandleLineWidth;
+    _arcLayer.lineCap = kCALineCapRound;
+    [self.layer addSublayer:_arcLayer];
+    [self updateArcColor];
+    if (@available(iOS 17.0, *)) {
+        [self registerForTraitChanges:@[UITraitUserInterfaceStyle.class] withAction:@selector(updateArcColor)];
+    }
+    self.accessibilityLabel = @"Resize";
     return self;
 }
+
+- (void)setWindowCornerRadius:(CGFloat)windowCornerRadius {
+    _windowCornerRadius = windowCornerRadius;
+    [self setNeedsLayout];
+}
+
+- (void)layoutSubviews {
+    [super layoutSubviews];
+    _arcLayer.frame = self.bounds;
+    // The window's corner is a quarter circle centered this far in from the
+    // bottom-right; the arc runs along it, a little inside the edge.
+    CGFloat radius = MAX(self.windowCornerRadius, ResizeHandleInset * 2);
+    CGPoint center = CGPointMake(CGRectGetMaxX(self.bounds) - radius, CGRectGetMaxY(self.bounds) - radius);
+    CGFloat middle = M_PI_4;
+    UIBezierPath *arc = [UIBezierPath bezierPathWithArcCenter:center
+                                                       radius:radius - ResizeHandleInset
+                                                   startAngle:middle - ResizeHandleSweep / 2
+                                                     endAngle:middle + ResizeHandleSweep / 2
+                                                    clockwise:YES];
+    _arcLayer.path = arc.CGPath;
+}
+
+- (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
+    [super traitCollectionDidChange:previousTraitCollection];
+    // Before iOS 17, which has trait change registration instead.
+    if (@available(iOS 17.0, *)) {
+        return;
+    }
+    [self updateArcColor];
+}
+
+- (void)updateArcColor {
+    // Readable over whatever the app draws in that corner, light or dark.
+    _arcLayer.strokeColor = [[UIColor secondaryLabelColor] resolvedColorWithTraitCollection:self.traitCollection].CGColor;
+}
+
 @end
