@@ -484,6 +484,9 @@
 - (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
     [super touchesBegan:touches withEvent:event];
     // FIXME: how to bring view to front when touching the passthrough view?
+    // Reading the host view brings it back above the Home Screen first, in
+    // case something the Home Screen drew since covered the windows.
+    [MultitaskDockManager.shared windowHostingView];
     [self.view.superview bringSubviewToFront:self.view];
 }
 
