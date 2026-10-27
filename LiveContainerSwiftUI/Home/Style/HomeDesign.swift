@@ -234,6 +234,14 @@ enum HomeDesign {
     static let searchBlur = 24.0
     /// How far a pull on the pages must go down to open search.
     static let pullToSearchDistance = 60.0
+    /// How far a pull on the pages goes down to bring search in completely.
+    static let searchPullRange = 140.0
+    /// How far above its place search starts as a pull brings it in.
+    static let searchPullOffset = 36.0
+    /// How much search darkens the Home Screen behind it.
+    static let searchDimming = 0.35
+    /// How much the Home Screen shrinks behind search.
+    static let searchScale = 0.94
     /// How long search waits for its field to get the keyboard before it
     /// shows the Home button under the field anyway.
     static let searchFocusWait = Duration.milliseconds(300)

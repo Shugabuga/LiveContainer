@@ -22,12 +22,22 @@ struct HomeSpringboard: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
+            // The pages sink back and blur as search comes in, as far as a
+            // pull down has brought it.
             HomePagesView(metrics: metrics, zoomNamespace: zoomNamespace)
+                .scaleEffect(1 - (1 - HomeDesign.searchScale) * model.searchPresence)
+                .blur(radius: HomeDesign.searchBlur * model.searchPresence)
 
-            HomeDock(metrics: metrics, zoomNamespace: zoomNamespace)
+            // The dock and the search pill only fade away as search comes in,
+            // as on iOS. Blurring or shrinking glass makes it redraw unevenly
+            // every frame.
+            Group {
+                HomeDock(metrics: metrics, zoomNamespace: zoomNamespace)
 
-            HomePillRow(homeButtonScale: metrics.pillButtonScale)
-                .position(metrics.pillCenter)
+                HomePillRow(homeButtonScale: metrics.pillButtonScale)
+                    .position(metrics.pillCenter)
+            }
+            .opacity(1 - model.searchPresence)
 
             if model.isEditing {
                 HomeEditControls(metrics: metrics)

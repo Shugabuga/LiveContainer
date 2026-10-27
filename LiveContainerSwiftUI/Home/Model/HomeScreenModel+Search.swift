@@ -21,6 +21,37 @@ extension HomeScreenModel {
         }
     }
 
+    /// How much of search shows, from 0 to 1: all of it while it is open,
+    /// otherwise as much as a pull down on the pages has brought in.
+    var searchPresence: Double {
+        isSearching ? 1 : searchPull
+    }
+
+    /// Follows a pull down on the pages, bringing search in as far as it went.
+    func searchPullChanged(_ progress: Double) {
+        guard !isEditing, !isSearching else {
+            return
+        }
+        searchPull = progress
+    }
+
+    /// Ends a pull down on the pages: search opens from where the pull left
+    /// it, or goes back away.
+    func searchPullEnded(opens: Bool) {
+        guard searchPull > 0 else {
+            return
+        }
+        if opens && !isEditing {
+            searchText = ""
+        }
+        withAnimation(HomeDesign.modeChange) {
+            if opens && !isEditing {
+                isSearching = true
+            }
+            searchPull = 0
+        }
+    }
+
     /// Closes search and forgets what was typed.
     func closeSearch() {
         withAnimation(HomeDesign.modeChange) {
