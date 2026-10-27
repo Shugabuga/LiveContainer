@@ -19,7 +19,11 @@ struct CertificateImportPresentation: ViewModifier {
         @Bindable var router = router
 
         content
-            .alert("zc.settings.zeus.passwordTitle".loc, item: $router.lockedCertificate) { locked in
+            .alert(
+                "zc.settings.zeus.passwordTitle".loc,
+                isPresented: Binding<Bool>.isPresented(for: $router.lockedCertificate),
+                presenting: router.lockedCertificate
+            ) { locked in
                 SecureField("zc.settings.zeus.password".loc, text: $password)
                 Button("lc.common.continue".loc) {
                     unlock(locked)
@@ -28,7 +32,11 @@ struct CertificateImportPresentation: ViewModifier {
             } message: { locked in
                 Text(locked.isRetry ? "zc.certificateImport.wrongPassword".loc : "zc.settings.zeus.passwordMessage".loc)
             }
-            .alert("zc.certificateImport.title".loc, item: $router.certificateOffer) { offer in
+            .alert(
+                "zc.certificateImport.title".loc,
+                isPresented: Binding<Bool>.isPresented(for: $router.certificateOffer),
+                presenting: router.certificateOffer
+            ) { offer in
                 Button("zc.certificateImport.use".loc) {
                     use(offer)
                 }
@@ -38,7 +46,11 @@ struct CertificateImportPresentation: ViewModifier {
             } message: { offer in
                 Text(message(for: offer))
             }
-            .alert("zc.certificateImport.readyTitle".loc, item: $router.storedCertificateTeam) { _ in
+            .alert(
+                "zc.certificateImport.readyTitle".loc,
+                isPresented: Binding<Bool>.isPresented(for: $router.storedCertificateTeam),
+                presenting: router.storedCertificateTeam
+            ) { _ in
                 Button("lc.common.ok".loc) { }
             } message: { teamID in
                 Text("zc.certificateImport.readyMessage %@".localizeWithFormat(teamID))

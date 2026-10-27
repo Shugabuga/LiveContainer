@@ -23,7 +23,11 @@ struct AppIconPicker: View {
         }
         .padding(.vertical, 8)
         .sensoryFeedback(.selection, trigger: selection)
-        .alert("zc.settings.appIconFailed".loc, item: $errorMessage) { _ in
+        .alert(
+            "zc.settings.appIconFailed".loc,
+            isPresented: Binding<Bool>.isPresented(for: $errorMessage),
+            presenting: errorMessage
+        ) { _ in
             Button("lc.common.ok".loc) { }
         } message: { message in
             Text(message)

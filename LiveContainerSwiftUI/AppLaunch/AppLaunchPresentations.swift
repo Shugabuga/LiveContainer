@@ -22,7 +22,11 @@ struct AppLaunchPresentations: ViewModifier {
 
         content
             .downloadAlert(helper: coordinator.downloadHelper)
-            .alert("lc.common.error".loc, item: $coordinator.errorMessage) { message in
+            .alert(
+                "lc.common.error".loc,
+                isPresented: Binding<Bool>.isPresented(for: $coordinator.errorMessage),
+                presenting: coordinator.errorMessage
+            ) { message in
                 Button("lc.common.ok".loc) { }
                 Button("lc.common.copy".loc) {
                     UIPasteboard.general.string = message

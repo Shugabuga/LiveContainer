@@ -26,7 +26,11 @@ struct HomeRouting: ViewModifier {
 
         content
             .appLaunchPresentations(router.coordinator)
-            .alert("lc.common.error".loc, item: $router.launchProblem) { problem in
+            .alert(
+                "lc.common.error".loc,
+                isPresented: Binding<Bool>.isPresented(for: $router.launchProblem),
+                presenting: router.launchProblem
+            ) { problem in
                 Button("lc.common.ok".loc) { }
                 Button("lc.common.copy".loc) {
                     UIPasteboard.general.string = problem

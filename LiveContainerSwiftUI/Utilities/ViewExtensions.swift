@@ -12,6 +12,19 @@ import SafariServices
 import Security
 import Combine
 
+extension Binding where Value == Bool {
+    static func isPresented<Item>(for item: Binding<Item?>) -> Self {
+        Self(
+            get: { item.wrappedValue != nil },
+            set: { isPresented in
+                if !isPresented {
+                    item.wrappedValue = nil
+                }
+            }
+        )
+    }
+}
+
 struct SafariView: UIViewControllerRepresentable {
     let url: Binding<URL>
     func makeUIViewController(context: UIViewControllerRepresentableContext<Self>) -> SFSafariViewController {

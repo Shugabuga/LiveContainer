@@ -20,7 +20,11 @@ struct HomePresentations: ViewModifier {
 
         content
             .modifier(HomeScreenPresentation(model: model, zoomNamespace: zoomNamespace))
-            .alert(model.removalTitle, item: $model.pendingRemoval) { app in
+            .alert(
+                model.removalTitle,
+                isPresented: Binding<Bool>.isPresented(for: $model.pendingRemoval),
+                presenting: model.pendingRemoval
+            ) { app in
                 HomeRemovalActions(app: app)
             } message: { app in
                 if !app.uiContainers.isEmpty {
