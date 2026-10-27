@@ -138,8 +138,8 @@ class AppInfoProvider {
 
     /// The view the virtual windows live in, on the main window. Reading it
     /// first puts it there when it isn't yet, since the main window may not
-    /// have been known when the manager was made. On iPad it also brings it
-    /// back above the Home Screen.
+    /// have been known when the manager was made, and brings it back above
+    /// the Home Screen.
     @objc public var windowHostingView: VirtualWindowsHostView {
         attachWindowHostingView()
         return hostView
@@ -325,21 +325,17 @@ class AppInfoProvider {
     /// Puts the virtual windows' host view on the main window, and waits
     /// while no main window is known.
     ///
-    /// On iPhone it goes where it always has, once: into the first view of
-    /// the window's root view, sized to the window, and it stays there.
-    ///
-    /// On iPad it goes on the root view itself, sized to it and above the
-    /// Home Screen, and comes back to the front when something covered it.
+    /// It goes on the root view itself, sized to it and above the Home
+    /// Screen, and comes back to the front when something covered it.
     /// zContainer's root is its own SwiftUI view rather than a tab bar
     /// controller whose view came first, so the first view there could be one
-    /// that scrolls with the Home Screen's pages.
+    /// that scrolls with the Home Screen's pages, and anything the Home Screen
+    /// adds later, like its dock, would be drawn over the windows. The host
+    /// view passes touches through wherever there's no window, so being on
+    /// top costs the Home Screen nothing.
     private func attachWindowHostingView() {
         guard let window = keyWindow, let rootView = window.rootViewController?.view else { return }
-        if SharedModel.isPhone {
-            guard hostView.superview == nil else { return }
-            hostView.frame = window.bounds
-            (rootView.subviews.first ?? rootView).addSubview(hostView)
-        } else if hostView.superview !== rootView {
+        if hostView.superview !== rootView {
             hostView.frame = rootView.bounds
             rootView.addSubview(hostView)
         } else if rootView.subviews.last !== hostView {
