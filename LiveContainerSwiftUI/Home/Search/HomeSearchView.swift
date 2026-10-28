@@ -66,14 +66,19 @@ struct HomeSearchView: View {
             }
         }
         .animation(HomeDesign.modeChange, value: showsHomeButton)
-        .background {
-            Color.black.opacity(0.35)
-                .ignoresSafeArea()
-        }
         .accessibilityElement(children: .contain)
         .accessibilityAddTraits(.isModal)
-        .onAppear(perform: focusField)
-        .task {
+        // A pull down shows search before it opens; the field takes the
+        // keyboard once it does.
+        .onChange(of: model.isSearching, initial: true) {
+            if model.isSearching {
+                focusField()
+            }
+        }
+        .task(id: model.isSearching) {
+            guard model.isSearching else {
+                return
+            }
             await showHomeButtonIfUnfocused()
         }
         .onChange(of: isFieldFocused, fieldFocusChanged)

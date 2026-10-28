@@ -98,6 +98,9 @@ final class HomeScreenModel {
 
     /// Whether search is open over the Home Screen.
     var isSearching = false
+    /// How far a pull down on the pages has brought search in, from 0 to 1,
+    /// while the finger is still down. Search follows it until the pull ends.
+    var searchPull = 0.0
     /// What the person typed into search.
     var searchText = ""
 
