@@ -19,6 +19,8 @@ struct HomeScreenView: View {
     @Namespace private var zoomNamespace
 
     var body: some View {
+        let presence = model.searchPresence
+
         ZStack {
             // The Home Screen is laid out from the screen's top left corner,
             // as on iOS. A reader that covers the whole screen reads its safe
@@ -30,7 +32,7 @@ struct HomeScreenView: View {
                         metrics: HomeMetrics(
                             size: screen.size,
                             safeArea: Self.insets(of: safeArea.size, within: screen.frame(in: .named(Self.safeAreaSpace))),
-                            isPhone: isPhone
+                            isPhone: SharedModel.isPhone
                         ),
                         zoomNamespace: zoomNamespace
                     )
@@ -40,13 +42,25 @@ struct HomeScreenView: View {
             .coordinateSpace(.named(Self.safeAreaSpace))
             // Search's keyboard leaves the Home Screen where it is.
             .ignoresSafeArea(.keyboard)
-            .blur(radius: model.isSearching ? HomeDesign.searchBlur : 0)
             // Search covers the Home Screen for touches and for VoiceOver alike.
             .allowsHitTesting(!model.isSearching)
             .accessibilityHidden(model.isSearching)
 
-            if model.isSearching {
+            // Search's dimming covers the whole screen and only fades, so
+            // it has no edge as search slides in.
+            Color.black
+                .opacity(HomeDesign.searchDimming * presence)
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+
+            if model.isSearching || model.searchPull > 0 {
+                // Search slides down and fades in with the pull, and only
+                // takes touches and the keyboard once it is open.
                 HomeSearchView()
+                    .opacity(presence)
+                    .offset(y: -HomeDesign.searchPullOffset * (1 - presence))
+                    .allowsHitTesting(model.isSearching)
                     .transition(.opacity)
             }
         }
@@ -81,12 +95,5 @@ struct HomeScreenView: View {
             bottom: max(screen.maxY - safeArea.height, 0),
             trailing: max(screen.maxX - safeArea.width, 0)
         )
-    }
-
-    /// Whether zContainer runs on an iPhone, whose Home Screen has its own
-    /// layout when the iPhone has a Home button. SwiftUI has no way to tell
-    /// an iPhone from an iPad by itself.
-    private var isPhone: Bool {
-        UIDevice.current.userInterfaceIdiom == .phone
     }
 }

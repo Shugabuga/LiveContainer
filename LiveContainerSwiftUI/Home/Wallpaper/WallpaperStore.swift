@@ -17,7 +17,8 @@ final class WallpaperStore {
     private(set) var image: UIImage?
 
     /// The wallpaper blurred, shown behind search. Blurring it once here
-    /// spares search a live blur of a full screen picture.
+    /// spares search a live blur of a full screen picture. Nil until it's
+    /// made, a moment after the wallpaper shows.
     private(set) var blurredImage: UIImage?
 
     /// Whether the wallpaper is a photo the person chose, rather than the
@@ -39,61 +40,83 @@ final class WallpaperStore {
     /// The defaults key `dimsInDarkMode` is saved under.
     private static let dimmedKey = "ZCWallpaperDimmed"
 
-    /// Counts the wallpapers set, so one that finishes loading late can't
-    /// replace a newer one.
+    /// Counts the wallpapers set, and the times the halo is chosen again,
+    /// so one that finishes loading or being made late can't replace a
+    /// newer one.
     @ObservationIgnored private var generation = 0
 
     init() {
         dimsInDarkMode = UserDefaults.standard.object(forKey: Self.dimmedKey) as? Bool ?? true
-        Task {
-            await load()
-        }
+        load()
     }
 
     /// Makes a photo's data the wallpaper. Throws when it isn't a picture
-    /// iOS can read, leaving the wallpaper as it was.
+    /// iOS can read, leaving the wallpaper as it was. A photo or the halo
+    /// chosen while it's being made wins, and this one is dropped.
     func set(_ data: Data) async throws {
+        generation += 1
+        let setting = generation
         isPreparing = true
         defer {
-            isPreparing = false
+            // A photo chosen after this one is still being made.
+            if setting == generation {
+                isPreparing = false
+            }
         }
-        generation += 1
-        let (image, blurred) = try await Task.detached(priority: .userInitiated) {
-            let image = try WallpaperFile.save(data)
-            return (image, WallpaperFile.blurred(image))
+        let (image, jpeg, blurred) = try await Task.detached(priority: .userInitiated) {
+            let made = try WallpaperFile.make(data)
+            return (made.image, made.jpeg, WallpaperFile.blurred(made.image))
         }.value
+        // Use Default, or a photo chosen after this one, came later and wins.
+        // Saving here on the main actor, with no wait after the check, keeps
+        // the file in the order useDefault removes it in.
+        guard setting == generation else {
+            return
+        }
+        try WallpaperFile.save(jpeg)
         self.image = image
         blurredImage = blurred
         isCustom = true
     }
 
-    /// Goes back to the halo zContainer comes with.
+    /// Goes back to the halo zContainer comes with. The photo stays, dimmed as
+    /// it was, until the halo has loaded and takes its place.
     func useDefault() {
+        generation += 1
+        isPreparing = false
         WallpaperFile.remove()
-        isCustom = false
-        Task {
-            await load()
-        }
+        load()
     }
 
     /// Loads the saved photo, or the halo when there's none: the iPad's
-    /// square one on an iPad, which fills the screen either way up.
-    private func load() async {
-        generation += 1
+    /// square one on an iPad, which fills the screen either way up. The
+    /// wallpaper shows as soon as it's decoded, and the blurred copy for
+    /// search follows once it's made.
+    private func load() {
         let loading = generation
         let isPad = UIDevice.current.userInterfaceIdiom == .pad
-        let loaded = await Task.detached(priority: .userInitiated) {
-            let photo = WallpaperFile.load()
-            return (photo ?? WallpaperFile.loadDefault(isPad: isPad)).map { image in
-                (image, WallpaperFile.blurred(image), photo != nil)
+        Task {
+            let loaded = await Task.detached(priority: .userInitiated) {
+                let photo = WallpaperFile.load()
+                return (photo ?? WallpaperFile.loadDefault(isPad: isPad)).map { image in
+                    (image, photo != nil)
+                }
+            }.value
+            // A wallpaper set meanwhile is newer than this one.
+            guard loading == generation, let loaded else {
+                return
             }
-        }.value
-        // A wallpaper set meanwhile is newer than this one.
-        guard loading == generation, let loaded else {
-            return
+            image = loaded.0
+            blurredImage = nil
+            isCustom = loaded.1
+
+            let blurred = await Task.detached(priority: .userInitiated) {
+                WallpaperFile.blurred(loaded.0)
+            }.value
+            guard loading == generation else {
+                return
+            }
+            blurredImage = blurred
         }
-        image = loaded.0
-        blurredImage = loaded.1
-        isCustom = loaded.2
     }
 }

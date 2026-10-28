@@ -21,7 +21,7 @@ struct SettingsAppPage: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
-                    AppShortcutMenu(app: app)
+                    AddToHomeScreenButton(app: app)
                 }
             }
             .onChange(of: coordinator.appSettingsCloseRequests, close)

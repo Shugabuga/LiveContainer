@@ -15,46 +15,13 @@ class AppInfoProvider {
     
     static let shared = AppInfoProvider()
     
-    private var infoCacheByUUID = [String: LCAppInfo]()
     private var infoCacheByName = [String: LCAppInfo]()
     private let cacheQueue = DispatchQueue(label: "com.livecontainer.appinfoprovider.cachequeue", attributes: .concurrent)
     
     private init() {}
     
     public func findAppInfo(appName: String, dataUUID: String) -> LCAppInfo? {
-        if let appInfo = findAppInfoFromSharedModel(appName: appName, dataUUID: dataUUID) {
-            return appInfo
-        }
-        if let appInfo = findAppInfo(byUUID: dataUUID) {
-            return appInfo
-        }
-        return findAppInfo(byName: appName)
-    }
-    
-    public func findAppInfo(byUUID dataUUID: String) -> LCAppInfo? {
-        if let cachedInfo = cacheQueue.sync(execute: { infoCacheByUUID[dataUUID] }) {
-            return cachedInfo
-        }
-        
-        guard let appGroupPath = LCSharedUtils.appGroupPath()?.path else { return nil }
-        
-        let searchPaths = [
-            "\(appGroupPath)/LiveContainer/Data/Application/\(dataUUID)/LCAppInfo.plist",
-            "\(appGroupPath)/Containers/\(dataUUID)/LCAppInfo.plist",
-            "\(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.path ?? "")/Data/Application/\(dataUUID)/LCAppInfo.plist"
-        ]
-        
-        for path in searchPaths {
-            if FileManager.default.fileExists(atPath: path),
-               let appInfoDict = NSDictionary(contentsOfFile: path),
-               let bundlePath = appInfoDict["bundlePath"] as? String,
-               let appInfo = LCAppInfo(bundlePath: bundlePath) {
-                
-                cacheQueue.async(flags: .barrier) { self.infoCacheByUUID[dataUUID] = appInfo }
-                return appInfo
-            }
-        }
-        return nil
+        return findAppInfoFromSharedModel(appName: appName, dataUUID: dataUUID) ?? findAppInfo(byName: appName)
     }
 
     public func findAppInfo(byName appName: String) -> LCAppInfo? {
@@ -87,7 +54,7 @@ class AppInfoProvider {
         let allApps = DataManager.shared.model.apps + DataManager.shared.model.hiddenApps
         
         for appModel in allApps {
-            if appModel.appInfo.containers.contains(where: { $0.folderName == dataUUID }) {
+            if appModel.uiContainers.contains(where: { $0.folderName == dataUUID }) {
                 return appModel.appInfo
             }
         }
@@ -98,13 +65,6 @@ class AppInfoProvider {
             }
         }
         return nil
-    }
-    
-    public func clearCache() {
-        cacheQueue.async(flags: .barrier) {
-            self.infoCacheByUUID.removeAll()
-            self.infoCacheByName.removeAll()
-        }
     }
 }
 
@@ -143,6 +103,22 @@ class AppInfoProvider {
     @objc public var windowHostingView: VirtualWindowsHostView {
         attachWindowHostingView()
         return hostView
+    }
+
+    /// Puts the apps' windows back above the Home Screen, after a screen that
+    /// covered it, like Settings, has closed and given the Home Screen back
+    /// to the window.
+    @objc public func keepWindowsAboveHomeScreen() {
+        attachWindowHostingView()
+    }
+
+    /// Whether the manager was made, which reading `shared` does.
+    private static var isCreated = false
+
+    /// Whether any app's window is on screen, those of apps that ended
+    /// included, without making the manager when it hasn't been.
+    @objc public static var hasWindows: Bool {
+        isCreated && !shared.hostView.subviews.isEmpty
     }
     private let hostView = VirtualWindowsHostView()
     internal var hostingController: UIHostingController<AnyView>?
@@ -301,6 +277,7 @@ class AppInfoProvider {
     
     override init() {
         super.init()
+        Self.isCreated = true
         attachWindowHostingView()
         setupDockView()
         NotificationCenter.default.addObserver(
@@ -553,20 +530,6 @@ class AppInfoProvider {
         }
     }
 
-    @objc public func animateFrame(to finalFrame: CGRect) {
-        guard let hostingController = self.hostingController else { return }
-        
-        UIView.animate(
-            withDuration: Constants.standardAnimationDuration,
-            delay: 0,
-            usingSpringWithDamping: Constants.standardSpringDamping,
-            initialSpringVelocity: Constants.standardSpringVelocity,
-            options: .curveEaseOut
-        ) {
-            hostingController.view.frame = finalFrame
-        }
-    }
-
     @objc public func updateFrameAfterAnimation(finalOffset: CGSize) {
         guard let hostingController = self.hostingController else { return }
         
@@ -629,15 +592,13 @@ class AppInfoProvider {
         }
         attachWindowHostingView()
 
-        for window in windowScene.windows {
-            if let targetView = findMultitaskView(in: window, withUUID: uuid) {
-                passURLSchemeToView(targetView)
-                animateViewAppearance(targetView, from: center, in: window)
-                return true
-            }
+        guard let targetView = apps.first(where: { $0.appUUID == uuid })?.view,
+              let window = windowScene.windows.first else {
+            return false
         }
-        
-        return false
+        passURLSchemeToView(targetView)
+        animateViewAppearance(targetView, from: center, in: window)
+        return true
     }
 
     private func passURLSchemeToView(_ view: UIView) {
@@ -710,27 +671,7 @@ class AppInfoProvider {
             windowSuperview.bringSubviewToFront(window)
         }
     }
-    
-    // Recursively find multitask view
-    private func findMultitaskView(in view: UIView, withUUID uuid: String) -> UIView? {
-        apps.first { $0.appUUID == uuid }?.view
-    }
-    
-    // Get view's dataUUID property through reflection
-    private func getDataUUID(from view: UIView) -> String? {
-        let mirror = Mirror(reflecting: view)
-        
-        if let child = (mirror.children.first { $0.label == "dataUUID" })?.value as? String {
-            return child
-        }
-        
-        if view.responds(to: NSSelectorFromString("dataUUID")) {
-            return view.value(forKey: "dataUUID") as? String
-        }
-        
-        return nil
-    }
-    
+
     @objc public func addRunningAppWithInfo(_ appInfo: LCAppInfo?, appUUID: String, view: UIView?) {
         guard isDockEnabled() else { return }
         
@@ -774,19 +715,12 @@ class AppInfoProvider {
     
     @objc public func notifyDockCollapseChanged() {
         self.updateDockFrame()
-        // find fullscreen apps and hide its UINavigationBar
+        // Full-screen windows have no title bar; tapping the dock shows
+        // their window controls for a moment.
         self.apps.forEach { app in
             if let vc = app.view?._viewDelegate() as? DecoratedAppSceneViewController, vc.isMaximized {
-                vc.updateVerticalConstraints()
+                vc.revealWindowControls()
             }
-        }
-    }
-    
-    // Toggle dock hide/show state
-    @objc public func toggleDockVisibility() {
-        DispatchQueue.main.async {
-            self.isDockHidden.toggle()
-            self.updateDockFrame()
         }
     }
     
@@ -1120,12 +1054,6 @@ class IconCacheManager {
     func setIcon(_ icon: UIImage, for key: String) {
         cacheQueue.async(flags: .barrier) {
             self.cache[key] = icon
-        }
-    }
-    
-    func clearCache() {
-        cacheQueue.async(flags: .barrier) {
-            self.cache.removeAll()
         }
     }
 }

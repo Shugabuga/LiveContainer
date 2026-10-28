@@ -42,8 +42,7 @@ struct HomePageIcons: View {
             if coordinator.isInstalling {
                 HomeInstallingIcon(
                     metrics: metrics,
-                    download: coordinator.downloadHelper,
-                    installProgress: coordinator.installProgress
+                    download: coordinator.downloadHelper
                 )
                 .position(position(of: model.displayedLayout.nextFreeSlot))
                 .transition(.opacity)

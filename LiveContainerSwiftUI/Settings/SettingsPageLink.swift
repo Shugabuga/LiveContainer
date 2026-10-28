@@ -12,7 +12,7 @@ import SwiftUI
 struct SettingsPageLink<Label: View>: View {
     /// The page the row opens.
     let page: SettingsPage
-    @ContentBuilder let label: Label
+    @ViewBuilder let label: Label
 
     var body: some View {
         // SharedModel.isPhone never changes while zContainer runs, so a row

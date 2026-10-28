@@ -15,7 +15,7 @@ struct SettingsRow<Value: View>: View {
     /// The color of the row's icon.
     let color: Color
     /// What shows on the trailing side, such as the current choice.
-    @ContentBuilder let value: Value
+    @ViewBuilder let value: Value
 
     var body: some View {
         LabeledContent {

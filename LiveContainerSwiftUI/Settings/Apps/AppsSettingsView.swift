@@ -65,7 +65,11 @@ struct AppsSettingsView: View {
         .navigationDestination(isPresented: $isShowingHiddenApps) {
             HiddenAppsSettingsView()
         }
-        .alert("lc.common.error".loc, item: $errorMessage) { _ in
+        .alert(
+            "lc.common.error".loc,
+            isPresented: Binding<Bool>.isPresented(for: $errorMessage),
+            presenting: errorMessage
+        ) { _ in
             Button("lc.common.ok".loc) { }
         } message: { message in
             Text(message)

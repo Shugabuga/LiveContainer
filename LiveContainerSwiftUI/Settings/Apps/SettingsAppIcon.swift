@@ -15,11 +15,9 @@ struct SettingsAppIcon: View {
     @ScaledMetric(relativeTo: .body) private var size = SettingsDesign.iconSize
 
     var body: some View {
-        // LCAppInfo keeps each icon in memory after drawing it once, and on
-        // disk after the first launch, so reading it here is cheap.
-        Image(uiImage: app.appInfo.homeScreenIconIsDarkIcon(darkModeIcon) ?? UIImage())
-            .resizable()
-            .scaledToFill()
+        // The Home Screen's icon, which shows at once once drawn, and is
+        // otherwise drawn off the main thread, so a long list doesn't wait.
+        HomeAppIconImage(app: app, isDark: darkModeIcon)
             .frame(width: size, height: size)
             .clipShape(.rect(cornerRadius: size * SettingsDesign.iconCornerRatio))
             .overlay {

@@ -7,7 +7,7 @@ official CI ships (no signing identity, "Sign to Run Locally"):
   requirement set and an empty CMS blob;
 - the app and extension executables carry the entitlements from their target's
   CODE_SIGN_ENTITLEMENTS file, filled in with the Release settings (team
-  AAAAA11111, the app group named after the bundle ID, the keychain groups), as
+  AAAAA11111, the app group zContainer shares with Zeus, the keychain groups), as
   XML and DER;
 - each bundle's _CodeSignature/CodeResources seals its other files with Apple's
   iOS rules, and its executable's signature seals Info.plist and CodeResources;

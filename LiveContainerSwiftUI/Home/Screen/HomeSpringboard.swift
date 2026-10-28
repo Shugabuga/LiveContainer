@@ -6,8 +6,9 @@
 import SwiftUI
 
 /// Everything on the Home Screen itself, laid out on the whole screen: the
-/// pages, the dock, the search pill (or the Home button in its place), edit
-/// mode's buttons, the icon being dragged and the launch zoom. Positions come
+/// pages, the dock, the search pill (or the Home button in its place), the
+/// open folder, edit mode's buttons over it, the icon being dragged over
+/// everything, and the launch zoom. Positions come
 /// from HomeMetrics, in the screen's coordinate space, which the drag gesture
 /// uses too.
 struct HomeSpringboard: View {
@@ -22,12 +23,27 @@ struct HomeSpringboard: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            HomePagesView(metrics: metrics, zoomNamespace: zoomNamespace)
+            Group {
+                // The pages sink back and blur as search comes in, as far as a
+                // pull down has brought it.
+                HomePagesView(metrics: metrics, zoomNamespace: zoomNamespace)
+                    .scaleEffect(1 - (1 - HomeDesign.searchScale) * model.searchPresence)
+                    .blur(radius: HomeDesign.searchBlur * model.searchPresence)
 
-            HomeDock(metrics: metrics, zoomNamespace: zoomNamespace)
+                // The dock and the search pill only fade away as search comes in,
+                // as on iOS. Blurring or shrinking glass makes it redraw unevenly
+                // every frame.
+                Group {
+                    HomeDock(metrics: metrics, zoomNamespace: zoomNamespace)
 
-            HomePillRow(homeButtonScale: metrics.pillButtonScale)
-                .position(metrics.pillCenter)
+                    HomePillRow(homeButtonScale: metrics.pillButtonScale)
+                        .position(metrics.pillCenter)
+                }
+                .opacity(1 - model.searchPresence)
+            }
+            .accessibilityHidden(model.isFolderShown)
+
+            HomeFolderView(metrics: metrics, zoomNamespace: zoomNamespace)
 
             if model.isEditing {
                 HomeEditControls(metrics: metrics)

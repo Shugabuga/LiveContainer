@@ -6,9 +6,9 @@
 import SwiftUI
 
 /// zContainer's icon on the welcome screen, which puts itself together: the
-/// near black tile swells in, the pink container draws itself around it, and
-/// Zeus's bolt pops into the middle with a light tap. With Reduce Motion the
-/// icon only fades in, and with VoiceOver it's there from the start.
+/// pink tile swells in, then its apps pop onto it from the top left, with a
+/// light tap as they start. With Reduce Motion the icon only fades in, and
+/// with VoiceOver it's there from the start.
 struct OnboardingWelcomeIcon: View {
     let isRevealed: Bool
 
@@ -20,7 +20,7 @@ struct OnboardingWelcomeIcon: View {
     var body: some View {
         ZContainerMark(stage: stage)
             .sensoryFeedback(.impact(weight: .light, intensity: 0.7), trigger: stage) { _, newStage in
-                newStage == .bolt
+                newStage == .apps
             }
             .onChange(of: isRevealed, initial: true, arrive)
     }
@@ -30,24 +30,20 @@ struct OnboardingWelcomeIcon: View {
     private func arrive() {
         guard isRevealed, stage == .hidden else { return }
         if voiceOverEnabled {
-            stage = .bolt
+            stage = .apps
         } else if reduceMotion {
             // ZContainerMark keeps its parts whole with Reduce Motion, so
             // only their opacity changes.
             withAnimation(OnboardingDesign.markFade) {
-                stage = .bolt
+                stage = .apps
             }
         } else {
             withAnimation(OnboardingDesign.markTileArrival) {
                 stage = .tile
             } completion: {
-                withAnimation(OnboardingDesign.markFrameDrawing) {
-                    stage = .frame
-                } completion: {
-                    withAnimation(OnboardingDesign.markBoltArrival) {
-                        stage = .bolt
-                    }
-                }
+                // Each app brings its own animation, one diagonal after
+                // another.
+                stage = .apps
             }
         }
     }

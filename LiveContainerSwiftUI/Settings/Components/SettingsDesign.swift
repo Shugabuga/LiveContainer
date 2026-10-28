@@ -32,12 +32,16 @@ enum SettingsDesign {
     static let cardMarkSize = 60.0
     /// The Zeus mark at the top of the Zeus page.
     static let headerMarkSize = 64.0
-    /// How much of the Zeus mark's tile the bolt takes up.
-    static let boltRatio = 0.56
-    /// The tile behind the bolt, as on Zeus's app icon.
-    static let zeusTile = Color(red: 0x16 / 255, green: 0x16 / 255, blue: 0x16 / 255)
-    /// Zeus's pink, the color of the bolt.
-    static let zeusPink = Color(red: 0xDA / 255, green: 0x2D / 255, blue: 0x98 / 255)
+    /// How much of the Zeus mark's tile the bolt takes up, top to bottom: 640
+    /// of the 1024 points on Zeus's app icon.
+    static let boltRatio = 0.625
+    /// The tile behind the bolt, as on Zeus's app icon: the pink zContainer's
+    /// own icon has too, fading from the top left corner to the bottom right.
+    static let zeusTile = LinearGradient(
+        colors: [OnboardingDesign.markGradientStart, OnboardingDesign.markGradientEnd],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
     /// Space between the mark and the text beside it.
     static let cardSpacing = 14.0
     /// Space between a title and the line under it.
@@ -47,6 +51,14 @@ enum SettingsDesign {
     static let cardPadding = 4.0
     /// Space between the parts of the Zeus page's header.
     static let headerSpacing = 8.0
+
+    // MARK: Add to Home Screen
+
+    /// The icon at the top of Add to Home Screen's sheet, as big as Safari's
+    /// Add to Home Screen shows a web page's.
+    static let shortcutIconSize = 60.0
+    /// Space between that icon and its name.
+    static let shortcutSpacing = 14.0
 
     // MARK: Badges and checks
 

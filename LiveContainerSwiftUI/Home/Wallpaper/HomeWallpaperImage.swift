@@ -7,7 +7,7 @@ import SwiftUI
 
 /// What the Home Screen shows behind everything: its wallpaper filling the
 /// screen, on black until it has loaded. While Dark Mode is on a photo is
-/// dimmed, unless that's turned off. While search is open, the blurred copy
+/// dimmed, unless that's turned off. As search comes in, the blurred copy
 /// fades in over it.
 struct HomeWallpaperImage: View {
     @Environment(WallpaperStore.self) private var wallpaper
@@ -29,7 +29,7 @@ struct HomeWallpaperImage: View {
                             Image(uiImage: blurred)
                                 .resizable()
                                 .scaledToFill()
-                                .opacity(model.isSearching ? 1 : 0)
+                                .opacity(model.searchPresence)
                         }
 
                         Color.black

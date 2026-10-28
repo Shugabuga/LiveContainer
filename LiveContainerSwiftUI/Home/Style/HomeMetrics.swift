@@ -61,8 +61,9 @@ struct HomeMetrics: Equatable {
 
     /// The center of the first icon on a page.
     private let firstIconCenter: CGPoint
-    /// The distance between neighboring columns and rows.
-    private let pitch: CGSize
+    /// The distance between neighboring columns and rows, which an open
+    /// folder's icons keep too.
+    let pitch: CGSize
     /// The distance between neighboring icons in the dock. On an iPad it is
     /// the most they can be apart; a narrow window brings them closer.
     private let dockPitch: Double
@@ -161,9 +162,19 @@ struct HomeMetrics: Equatable {
                 width: thickness,
                 height: size.height - edge * 2
             )
+            editControlsCenterY = max(safeArea.top * 0.54, 24)
+            editControlsInset = max(safeArea.leading, safeArea.trailing) + 16
+            editButtonSize = HomeDesign.editButtonSize
             let left = max(safeArea.leading, 16 * scale) + 8 * scale
             let right = dockFrame.minX - 8 * scale
-            let top = max(safeArea.top, 8 * scale) + 6 * scale
+            // Below edit mode's buttons with room for the first row's minus
+            // badges, as on iPad. The buttons don't move when edit mode
+            // starts, so neither do the icons.
+            let badgeReach = HomeDesign.minusBadgeSize / 2 - HomeDesign.minusBadgeInset
+            let top = max(
+                max(safeArea.top, 8 * scale) + 6 * scale,
+                editControlsCenterY + editButtonSize / 2 + badgeReach + 4
+            )
             pillCenter = CGPoint(
                 x: (left + right) / 2,
                 y: size.height - max(safeArea.bottom, 8 * scale) - HomeDesign.pillHeight / 2 - 2 * scale
@@ -175,10 +186,14 @@ struct HomeMetrics: Equatable {
                 x: left + pitch.width / 2,
                 y: top + (pitch.height - iconSize - labelBlock) / 2 + iconSize / 2
             )
-            dockPitch = min(HomeDesign.columnPitch * scale, (dockFrame.height - 24 * scale) / 4)
-            editControlsCenterY = max(safeArea.top * 0.54, 24)
-            editControlsInset = max(safeArea.leading, safeArea.trailing) + 16
-            editButtonSize = HomeDesign.editButtonSize
+            // The first of a full dock's four icons, one and a half steps
+            // above the dock's middle, starts no higher than the first row,
+            // so Done leaves its minus badge clear too.
+            dockPitch = min(
+                HomeDesign.columnPitch * scale,
+                (dockFrame.height - 24 * scale) / 4,
+                (dockFrame.midY - iconSize / 2 - top) / 1.5
+            )
         } else if isDockFlush {
             // An iPhone with a Home button: fixed sizes, the dock along the
             // bottom edge and the rows as close as the search pill needs.
@@ -363,14 +378,6 @@ struct HomeMetrics: Equatable {
         let column = Self.steps(point.x - firstIconCenter.x, of: pitch.width)
         let row = Self.steps(point.y - firstIconCenter.y, of: pitch.height)
         return min(max(row, 0), rows - 1) * columns + min(max(column, 0), columns - 1)
-    }
-
-    /// Where an icon dropped at a point goes in a dock that holds `count`
-    /// other icons: before the icon it lands on, or at either end.
-    func dockIndex(nearest point: CGPoint, count: Int) -> Int {
-        let first = dockIconCenter(at: 0, count: count + 1)
-        let distance = isDockVertical ? point.y - first.y : point.x - first.x
-        return min(max(Self.steps(distance, of: dockSpacing(count: count + 1).pitch), 0), count)
     }
 
     /// How many whole steps of `step` points fit in `distance`, rounded, or 0

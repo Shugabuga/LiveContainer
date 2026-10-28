@@ -28,7 +28,7 @@ environment (all of them are listed in `env.sh`):
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `ZC_BUNDLE_ID` | `app.reiko.zcontainer` | Main app bundle ID; the extension IDs and the app group are derived from it |
+| `ZC_BUNDLE_ID` | `app.reiko.zcontainer` | Main app bundle ID; the extension IDs are derived from it |
 | `ZC_EXTENSIONS` | `1` | `0` leaves out every `.appex` |
 | `ZC_DISPLAY_NAME` | (from Info.plist) | Home Screen name, and the share extension's (the name the share sheet shows) |
 | `ZC_URL_SCHEME` | `zcontainer` | URL scheme the app declares first and makes its own links with |
@@ -45,20 +45,27 @@ ZC_BUNDLE_ID=com.rileytestut.Delta ZC_EXTENSIONS=0 ZC_DISPLAY_NAME="zContainer T
 ZC_IPA_NAME=zContainer-Test.ipa Scripts/zc/build.sh
 ```
 
-`ZC_BUNDLE_ID` sets the app's bundle ID, its extensions' (`<ID>.LiveProcess` and
-so on) and its app group (`group.<ID>`). The 128 keychain groups
+`ZC_BUNDLE_ID` sets the app's bundle ID and its extensions' (`<ID>.LiveProcess`
+and so on). The app group stays `group.app.reiko.zeus` for every build: it is the
+group zContainer shares with Zeus, and installers add the team (Zeus assigns
+`group.app.reiko.zeus.<team>`; SideStore, AltStore and Impactor append the team the
+same way). zContainer picks it from its own entitlements
+(`LCSharedUtils.appGroupID`). The 128 keychain groups
 (`<team>.app.reiko.zcontainer.shared` and `.1` to `.127`) stay the same for every
-build, as LiveContainer's do. So does the URL scheme, `zcontainer`, unless
+build too, as LiveContainer's do. So does the URL scheme, `zcontainer`, unless
 `ZC_URL_SCHEME` names another: the app reads its scheme from its own Info.plist
 (`LCSharedUtils.hostAppUrlScheme`) for every link it makes or takes as its own.
 
 Don't install a test build and zContainer on one iPhone together. Both answer to
-`zcontainer://`, so iOS may hand either one Zeus's install links, web clips, the
-Launch App shortcut, or the links LiveProcess sends back to its app. To keep both,
-give the test build a scheme of its own, for example `ZC_URL_SCHEME=zcontainer-test`;
-Zeus only opens `zcontainer://`, so its hand-off then reaches zContainer alone. A
-build under another App ID never borrows zContainer's LiveProcess extension, whose
-app group isn't its own, so a test build without extensions has no multitasking.
+`zcontainer://`, so iOS may hand either one install links, web clips, the Launch
+App shortcut, or the links LiveProcess sends back to its app. A scheme of its own,
+for example `ZC_URL_SCHEME=zcontainer-test`, stops the two from taking each
+other's links. It keeps nothing private: any app can declare a scheme, which is
+why links from Zeus carry nothing secret. Installed by one team, both builds also
+share Zeus's app group, so they see the same shared apps, shared settings and
+requests from Zeus. A build under another App ID never borrows zContainer's
+LiveProcess extension (only zContainer's own copies look for it), so a test build
+without extensions has no multitasking.
 
 Like the official IPA, the build is ad-hoc signed the way Xcode signs an archive
 without a signing identity: each binary has a certificate-less signature, and the
@@ -67,7 +74,9 @@ groups, increased memory limit). Those can't be installed as they are; sign the
 IPA when installing it (Zeus, `xtool install` or another sideloader). xtool and
 other sideloaders read the entitlements from the executables to decide what to
 register, so an unsigned build (`ZC_ADHOC_SIGN=0`) would install without them.
-Zeus signs with the entitlements of the profile it makes instead.
+Zeus signs with the entitlements of the profile it makes instead. It gives the
+shared app group only to official builds from build 2 on, the ones whose SHA-256
+its source lists, and keeps every other app it signs out of the group.
 
 The main Info.plist carries `ZeusCompanion = {Kind: zContainer, Protocol: 1}`.
 Zeus looks for it before it puts `ZeusCertificate.plist` (its signing certificate

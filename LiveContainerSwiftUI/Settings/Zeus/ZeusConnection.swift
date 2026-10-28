@@ -8,8 +8,8 @@ import SwiftUI
 /// zContainer's link to Zeus, as Settings shows it: the certificate it signs
 /// apps with (the one Zeus put inside it, or one imported by hand), what went
 /// wrong with it, what Apple says about it, and how Check Setup found the
-/// parts Zeus sets up. It also imports, removes and puts back certificates,
-/// writing what importing one by hand always wrote.
+/// parts Zeus sets up. It also imports (through ZeusCertificateImport),
+/// removes and puts back certificates.
 ///
 /// Settings makes one when it opens and hands it to its pages through the
 /// environment. Nothing here runs at launch: LCZeusCertificate stores Zeus's
@@ -58,15 +58,6 @@ final class ZeusConnection {
     /// How Check Setup found each part, for the parts it looked at.
     private var results: [ZeusSetupCheck: ZeusCheckResult] = [:]
     @ObservationIgnored private var teamTask: Task<Void, Never>?
-
-    // The keys importing a certificate by hand writes in the shared defaults,
-    // which signing and LCZeusCertificate read.
-    private static let certificateDataKey = "LCCertificateData"
-    private static let certificatePasswordKey = "LCCertificatePassword"
-    private static let certificateDateKey = "LCCertificateUpdateDate"
-    /// Remembered in the standard defaults, as LiveContainer did, so the
-    /// extensions find the app group the certificate came with.
-    private static let appGroupKey = "LCAppGroupID"
 
     private var defaults: UserDefaults {
         LCUtils.appGroupUserDefault
@@ -224,6 +215,10 @@ final class ZeusConnection {
     /// signs a test library with the certificate, the way apps are signed, and
     /// checks that iOS accepts it, as it has to for apps to open without JIT.
     /// When that works, a failed check recorded at launch no longer stands.
+    ///
+    /// When a different certificate is stored before the check is done, what
+    /// it found is dropped and it checks again, for the new certificate. A
+    /// page that asks for a check meanwhile gets that one.
     func checkSetup() async {
         guard !isCheckingSetup else {
             return
@@ -232,6 +227,17 @@ final class ZeusConnection {
         defer {
             isCheckingSetup = false
         }
+        var checkedVersion: Int
+        repeat {
+            checkedVersion = certificateVersion
+            await checkSetupOnce()
+        } while checkedVersion != certificateVersion
+    }
+
+    /// One run of Check Setup, for the certificate stored as it starts. It
+    /// keeps nothing it found about signing once a different certificate is
+    /// stored before it's done, since `checkSetup()` then runs again.
+    private func checkSetupOnce() async {
         reload()
 
         guard hasCertificate else {
@@ -239,8 +245,12 @@ final class ZeusConnection {
             ZeusCertificate.lastCheckPassed = false
             return
         }
+        let version = certificateVersion
         results[.signing] = .checking
         let (passed, error) = await ZeusCertificate.validateJITLessSetup()
+        guard version == certificateVersion else {
+            return
+        }
         ZeusCertificate.lastCheckPassed = passed
         if passed {
             results[.signing] = .passed
@@ -256,36 +266,31 @@ final class ZeusConnection {
     }
 
     /// Stores a .p12 of the person's own in place of the current certificate,
-    /// once ZSign opens it with the password. Throws the error to show when it
-    /// doesn't.
+    /// once ZSign opens it with the password, as long as it belongs to the
+    /// team that signed zContainer (or zContainer can't tell that team), the
+    /// way a certificate link is checked. Throws the error to show when it
+    /// doesn't open or belongs to another team.
     func importCertificate(_ data: Data, password: String) async throws {
-        // ZSign opens the .p12 on the calling thread, so it runs away from
-        // the main one.
-        let team = await Task.detached(priority: .userInitiated) {
-            LCUtils.getCertTeamId(withKeyData: data, password: password)
-        }.value
-        guard team != nil else {
+        guard let team = await ZeusCertificateImport.teamID(of: data, password: password) else {
             throw "lc.settings.invalidCertError".loc
         }
-        defaults.set(data, forKey: Self.certificateDataKey)
-        defaults.set(password, forKey: Self.certificatePasswordKey)
-        defaults.set(Date.now, forKey: Self.certificateDateKey)
-        ZeusCertificate.forgetStored()
-        // Not checked yet: Check Setup tells whether this one signs.
-        ZeusCertificate.lastCheckPassed = nil
-        UserDefaults.standard.set(LCSharedUtils.appGroupID(), forKey: Self.appGroupKey)
+        // Apps signed with another team's certificate wouldn't open.
+        if let ownTeam = LCSharedUtils.teamIdentifier(), ownTeam != team {
+            throw "zc.certificateImport.otherTeam %@ %@".localizeWithFormat(team, ownTeam)
+        }
+        ZeusCertificateImport.store(data, password: password)
         certificateChanged()
     }
 
     /// Forgets the certificate, so zContainer can't sign apps until it has
     /// one again.
     func removeCertificate() {
-        defaults.removeObject(forKey: Self.certificateDataKey)
-        defaults.removeObject(forKey: Self.certificatePasswordKey)
-        defaults.removeObject(forKey: Self.certificateDateKey)
+        defaults.removeObject(forKey: ZeusCertificateImport.certificateDataKey)
+        defaults.removeObject(forKey: ZeusCertificateImport.certificatePasswordKey)
+        defaults.removeObject(forKey: ZeusCertificateImport.certificateDateKey)
         ZeusCertificate.forgetStored()
         ZeusCertificate.lastCheckPassed = false
-        UserDefaults.standard.removeObject(forKey: Self.appGroupKey)
+        UserDefaults.standard.removeObject(forKey: ZeusCertificateImport.appGroupKey)
         certificateChanged()
     }
 
@@ -299,8 +304,10 @@ final class ZeusConnection {
     }
 
     /// Starts over with whatever certificate is stored now: nothing is known
-    /// about it from Apple or Check Setup yet.
-    private func certificateChanged() {
+    /// about it from Apple or Check Setup yet. Pages call it when a
+    /// certificate was stored elsewhere, such as the one Zeus sends through
+    /// the app group.
+    func certificateChanged() {
         teamTask?.cancel()
         validity = .unknown
         results[.signing] = nil

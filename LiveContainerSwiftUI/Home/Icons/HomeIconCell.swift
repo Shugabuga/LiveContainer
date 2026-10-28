@@ -36,6 +36,8 @@ struct HomeIconCell: View {
     @GestureState private var isHeld = false
 
     var body: some View {
+        let isMergeTarget = model.drag?.mergeTarget == item
+
         Button(action: open) {
             HomeIconContent(
                 item: item,
@@ -45,6 +47,17 @@ struct HomeIconCell: View {
                 darkModeIcon: darkModeIcon,
                 zoomNamespace: zoomNamespace
             )
+            .scaleEffect(mergeScale(isMergeTarget), anchor: iconAnchor)
+            .background(alignment: .top) {
+                if isMergeTarget && !item.isFolder {
+                    newFolderGlass
+                }
+            }
+            .animation(HomeDesign.mergeHighlight, value: isMergeTarget)
+            // The icon's whole place takes touches, its name too, as on iOS,
+            // not only what's drawn there: a folder's glass between its small
+            // icons, or an app icon's clear corners.
+            .contentShape(.rect)
         }
         .buttonStyle(HomeIconButtonStyle())
         .accessibilityLabel(title)
@@ -62,7 +75,7 @@ struct HomeIconCell: View {
         .highPriorityGesture(editDrag, including: model.isEditing ? .all : .subviews)
         .onChange(of: isHeld) { wasHeld, isHeld in
             if wasHeld && !isHeld {
-                model.dragEnded()
+                model.iconReleased(item)
             }
         }
         // The badge sits over the icon, outside the drag gesture, so a tap on
@@ -74,19 +87,56 @@ struct HomeIconCell: View {
             }
         }
         .homeJiggle(isActive: model.isEditing && isOnScreen && !reduceMotion && !isLifted, seed: jiggleSeed)
-        .opacity(isLifted ? 0 : 1)
+        .opacity(isLifted || isOpenFolder ? 0 : 1)
+        // HomeLiftedIcon's copy takes the icon's place in the same spot and
+        // look, and an open folder's view zooms out of its icon and back into
+        // it, so the icon hides and comes back at once, with no fade.
+        .animation(nil, value: isLifted)
+        .animation(nil, value: isOpenFolder)
         .accessibilityHidden(isLifted)
     }
 
     /// The icon's name, which VoiceOver reads even in the dock, where it
     /// doesn't show.
     private var title: String {
-        switch item {
-        case .settings:
-            "lc.tabView.settings".loc
-        case .app:
-            app?.displayName ?? ""
+        model.title(of: item)
+    }
+
+    /// Whether this is a folder's icon while the folder is open over the Home
+    /// Screen, or zooming back into it. A folder an icon is being dragged out
+    /// of has gone back into its icon, which shows again.
+    private var isOpenFolder: Bool {
+        guard case .folder(let id) = item, id == model.openFolderID else {
+            return false
         }
+        return model.isFolderShown || model.drag == nil
+    }
+
+    /// The icon's center in this view, which it grows and shrinks around.
+    private var iconAnchor: UnitPoint {
+        showsLabel ? UnitPoint(x: 0.5, y: metrics.iconSize / 2 / metrics.cellHeight) : .center
+    }
+
+    /// How big the icon shows while a dragged icon hovers over it to go in: a
+    /// folder grows to take it, and an app or Settings shrinks into the glass
+    /// of the folder the two would make.
+    private func mergeScale(_ isMergeTarget: Bool) -> Double {
+        guard isMergeTarget else {
+            return 1
+        }
+        return item.isFolder ? HomeDesign.mergeFolderScale : HomeDesign.mergeIconScale
+    }
+
+    /// The glass of the folder an app or Settings would make with the icon
+    /// hovering over it, grown out behind the icon.
+    private var newFolderGlass: some View {
+        let size = metrics.iconSize * HomeDesign.mergeTileScale
+        return Color.clear
+            .frame(width: size, height: size)
+            .homeFolderGlass(cornerRadius: metrics.iconCornerRadius * HomeDesign.mergeTileScale)
+            // Centered on the icon, which sits at the top of this view.
+            .offset(y: (metrics.iconSize - size) / 2)
+            .transition(.scale(scale: 1 / HomeDesign.mergeTileScale).combined(with: .opacity))
     }
 
     /// Where the icon's left edge is in this view.

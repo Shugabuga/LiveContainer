@@ -12,7 +12,7 @@ struct OnboardingHeader<Symbol: View>: View {
     let title: String
     /// The explanation, already localized.
     let message: String
-    @ContentBuilder let symbol: Symbol
+    @ViewBuilder let symbol: Symbol
 
     var body: some View {
         VStack(spacing: OnboardingDesign.headerSpacing) {

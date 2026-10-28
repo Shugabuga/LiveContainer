@@ -52,12 +52,20 @@ struct DeveloperSettingsView: View {
         }
         .navigationTitle("zc.settings.developer".loc)
         .navigationBarTitleDisplayMode(.inline)
-        .alert("lc.common.success".loc, item: $exportedFiles) { _ in
+        .alert(
+            "lc.common.success".loc,
+            isPresented: Binding<Bool>.isPresented(for: $exportedFiles),
+            presenting: exportedFiles
+        ) { _ in
             Button("lc.common.ok".loc) { }
         } message: { files in
             Text(exportMessage(for: files))
         }
-        .alert("lc.common.error".loc, item: $errorMessage) { _ in
+        .alert(
+            "lc.common.error".loc,
+            isPresented: Binding<Bool>.isPresented(for: $errorMessage),
+            presenting: errorMessage
+        ) { _ in
             Button("lc.common.ok".loc) { }
         } message: { message in
             Text(message)

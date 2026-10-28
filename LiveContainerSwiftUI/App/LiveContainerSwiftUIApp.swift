@@ -25,10 +25,13 @@ struct LiveContainerSwiftUIApp : SwiftUI.App {
         var tempArm32EmuApps: [LCAppModel] = []
         var tempHiddenApps: [LCAppModel] = []
         var tempURLSchemes: Set<String>? = DataManager.shared.model.multiLCStatus != 2 ? Set() : nil
+        Self.moveGuestSettingsToAppGroup()
 
         do {
             // load apps
             try fm.createDirectory(at: LCPath.bundlePath, withIntermediateDirectories: true)
+            // Delete what a replace that stopped halfway left behind.
+            AppBundleSwap.recover(in: LCPath.bundlePath)
             let appDirs = try fm.contentsOfDirectory(atPath: LCPath.bundlePath.path)
             for appDir in appDirs {
                 if !appDir.hasSuffix(".app") {
@@ -42,7 +45,7 @@ struct LiveContainerSwiftUIApp : SwiftUI.App {
                     tempHiddenApps.append(model)
                 } else {
                     tempApps.append(model)
-                    tempURLSchemes?.formUnion(newApp.urlSchemes() as! [String])
+                    tempURLSchemes?.formUnion(newApp.urlSchemes() as? [String] ?? [])
                 }
                 if newApp.is32bitEmulator {
                     tempArm32EmuApps.append(model)
@@ -50,6 +53,12 @@ struct LiveContainerSwiftUIApp : SwiftUI.App {
             }
             if LCPath.lcGroupDocPath != LCPath.docPath {
                 try fm.createDirectory(at: LCPath.lcGroupBundlePath, withIntermediateDirectories: true)
+                // Only the primary zContainer installs shared apps, so only it
+                // cleans up after them: a secondary one starting while the
+                // primary replaces a shared app would delete its new copy.
+                if DataManager.shared.model.multiLCStatus != 2 {
+                    AppBundleSwap.recover(in: LCPath.lcGroupBundlePath)
+                }
                 let appDirsShared = try fm.contentsOfDirectory(atPath: LCPath.lcGroupBundlePath.path)
                 for appDir in appDirsShared {
                     if !appDir.hasSuffix(".app") {
@@ -63,7 +72,7 @@ struct LiveContainerSwiftUIApp : SwiftUI.App {
                         tempHiddenApps.append(model)
                     } else {
                         tempApps.append(model)
-                        tempURLSchemes?.formUnion(newApp.urlSchemes() as! [String])
+                        tempURLSchemes?.formUnion(newApp.urlSchemes() as? [String] ?? [])
                     }
                     if newApp.is32bitEmulator {
                         tempArm32EmuApps.append(model)
@@ -143,4 +152,20 @@ struct LiveContainerSwiftUIApp : SwiftUI.App {
         }
     }
     
+
+    /// Moves the settings apps read as they run, saved in zContainer's own
+    /// defaults before 1.0 (5), into the app group, where apps in multitasking
+    /// windows, which run in the LiveProcess extension, can read them too.
+    private static func moveGuestSettingsToAppGroup() {
+        let group = LCUtils.appGroupUserDefault
+        for key in ["LCSwitchAppWithoutAsking", "LCOpenWebPageWithoutAsking"] {
+            guard let value = UserDefaults.standard.object(forKey: key) else {
+                continue
+            }
+            if group.object(forKey: key) == nil {
+                group.set(value, forKey: key)
+            }
+            UserDefaults.standard.removeObject(forKey: key)
+        }
+    }
 }

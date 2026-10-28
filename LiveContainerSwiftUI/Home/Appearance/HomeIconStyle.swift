@@ -24,11 +24,11 @@ enum HomeIconStyle: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .automatic:
-            "zc.settings.homeScreen.iconStyle.automatic".loc
+            "zc.settings.appearance.iconStyle.automatic".loc
         case .light:
-            "zc.settings.homeScreen.iconStyle.light".loc
+            "zc.settings.appearance.iconStyle.light".loc
         case .dark:
-            "zc.settings.homeScreen.iconStyle.dark".loc
+            "zc.settings.appearance.iconStyle.dark".loc
         }
     }
 
