@@ -190,6 +190,13 @@ def main_app_plist(app):
     # AppIcon83.5x83.5 is the iPad Pro and other all-screen iPads' Home Screen size.
     info['CFBundleIcons~ipad'] = {'CFBundlePrimaryIcon': {'CFBundleIconFiles': ['AppIcon60x60', 'AppIcon76x76', 'AppIcon83.5x83.5']}}
     info['CFBundleIconFile'] = 'AppIcon'
+    names = alternate_icon_names()
+    if names:
+        info['CFBundleIcons']['CFBundleAlternateIcons'] = {
+            name: {'CFBundleIconFiles': [f'AppIcon{name}60x60']} for name in names}
+        info['CFBundleIcons~ipad']['CFBundleAlternateIcons'] = {
+            name: {'CFBundleIconFiles': [f'AppIcon{name}60x60', f'AppIcon{name}76x76', f'AppIcon{name}83.5x83.5']}
+            for name in names}
     # What the Xcode target's Run Script adds: "$CONFIGURATION ($BRANCH/$COMMIT)".
     info['LCVersionInfo'] = ENV.get('ZC_VERSION_INFO') or 'Release (unknown/unknown)'
     if ENV.get('ZC_DISPLAY_NAME'):
@@ -332,6 +339,31 @@ def compile_string_catalog(app, path):
         note(f'untranslated strings filled in from {source}: {", ".join(fallbacks)}')
 
 
+# The icons Settings > Home Screen offers instead of the app icon
+
+ALTERNATE_ICONS = os.path.join(REPO, 'Resources', 'AppIcons')
+
+
+def alternate_icon_names():
+    """The name iOS switches to for each icon Scripts/zc/art/render-icon.sh
+    rendered into Resources/AppIcons, like OG for AppIconOG60x60@2x.png."""
+    if not os.path.isdir(ALTERNATE_ICONS):
+        return []
+    found = (re.fullmatch(r'AppIcon(\w+)60x60@2x\.png', f) for f in os.listdir(ALTERNATE_ICONS))
+    return sorted({m.group(1) for m in found if m})
+
+
+def copy_alternate_icons(app):
+    """Copies the icons into the app's root, where iOS looks for the files
+    CFBundleAlternateIcons names."""
+    if not os.path.isdir(ALTERNATE_ICONS):
+        return
+    files = sorted(f for f in os.listdir(ALTERNATE_ICONS) if f.endswith('.png'))
+    for name in files:
+        shutil.copyfile(os.path.join(ALTERNATE_ICONS, name), os.path.join(app, name))
+    note(f'Resources/AppIcons: {len(files)} alternate icon PNGs ({", ".join(alternate_icon_names())})')
+
+
 # Asset catalog (no actool on Linux)
 
 def magick(*args):
@@ -420,6 +452,7 @@ def copy_resources(app):
                 for f in files:
                     if not os.path.exists(os.path.join(dst_dir, f)):
                         shutil.copyfile(os.path.join(root, f), os.path.join(dst_dir, f))
+    copy_alternate_icons(app)
 
 
 def check_no_variables(app):

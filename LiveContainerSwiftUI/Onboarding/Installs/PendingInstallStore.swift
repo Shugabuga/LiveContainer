@@ -8,7 +8,10 @@ import Foundation
 /// Where PendingInstallQueue keeps the apps on their way in, so they outlast
 /// zContainer closing, as it does when Zeus signs and installs it again or
 /// iOS ends it while the person is in Zeus. Zeus counts an app as sent once
-/// its one-time link has been read, so an IPA lost here is lost for good.
+/// its one-time link has been read, so an IPA lost here is lost for good. An
+/// app Zeus left in the app group the two apps share is the exception: its
+/// request stays there until zContainer answers it or it expires, so it's
+/// read again from there.
 ///
 /// Application Support/ReceivedApps, which updates keep and backups leave
 /// out, holds a folder for each app's IPA, named by the app's id, and a
@@ -65,8 +68,10 @@ enum PendingInstallStore {
 
     /// The apps that were still on their way in when zContainer last closed,
     /// as long as their IPAs can still be found. A link whose download
-    /// hadn't finished comes back downloading. Folders no app refers to any
-    /// more are deleted.
+    /// hadn't finished comes back downloading. An app from Zeus comes back
+    /// only while its request can still be read from the app group, and is
+    /// copied again unless its copy had been checked. Folders no app refers
+    /// to any more are deleted.
     static func restore() -> [PendingInstall] {
         let records = (try? Data(contentsOf: manifest)).flatMap {
             try? JSONDecoder().decode([PendingInstallRecord].self, from: $0)
@@ -134,10 +139,20 @@ enum PendingInstallStore {
                 state: item.state,
                 bookmark: bookmark
             )
+        case .zeusRequest(let requestID):
+            return PendingInstallRecord(
+                id: item.id,
+                kind: .zeusRequest,
+                name: item.placeholderName,
+                state: item.state,
+                fileName: item.file?.lastPathComponent,
+                zeusRequestID: requestID
+            )
         }
     }
 
-    /// The app a record describes, or nil when its IPA can't be found.
+    /// The app a record describes, or nil when its IPA can't be found, or
+    /// for an app from Zeus, when its request can't be read any more.
     private static func item(from record: PendingInstallRecord) -> PendingInstall? {
         guard !record.state.isFinished else {
             return nil
@@ -150,8 +165,7 @@ enum PendingInstallStore {
             // DownloadHelper moves the IPA in only once all of it has come,
             // so one that's there is whole, even when zContainer closed
             // before noting that it had downloaded.
-            let fileName = record.fileName ?? PendingInstallSource.downloadName(for: url)
-            let file = folder(for: record.id).appending(path: fileName, directoryHint: .notDirectory)
+            let file = file(for: record, otherwise: PendingInstallSource.downloadName(for: url))
             let isDownloaded = FileManager.default.fileExists(atPath: file.path)
             return PendingInstall(id: record.id, source: .link(url), name: record.name, downloadedFile: isDownloaded ? file : nil)
         case .pickedFile:
@@ -170,6 +184,33 @@ enum PendingInstallStore {
                 return nil
             }
             return PendingInstall(id: record.id, source: .openedFile(file), name: record.name, bookmark: bookmark)
+        case .zeusRequest:
+            // Read again, like any request, so one that expired or that Zeus
+            // took back doesn't come back.
+            guard let requestID = record.zeusRequestID,
+                  let request = try? ZeusGroup.readRequest(requestID, fromLink: true),
+                  request.kind == .app else {
+                return nil
+            }
+            // The copy takes its final name before it's checked, so only one
+            // noted as checked counts; any other is copied again.
+            let file = file(for: record, otherwise: ZeusGroupLayout.appPayloadFileName)
+            let isCopied = record.state != .downloading && FileManager.default.fileExists(atPath: file.path)
+            return PendingInstall(
+                id: record.id,
+                source: .zeusRequest(requestID),
+                name: record.name,
+                downloadedFile: isCopied ? file : nil,
+                zeusRequest: request
+            )
         }
+    }
+
+    /// Where a record's IPA is in its app's folder: under the name the record
+    /// gives, when that names a file right inside the folder, or else under
+    /// `fallback`.
+    private static func file(for record: PendingInstallRecord, otherwise fallback: String) -> URL {
+        let name = record.fileName.flatMap { PendingInstallSource.isFileName($0) ? $0 : nil } ?? fallback
+        return folder(for: record.id).appending(path: name, directoryHint: .notDirectory)
     }
 }

@@ -11,7 +11,11 @@ struct MultitaskAppInfo {
     var displayName: String
     var dataUUID: String
     var bundleId: String
-    
+    // new for every launch, so a window that goes away late changes only its own entry, never the one a newer launch of the same container made
+    let launchID = UUID()
+    // the window's session once iOS disconnected it; iOS can bring a disconnected window back, so the entry stays until that session is gone
+    var disconnectedSessionID: String? = nil
+
     init(displayName: String, dataUUID: String, bundleId: String) {
         self.displayName = displayName
         self.dataUUID = dataUUID
@@ -25,20 +29,33 @@ struct MultitaskAppInfo {
     static var appDict: [String: MultitaskAppInfo] = [:]
     
     @objc class func openAppWindow(displayName: String, dataUUID: String, bundleId: String, pidCallback: ((NSNumber, Error?) -> Void)?) {
-        DataManager.shared.model.enableMultipleWindow = true
         DataManager.shared.model.pidCallback = pidCallback
         appDict[dataUUID] = MultitaskAppInfo(displayName: displayName, dataUUID: dataUUID, bundleId: bundleId)
         openWindow(id: "appView", value: dataUUID)
     }
     
     @objc class func openExistingAppWindow(dataUUID: String) -> Bool {
-        for a in appDict {
-            if a.value.dataUUID == dataUUID {
-                openWindow(id: "appView", value: a.key)
-                return true
-            }
+        guard let info = appDict[dataUUID] else { return false }
+        // the window was closed, so the app launches again the full way: signing, JIT and the launch date
+        if let sessionID = info.disconnectedSessionID,
+           !UIApplication.shared.openSessions.contains(where: { $0.persistentIdentifier == sessionID }) {
+            appDict[dataUUID] = nil
+            return false
         }
-        return false
+        openWindow(id: "appView", value: dataUUID)
+        return true
+    }
+
+    // records the session of a disconnected window on the entry of that window's launch only
+    class func recordDisconnectedSession(_ sessionID: String, for info: MultitaskAppInfo) {
+        guard appDict[info.dataUUID]?.launchID == info.launchID else { return }
+        appDict[info.dataUUID]?.disconnectedSessionID = sessionID
+    }
+
+    // removes the entry of a closing window's launch only, so a newer launch of the same container keeps its own
+    class func removeAppInfo(_ info: MultitaskAppInfo) {
+        guard appDict[info.dataUUID]?.launchID == info.launchID else { return }
+        appDict[info.dataUUID] = nil
     }
 }
 
@@ -140,81 +157,87 @@ struct MultitaskAppWindow: View {
     
     var body: some View {
         let isVirtualWindowMode = multitaskMode == .virtualWindow
-        if show, let appInfo {
-            GeometryReader { geometry in
-                AppSceneViewSwiftUI(show: $show, bundleId: appInfo.bundleId, dataUUID: appInfo.dataUUID, initSize: geometry.size,
-                                    onAppInitialize: { pid, error in
-                    DispatchQueue.main.async {
-                        if error == nil {
-                            self.pid = Int(pid)
-                        } else {
-                            self.errorMessage = error?.localizedDescription
-                        }
-                        DataManager.shared.model.pidCallback?(NSNumber(value: pid), error)
-                        DataManager.shared.model.pidCallback = nil
-                    }
-                })
-                .background(.black)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-            .ignoresSafeArea(.all, edges: .all)
-            .navigationTitle(Text("\(appInfo.displayName) - \(String(pid))"))
-            .onReceive(pub) { out in
-                if let scene1 = sceneDelegate.window?.windowScene, let scene2 = out.object as? UIWindowScene, scene1 == scene2 {
-                    show = false
-                }
-            }
-            
-        } else if skipTerminatedScreen && isVirtualWindowMode, appInfo != nil {
-            Color.clear
-                .ignoresSafeArea(.all, edges: .all)
-                .onAppear {
-                    guard !didRequestManualClose else { return }
-                    if let appInfo {
-                        MultitaskRelaunchManager.scheduleRelaunchIfNeeded(bundleId: appInfo.bundleId, dataUUID: appInfo.dataUUID, isManualTermination: false)
-                    }
-                    if !hasScheduledAutoClose {
-                        hasScheduledAutoClose = true
+        Group {
+            if show, let appInfo {
+                GeometryReader { geometry in
+                    AppSceneViewSwiftUI(show: $show, bundleId: appInfo.bundleId, dataUUID: appInfo.dataUUID, initSize: geometry.size,
+                                        onAppInitialize: { pid, error in
                         DispatchQueue.main.async {
-                            requestSceneDestruction(isManual: false)
+                            if error == nil {
+                                self.pid = Int(pid)
+                            } else {
+                                self.errorMessage = error?.localizedDescription
+                            }
+                            DataManager.shared.model.pidCallback?(NSNumber(value: pid), error)
+                            DataManager.shared.model.pidCallback = nil
+                        }
+                    })
+                    .background(.black)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+                .ignoresSafeArea(.all, edges: .all)
+                .navigationTitle(Text("\(appInfo.displayName) - \(String(pid))"))
+                
+            } else if skipTerminatedScreen && isVirtualWindowMode, appInfo != nil {
+                Color.clear
+                    .ignoresSafeArea(.all, edges: .all)
+                    .onAppear {
+                        guard !didRequestManualClose else { return }
+                        if let appInfo {
+                            MultitaskRelaunchManager.scheduleRelaunchIfNeeded(bundleId: appInfo.bundleId, dataUUID: appInfo.dataUUID, isManualTermination: false)
+                        }
+                        if !hasScheduledAutoClose {
+                            hasScheduledAutoClose = true
+                            DispatchQueue.main.async {
+                                requestSceneDestruction(isManual: false)
+                            }
                         }
                     }
-                }
-        } else {
-            VStack {
-                Text("lc.multitaskAppWindow.appTerminated".loc)
-                    .font(.largeTitle)
-                if let errorMessage {
-                    Text(errorMessage)
-                        .font(.system(.body, design: .monospaced))
-                    Button("lc.common.copy".loc) {
-                        UIPasteboard.general.string = errorMessage
+            } else {
+                VStack {
+                    Text("lc.multitaskAppWindow.appTerminated".loc)
+                        .font(.largeTitle)
+                    if let errorMessage {
+                        Text(errorMessage)
+                            .font(.system(.body, design: .monospaced))
+                        Button("lc.common.copy".loc) {
+                            UIPasteboard.general.string = errorMessage
+                            requestSceneDestruction(isManual: true)
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                    Button("lc.common.close".loc) {
                         requestSceneDestruction(isManual: true)
                     }
                     .buttonStyle(.bordered)
-                }
-                Button("lc.common.close".loc) {
-                    requestSceneDestruction(isManual: true)
-                }
-                .buttonStyle(.bordered)
-            }.onAppear {
-                // appInfo == nil indicates this is the first scene opened in this launch. We don't want this so we open lc's main scene and close this view
-                // however lc's main view may already be starting in another scene so we wait a bit before opening the main view
-                // also we have to keep the view open for a little bit otherwise lc will be killed by iOS
-                if appInfo == nil {
-                    if DataManager.shared.model.mainWindowOpened {
-                        requestSceneDestruction()
-                    } else {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            if !DataManager.shared.model.mainWindowOpened {
-                                openWindow(id: "Main")
-                            }
+                }.onAppear {
+                    // appInfo == nil indicates this is the first scene opened in this launch. We don't want this so we open lc's main scene and close this view
+                    // however lc's main view may already be starting in another scene so we wait a bit before opening the main view
+                    // also we have to keep the view open for a little bit otherwise lc will be killed by iOS
+                    if appInfo == nil {
+                        if DataManager.shared.model.mainWindowOpened {
+                            requestSceneDestruction()
+                        } else {
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                requestSceneDestruction()
+                                if !DataManager.shared.model.mainWindowOpened {
+                                    openWindow(id: "Main")
+                                }
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                    requestSceneDestruction()
+                                }
                             }
                         }
                     }
                 }
+            }
+        }
+        .onReceive(pub) { out in
+            if let scene1 = sceneDelegate.window?.windowScene, let scene2 = out.object as? UIWindowScene, scene1 == scene2 {
+                // recorded on every screen, so a later launch knows this window is gone once its session is
+                if let appInfo {
+                    MultitaskWindowManager.recordDisconnectedSession(scene2.session.persistentIdentifier, for: appInfo)
+                }
+                show = false
             }
         }
     }
@@ -224,6 +247,8 @@ struct MultitaskAppWindow: View {
             didRequestManualClose = true
         }
         guard let session = sceneDelegate.window?.windowScene?.session else { return }
+        // this window is going away, so the next launch takes the full way
+        if let appInfo { MultitaskWindowManager.removeAppInfo(appInfo) }
         UIApplication.shared.requestSceneSessionDestruction(session, options: nil) { error in
             print(error)
         }

@@ -38,6 +38,12 @@ struct PSTextField: View {
                 }
                 .multilineTextAlignment(.trailing)
         }
+        // What's typed is kept without Return too, when the page goes away.
+        .onDisappear {
+            if val != (delegate.get(key: key) as? String ?? defaultValue ?? "") {
+                delegate.set(key: key, val: val)
+            }
+        }
     }
     
 }
@@ -237,17 +243,14 @@ struct AppPreferencePageView : View {
     let preferencePlistURL : URL
     
     @State var children : [AnyView] = []
-    @State var errorInfo : String?
 
     init(preferencePlistURL : URL, bundleId : String, containerURL : URL, settingsBundle: Bundle) {
         var children : [AnyView] = []
         self.preferencePlistURL = preferencePlistURL
         guard let dict = NSMutableDictionary(contentsOf: preferencePlistURL) else {
-            errorInfo = "Failed to load preference."
             return
         }
         guard let items = dict["PreferenceSpecifiers"] as? [[String:Any]] else {
-            errorInfo = "Failed to load preference."
             return
         }
         let suiteName = dict["ApplicationGroupContainerIdentifier"] as? String ?? bundleId

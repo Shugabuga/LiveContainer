@@ -9,6 +9,8 @@ import Foundation
 struct HomeLaunchZoom: Identifiable, Equatable {
     /// The icon the app opens from.
     let item: HomeItem
+    /// The app opening.
+    let app: LCAppModel
     /// The icon's frame on screen, where the zoom starts.
     let iconFrame: CGRect
     /// Tells this zoom from an earlier one of the same app.

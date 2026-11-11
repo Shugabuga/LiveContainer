@@ -38,7 +38,7 @@ target LiveContainer type=com.apple.product-type.application
   phase PBXResourcesBuildPhase  files=[]
   phase PBXCopyFilesBuildPhase Embed Foundation Extensions dst=13: files=['ShareExtension.appex[RemoveHeadersOnCopy]', 'LaunchAppExtension.appex[RemoveHeadersOnCopy]', 'LiveProcess.appex[RemoveHeadersOnCopy]']
   phase PBXCopyFilesBuildPhase Embed Frameworks dst=10: files=['TweakLoader.dylib[CodeSignOnCopy]', 'TestJITLess.dylib', 'OpenSSL.xcframework[CodeSignOnCopy,RemoveHeadersOnCopy]', 'LiveContainerShared.framework[CodeSignOnCopy,RemoveHeadersOnCopy]', 'LiveContainerSwiftUI.framework[CodeSignOnCopy,RemoveHeadersOnCopy]', 'ZSign.dylib[CodeSignOnCopy]']
-  phase PBXShellScriptBuildPhase Run Script script='# Type a script or drag a script file from your workspace to insert its path.\nINFO_PLIST="${TARGET_BUILD_DIR}"/"${INFOPLIST_PATH}"\n\n# Get current Git branch and commit hash\nCONFIG_BRANCH=$(git rev-parse --abbrev-ref HEAD)\nCONFIG_COMMIT=$(git log -1 --format=%h)\n\n# Combine values into a version info string\nLCVersionInfo="$CONFIGURATION ($CONFIG_BRANCH/$CONFIG_COMMIT)"\n\n/usr/libexec/PlistBuddy -c "Add :LCVersionInfo string $LCVersionInfo" "${INFO_PLIST}"\ncp -n -r "$SRCROOT"/Resources/*.lproj "$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH"\n\n# License texts the About page shows (LCLicense.swift), as Scripts/zc/assemble.py copies them\nLICENSES="$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Licenses"\nmkdir -p "$LICENSES"\ncp "$SRCROOT"/LICENSE "$LICENSES"/zContainer.txt\ncp "$SRCROOT"/OpenSSL/LICENSE.txt "$LICENSES"/OpenSSL.txt\ncp "$SRCROOT"/Resources/Frameworks/CydiaSubstrate.framework/LICENSE "$LICENSES"/ElleKit.txt\ncp "$SRCROOT"/litehook/LICENSE "$LICENSES"/litehook.txt\ncp "$SRCROOT"/Resources/Licenses/*.txt "$LICENSES"\necho 1\n' files=[]
+  phase PBXShellScriptBuildPhase Run Script script='# Type a script or drag a script file from your workspace to insert its path.\nINFO_PLIST="${TARGET_BUILD_DIR}"/"${INFOPLIST_PATH}"\n\n# Get current Git branch and commit hash\nCONFIG_BRANCH=$(git rev-parse --abbrev-ref HEAD)\nCONFIG_COMMIT=$(git log -1 --format=%h)\n\n# Combine values into a version info string\nLCVersionInfo="$CONFIGURATION ($CONFIG_BRANCH/$CONFIG_COMMIT)"\n\n/usr/libexec/PlistBuddy -c "Add :LCVersionInfo string $LCVersionInfo" "${INFO_PLIST}"\ncp -n -r "$SRCROOT"/Resources/*.lproj "$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH"\n\n# License texts the About page shows (LCLicense.swift), as Scripts/zc/assemble.py copies them\nLICENSES="$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Licenses"\nmkdir -p "$LICENSES"\ncp "$SRCROOT"/LICENSE "$LICENSES"/zContainer.txt\ncp "$SRCROOT"/OpenSSL/LICENSE.txt "$LICENSES"/OpenSSL.txt\ncp "$SRCROOT"/Resources/Frameworks/CydiaSubstrate.framework/LICENSE "$LICENSES"/ElleKit.txt\ncp "$SRCROOT"/litehook/LICENSE "$LICENSES"/litehook.txt\ncp "$SRCROOT"/Resources/Licenses/*.txt "$LICENSES"\n\n# The icons Settings > Appearance offers instead of zContainer\'s own, as Scripts/zc/assemble.py adds them\npython3 "$SRCROOT"/Scripts/zc/alternate_icons.py "$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH" "${INFO_PLIST}"\necho 1\n' files=[]
   phase PBXCopyFilesBuildPhase Embed ExtensionKit Extensions dst=16:$(EXTENSIONS_FOLDER_PATH) files=[]
   ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon
   ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor
@@ -47,7 +47,7 @@ target LiveContainer type=com.apple.product-type.application
   CODE_SIGN_ENTITLEMENTS = entitlements.xml
   CODE_SIGN_IDENTITY = $(inherited)
   CODE_SIGN_STYLE = Automatic
-  CURRENT_PROJECT_VERSION = 1
+  CURRENT_PROJECT_VERSION = 7
   DEVELOPMENT_TEAM = $(DEVELOPMENT_TEAM)
   FRAMEWORK_SEARCH_PATHS = $(inherited) $(PROJECT_DIR)/Resources/Frameworks $(PROJECT_DIR)/OpenSSL/Frameworks/iphoneos
   GENERATE_INFOPLIST_FILE = NO
@@ -77,7 +77,7 @@ target LiveContainerSwiftUI type=com.apple.product-type.framework
   phase PBXResourcesBuildPhase  files=[]
   BUILD_LIBRARY_FOR_DISTRIBUTION = NO
   CODE_SIGN_STYLE = Automatic
-  CURRENT_PROJECT_VERSION = 1
+  CURRENT_PROJECT_VERSION = 7
   DEFINES_MODULE = YES
   DEVELOPMENT_TEAM = 
   DYLIB_COMPATIBILITY_VERSION = 1
@@ -87,9 +87,9 @@ target LiveContainerSwiftUI type=com.apple.product-type.framework
   GENERATE_INFOPLIST_FILE = YES
   INFOPLIST_KEY_NSHumanReadableCopyright = 
   INSTALL_PATH = $(LOCAL_LIBRARY_DIR)/Frameworks
-  IPHONEOS_DEPLOYMENT_TARGET = 15.0
+  IPHONEOS_DEPLOYMENT_TARGET = 17.5
   LD_RUNPATH_SEARCH_PATHS = $(inherited) @executable_path/Frameworks @loader_path/Frameworks
-  MARKETING_VERSION = 1.0
+  MARKETING_VERSION = 1.1
   MODULE_VERIFIER_SUPPORTED_LANGUAGES = objective-c objective-c++
   MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = gnu17 gnu++20
   OTHER_CFLAGS = -DCONFIG_TYPE=\"$(CONFIG_TYPE)\" -DCONFIG_BRANCH=\"$(CONFIG_BRANCH)\" -DCONFIG_COMMIT=\"$(CONFIG_COMMIT)\"
@@ -167,7 +167,7 @@ target LiveProcess type=com.apple.product-type.app-extension
   CODE_SIGN_ENTITLEMENTS = LiveProcess/LiveProcess.entitlements
   CODE_SIGN_IDENTITY = $(inherited)
   CODE_SIGN_STYLE = Automatic
-  CURRENT_PROJECT_VERSION = 1
+  CURRENT_PROJECT_VERSION = 7
   DEAD_CODE_STRIPPING = NO
   DEVELOPMENT_TEAM = $(DEVELOPMENT_TEAM)
   ENABLE_USER_SCRIPT_SANDBOXING = YES
@@ -211,7 +211,7 @@ target LiveProcess type=com.apple.product-type.app-extension
   INFOPLIST_KEY_UIMainStoryboardFile = Main
   IPHONEOS_DEPLOYMENT_TARGET = 15.0
   LD_RUNPATH_SEARCH_PATHS = $(inherited) @executable_path/Frameworks @executable_path/../../Frameworks
-  MARKETING_VERSION = 1.0
+  MARKETING_VERSION = 1.1
   PRODUCT_BUNDLE_IDENTIFIER = $(PRODUCT_BUNDLE_IDENTIFIER)
   PRODUCT_NAME = $(TARGET_NAME)
   PROVISIONING_PROFILE_SPECIFIER = 
@@ -228,7 +228,7 @@ target LiveContainerShared type=com.apple.product-type.framework
   CLANG_ENABLE_MODULES = YES
   CODE_SIGN_IDENTITY = $(inherited)
   CODE_SIGN_STYLE = Automatic
-  CURRENT_PROJECT_VERSION = 1
+  CURRENT_PROJECT_VERSION = 7
   DEFINES_MODULE = YES
   DEVELOPMENT_TEAM = 
   DYLIB_COMPATIBILITY_VERSION = 1
@@ -242,7 +242,7 @@ target LiveContainerShared type=com.apple.product-type.framework
   INSTALL_PATH = $(LOCAL_LIBRARY_DIR)/Frameworks
   IPHONEOS_DEPLOYMENT_TARGET = 15.0
   LD_RUNPATH_SEARCH_PATHS = $(inherited) @executable_path/Frameworks @loader_path/Frameworks
-  MARKETING_VERSION = 1.0
+  MARKETING_VERSION = 1.1
   MODULE_VERIFIER_SUPPORTED_LANGUAGES = objective-c objective-c++
   MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = gnu17 gnu++20
   OTHER_CFLAGS = -fcommon
@@ -264,7 +264,7 @@ target LaunchAppExtension type=com.apple.product-type.extensionkit-extension
   CODE_SIGN_ENTITLEMENTS = LaunchAppExtension/LaunchAppExtension.entitlements
   CODE_SIGN_IDENTITY = $(inherited)
   CODE_SIGN_STYLE = Automatic
-  CURRENT_PROJECT_VERSION = 1
+  CURRENT_PROJECT_VERSION = 7
   DEVELOPMENT_TEAM = $(DEVELOPMENT_TEAM)
   ENABLE_USER_SCRIPT_SANDBOXING = YES
   GENERATE_INFOPLIST_FILE = YES
@@ -273,7 +273,7 @@ target LaunchAppExtension type=com.apple.product-type.extensionkit-extension
   INFOPLIST_KEY_NSHumanReadableCopyright = 
   IPHONEOS_DEPLOYMENT_TARGET = 16.0
   LD_RUNPATH_SEARCH_PATHS = $(inherited) @executable_path/Frameworks @executable_path/../../Frameworks
-  MARKETING_VERSION = 1.0
+  MARKETING_VERSION = 1.1
   OTHER_LDFLAGS = 
   PRODUCT_BUNDLE_IDENTIFIER = $(PRODUCT_BUNDLE_IDENTIFIER)
   PRODUCT_NAME = $(TARGET_NAME)
@@ -295,7 +295,7 @@ target ShareExtension type=com.apple.product-type.app-extension
   CODE_SIGN_ENTITLEMENTS = ShareExtension/ShareExtension.entitlements
   CODE_SIGN_IDENTITY = $(inherited)
   CODE_SIGN_STYLE = Automatic
-  CURRENT_PROJECT_VERSION = 1
+  CURRENT_PROJECT_VERSION = 7
   DEVELOPMENT_TEAM = $(DEVELOPMENT_TEAM)
   ENABLE_USER_SCRIPT_SANDBOXING = YES
   GENERATE_INFOPLIST_FILE = NO
@@ -304,7 +304,7 @@ target ShareExtension type=com.apple.product-type.app-extension
   INFOPLIST_KEY_NSHumanReadableCopyright = 
   IPHONEOS_DEPLOYMENT_TARGET = 16.0
   LD_RUNPATH_SEARCH_PATHS = $(inherited) @executable_path/Frameworks @executable_path/../../Frameworks
-  MARKETING_VERSION = 1.0
+  MARKETING_VERSION = 1.1
   OTHER_LDFLAGS = 
   PRODUCT_BUNDLE_IDENTIFIER = $(PRODUCT_BUNDLE_IDENTIFIER)
   PRODUCT_NAME = $(TARGET_NAME)
@@ -336,5 +336,5 @@ synced folder LiveProcess
 synced folder Tweaks
   PBXFileSystemSynchronizedBuildFileExceptionSet LiveContainerShared: ['Tweaks.h']
 synced folder MultitaskSupport
-  PBXFileSystemSynchronizedBuildFileExceptionSet LiveContainerSwiftUI: ['AppSceneViewController.h', 'AppSceneViewController.m', 'DecoratedAppSceneViewController.h', 'DecoratedAppSceneViewController.m', 'LCStatusBarManager.h', 'LCStatusBarManager.m', 'MultitaskAppWindow.swift', 'MultitaskDockView.swift', 'MultitaskManager.swift', 'PiPManager.h', 'PiPManager.m', 'ResizeHandleView.h', 'ResizeHandleView.m', 'UIKitHooks.m', 'UIKitPrivate+MultitaskSupport.h', 'VirtualWindowsHostView.h', 'VirtualWindowsHostView.m']
+  PBXFileSystemSynchronizedBuildFileExceptionSet LiveContainerSwiftUI: ['AppSceneViewController.h', 'AppSceneViewController.m', 'DecoratedAppSceneViewController.h', 'DecoratedAppSceneViewController.m', 'LCSplitDividerView.h', 'LCSplitDividerView.m', 'LCStatusBarManager.h', 'LCStatusBarManager.m', 'LCWindowSnapManager.h', 'LCWindowSnapManager.m', 'MultitaskAppWindow.swift', 'MultitaskDockView.swift', 'MultitaskManager.swift', 'PiPManager.h', 'PiPManager.m', 'ResizeHandleView.h', 'ResizeHandleView.m', 'UIKitHooks.m', 'UIKitPrivate+MultitaskSupport.h', 'VirtualWindowsHostView.h', 'VirtualWindowsHostView.m']
   PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet 17413FB02D9C0BAE00F3F928: ['LCStatusBarManager.m', 'VirtualWindowsHostView.m']

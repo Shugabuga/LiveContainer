@@ -17,8 +17,8 @@
 @interface LCZeusCertificate : NSObject
 
 // Stores the certificate from ZeusCertificate.plist when it is new: its serial
-// number differs from the one stored last, or no certificate is stored. Returns
-// whether it stored one. Does nothing when the app holds no such file.
+// number differs from the one recorded last, or no certificate is stored.
+// Returns whether it stored one. Does nothing when the app holds no such file.
 + (BOOL)importIfNeeded;
 
 // Stores the certificate from ZeusCertificate.plist even when it was stored
@@ -28,22 +28,34 @@
 // Whether the app holds a ZeusCertificate.plist.
 + (BOOL)isBundled;
 
+// The serial number ZeusCertificate.plist gives, or nil when the app holds no
+// such file or the file gives none.
++ (NSString *)bundledSerialNumber;
+
 // A build of this fork briefly kept the shared defaults in the standard ones when
 // the app had no app group. Moves a certificate it stored there to the shared
 // defaults, unless one is stored there already, and leaves no copy behind.
 + (void)moveCertificateOutOfStandardDefaults;
+
+// The keys of the stored certificate and what is known about it, which only make
+// sense together.
++ (NSArray<NSString *> *)certificateKeys;
 
 @end
 
 // Keys in the shared defaults (NSUserDefaults.lcSharedDefaults), next to
 // LCCertificateData, LCCertificatePassword and LCCertificateUpdateDate.
 
-// BOOL: the stored certificate is the one Zeus put inside the app. Importing
-// or removing a certificate by hand clears it.
+// BOOL: the stored certificate is Zeus's, the one it put inside the app or the
+// one it sent through the app group (ZeusCertificateImport.storeFromZeus).
+// Importing or removing a certificate by hand clears it.
 extern NSString * const LCCertificateFromZeusKey;
-// The serial number of the last ZeusCertificate.plist stored. It stays when a
-// certificate is imported by hand, so that one is kept until Zeus brings a new
-// certificate.
+// The serial number of the last ZeusCertificate.plist stored, or set aside for
+// the certificate Zeus sent through the app group
+// (ZeusCertificateImport.storeFromZeus), so it isn't stored or reported again.
+// When the app holds none, the serial number of the last certificate Zeus sent
+// through the app group. It stays when a certificate is imported by hand, so
+// that one is kept until Zeus brings a new certificate.
 extern NSString * const LCZeusCertificateSerialNumberKey;
 extern NSString * const LCZeusCertificateTeamIDKey;
 extern NSString * const LCZeusCertificateExpiresAtKey;

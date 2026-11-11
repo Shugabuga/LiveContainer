@@ -16,14 +16,13 @@
 
 @interface AppSceneViewController()
 @property int resizeDebounceToken;
-@property CFTimeInterval lastResizeRequestTime;
-@property CGPoint normalizedOrigin;
 @property bool isNativeWindow;
 @property NSUUID* identifier;
 @end
 
 @interface AppSceneViewController()
-@property(nonatomic) UIWindowScene *hostScene;
+@property(nonatomic, weak) UIWindowScene *hostScene;
+@property(nonatomic) NSString *settingsDiffKey;
 @property(nonatomic) NSString *sceneID;
 @property(nonatomic) NSExtension* extension;
 @property(nonatomic) bool isAppTerminationCleanUpCalled;
@@ -102,7 +101,12 @@
     }];
     [_extension beginExtensionRequestWithInputItems:@[item] completion:^(NSUUID *identifier) {
         if(identifier) {
-            [MultitaskManager registerMultitaskContainerWithContainer:self.dataUUID];
+            // The list of containers in use is changed only on the main thread
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if(!self.isAppTerminationCleanUpCalled) {
+                    [MultitaskManager registerMultitaskContainerWithContainer:self.dataUUID];
+                }
+            });
             self.identifier = identifier;
             self.pid = [self.extension pidForRequestIdentifier:self.identifier];
             [delegate appSceneVC:self didInitializeWithError:nil];
@@ -235,7 +239,11 @@
     self.contentView.layer.anchorPoint = CGPointMake(0, 0);
     self.contentView.layer.position = CGPointMake(0, 0);
     
-    [self.view.window.windowScene _registerSettingsDiffActionArray:@[self] forKey:self.sceneID];
+    // Unregister later from the same scene: the view has no window by then. The
+    // legacy scene ID repeats for a container, so the key is this window's own.
+    self.hostScene = self.view.window.windowScene;
+    self.settingsDiffKey = NSUUID.UUID.UUIDString;
+    [self.hostScene _registerSettingsDiffActionArray:@[self] forKey:self.settingsDiffKey];
 }
 
 - (void)terminate {
@@ -323,8 +331,6 @@
     }
     
     if (self.contentView) {
-        BOOL isiOS26 = NO;
-        if(@available(iOS 19.0, *)) { if(@available(iOS 27.0, *)) {} else isiOS26 = YES; }
         // Discard position
         frame.origin = CGPointZero;
         self.contentView.frame = frame;
@@ -389,8 +395,10 @@
 - (void)viewDidMoveToWindow:(UIWindow *)newWindow shouldAppearOrDisappear:(BOOL)appear {
     [super viewDidMoveToWindow:newWindow shouldAppearOrDisappear:appear];
     if(!newWindow) {
-        if(self.sceneID) {
-            [self.view.window.windowScene _unregisterSettingsDiffActionArrayForKey:self.sceneID];
+        if(self.settingsDiffKey) {
+            [self.hostScene _unregisterSettingsDiffActionArrayForKey:self.settingsDiffKey];
+            self.hostScene = nil;
+            self.settingsDiffKey = nil;
         }
         self.delegate = nil;
     }

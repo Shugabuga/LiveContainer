@@ -6,9 +6,13 @@
 import Foundation
 
 /// The tool that enables JIT for apps that need it, which Settings > Advanced
-/// > JIT chooses. The raw values are saved as LCJITEnablerType in the app
-/// group's defaults, so they never change.
+/// > JIT chooses: Zeus unless another was chosen. The raw values are saved as
+/// LCJITEnablerType in the app group's defaults, so they never change.
 enum JITEnablerType: Int, CaseIterable, Identifiable {
+    /// Zeus, which starts zContainer with JIT through the iPhone's own
+    /// services, as it starts its own apps with JIT, with nothing else to
+    /// install.
+    case Zeus = 7
     case SideJITServer = 0
     case StikJIT = 1
     case JITStreamerEBLegacy = 2
@@ -20,9 +24,22 @@ enum JITEnablerType: Int, CaseIterable, Identifiable {
         rawValue
     }
 
+    /// The tool set in Settings, or Zeus when none was chosen.
+    static var current: JITEnablerType {
+        let defaults = LCUtils.appGroupUserDefault
+        guard defaults.object(forKey: storageKey) != nil else {
+            return .Zeus
+        }
+        return JITEnablerType(rawValue: defaults.integer(forKey: storageKey)) ?? .Zeus
+    }
+
+    /// The app group defaults key the choice is saved under.
+    static let storageKey = "LCJITEnablerType"
+
     /// The tool's name.
     var displayName: String {
         switch self {
+        case .Zeus: "Zeus"
         case .StikJIT: "StikDebug"
         case .StikJITLC: "StikDebug (Another zContainer/Multitask)"
         case .StosDebug: "StosDebug"

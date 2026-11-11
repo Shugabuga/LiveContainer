@@ -13,13 +13,13 @@ struct HomeInstallingIcon: View {
     let metrics: HomeMetrics
     /// The download, while there is one.
     @ObservedObject var download: DownloadHelper
-    /// How far unpacking and signing have come, from 0 to 1.
-    let installProgress: Float
+
+    @Environment(AppLaunchCoordinator.self) private var coordinator
 
     var body: some View {
         VStack(spacing: HomeDesign.labelSpacing) {
             RoundedRectangle(cornerRadius: metrics.iconCornerRadius)
-                .fill(Color(white: 0.3))
+                .fill(HomeDesign.iconPlaceholder)
                 .frame(width: metrics.iconSize, height: metrics.iconSize)
                 .overlay {
                     HomeProgressPie(progress: progress, cornerRadius: metrics.iconCornerRadius)
@@ -33,7 +33,7 @@ struct HomeInstallingIcon: View {
     }
 
     private var progress: Double {
-        download.isDownloading ? Double(download.downloadProgress) : Double(installProgress)
+        download.isDownloading ? Double(download.downloadProgress) : Double(coordinator.installProgress)
     }
 
     private var title: String {

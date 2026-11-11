@@ -43,9 +43,9 @@ enum WallpaperFile {
         UIImage(named: isPad ? "DefaultWallpaperPad" : "DefaultWallpaperPhone")?.preparingForDisplay()
     }
 
-    /// Makes a wallpaper from a photo's data, saves it in place of the last
-    /// one, and returns it decoded for drawing.
-    static func save(_ data: Data) throws -> UIImage {
+    /// Makes a wallpaper from a photo's data: the picture decoded for
+    /// drawing, and the JPEG to save it as.
+    static func make(_ data: Data) throws -> (image: UIImage, jpeg: Data) {
         guard let source = CGImageSourceCreateWithData(data as CFData, nil) else {
             throw WallpaperError.unreadable
         }
@@ -61,9 +61,13 @@ enum WallpaperFile {
         guard let jpeg = image.jpegData(compressionQuality: quality) else {
             throw WallpaperError.unreadable
         }
+        return (image.preparingForDisplay() ?? image, jpeg)
+    }
+
+    /// Saves a wallpaper `make` made in place of the last one.
+    static func save(_ jpeg: Data) throws {
         try FileManager.default.createDirectory(at: .applicationSupportDirectory, withIntermediateDirectories: true)
         try jpeg.write(to: url, options: .atomic)
-        return image.preparingForDisplay() ?? image
     }
 
     /// The longest side, in pixels, to make a photo's wallpaper at. On iPhone
@@ -95,11 +99,56 @@ enum WallpaperFile {
         }
         let small = CIImage(cgImage: picture).transformed(by: CGAffineTransform(scaleX: blurScale, y: blurScale))
         let blurred = small.clampedToExtent().applyingGaussianBlur(sigma: blurRadius).cropped(to: small.extent)
-        guard let output = CIContext().createCGImage(blurred, from: blurred.extent) else {
+        guard let output = blurContext.createCGImage(blurred, from: blurred.extent) else {
             return nil
         }
         return UIImage(cgImage: output).preparingForDisplay()
     }
+
+    /// How bright a wallpaper is behind a part of a screen of `screenSize` it
+    /// fills, from 0 for black to 1 for white: the part's average color's
+    /// luminance. Nil when the part is off the picture.
+    static func brightness(of image: UIImage, behind rect: CGRect, onScreenOf screenSize: CGSize) -> Double? {
+        guard let picture = image.cgImage, image.size.width > 0, image.size.height > 0 else {
+            return nil
+        }
+        // Where the part falls on the picture, which fills the screen and is
+        // centered on it, in the picture's pixels.
+        let fill = max(screenSize.width / image.size.width, screenSize.height / image.size.height)
+        let left = (screenSize.width - image.size.width * fill) / 2
+        let top = (screenSize.height - image.size.height * fill) / 2
+        let pixels = Double(picture.width) / image.size.width
+        let part = CGRect(
+            x: (rect.minX - left) / fill * pixels,
+            y: (rect.minY - top) / fill * pixels,
+            width: rect.width / fill * pixels,
+            height: rect.height / fill * pixels
+        ).integral.intersection(CGRect(x: 0, y: 0, width: picture.width, height: picture.height))
+        guard !part.isEmpty, let cropped = picture.cropping(to: part) else {
+            return nil
+        }
+        // Drawn into one pixel, which averages it.
+        var pixel: [UInt8] = [0, 0, 0, 0]
+        let drawn: Bool = pixel.withUnsafeMutableBytes { bytes in
+            guard let context = CGContext(
+                data: bytes.baseAddress, width: 1, height: 1, bitsPerComponent: 8, bytesPerRow: 4,
+                space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            ) else {
+                return false
+            }
+            context.interpolationQuality = .medium
+            context.draw(cropped, in: CGRect(x: 0, y: 0, width: 1, height: 1))
+            return true
+        }
+        guard drawn else {
+            return nil
+        }
+        return (0.2126 * Double(pixel[0]) + 0.7152 * Double(pixel[1]) + 0.0722 * Double(pixel[2])) / 255
+    }
+
+    /// The Core Image context every blurred copy is made in. Making one is
+    /// slow, so it's made once and shared.
+    private static let blurContext = CIContext()
 
     /// How much smaller the blurred copy is made.
     private static let blurScale = 0.25

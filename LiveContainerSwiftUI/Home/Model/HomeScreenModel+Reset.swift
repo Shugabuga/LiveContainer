@@ -15,6 +15,14 @@ extension HomeScreenModel {
             endEditing()
         }
         let fresh = HomeLayout.firstLaunch(apps: sharedModel.apps, customOrder: [])
+        // The folders go, so an open one's state goes too, as Settings may
+        // have been opened from one.
+        openFolderID = nil
+        isFolderShown = false
+        isFolderSettled = false
+        isFolderLetOut = false
+        isEditingFolderName = false
+        folderPage = 0
         layout = fresh
         page = 0
         HomeLayoutStorage.save(fresh)

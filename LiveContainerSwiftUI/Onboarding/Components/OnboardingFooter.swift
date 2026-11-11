@@ -10,7 +10,7 @@ import SwiftUI
 /// like the one that leaves it for later. They stay a comfortable width on
 /// wide screens.
 struct OnboardingFooter<Content: View>: View {
-    @ContentBuilder let content: Content
+    @ViewBuilder let content: Content
 
     var body: some View {
         VStack(spacing: OnboardingDesign.footerSpacing) {

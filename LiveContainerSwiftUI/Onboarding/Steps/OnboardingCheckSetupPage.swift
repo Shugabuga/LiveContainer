@@ -63,7 +63,10 @@ struct OnboardingCheckSetupPage: View {
         .sheet(isPresented: $isShowingDiagnosis) {
             OnboardingDiagnosisSheet()
         }
-        .task {
+        // A certificate stored while the step shows, like the one Zeus
+        // sends, starts over with nothing known about it, so it's checked
+        // as it arrives.
+        .task(id: connection.certificateVersion) {
             await checkIfNeeded()
         }
     }
@@ -91,8 +94,9 @@ struct OnboardingCheckSetupPage: View {
         }
     }
 
-    /// Checks the setup as the step shows, unless it already passed, like
-    /// when coming back to the step.
+    /// Checks the setup as the step shows, and again for each different
+    /// certificate stored while it does, unless it already passed, like when
+    /// coming back to the step.
     private func checkIfNeeded() async {
         guard !hasPassed else { return }
         await connection.checkSetup()

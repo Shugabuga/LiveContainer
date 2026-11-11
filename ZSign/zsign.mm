@@ -43,12 +43,12 @@ int checkCert(NSData *key,
 
     string strPassword = [pass cStringUsingEncoding:NSUTF8StringEncoding];
     
-    ZLog::logs.clear();
+    ZLog::ClearLogs();
 
     __block ZSignAsset zSignAsset;
     
     if (!zSignAsset.InitSimple(strPKeyFileData, (int)[key length], nil, 0, strPassword)) {
-        ZLog::logs.clear();
+        ZLog::ClearLogs();
         completionHandler(2, nil, nil, @"Unable to initialize certificate. Please check your password.");
         return -1;
     }
@@ -155,13 +155,13 @@ int checkCert(NSData *key,
                 organizationalUnitName = @((const char*)ASN1_STRING_get0_data(ouAsn1Str));
             }
             NSLog(@"organizationalUnitName = %@", organizationalUnitName);
-            NSString *fullDateString = [NSString stringWithFormat:@"20%s", expirationDateAsn1->data];
-
-            NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
-            formatter.dateFormat = @"yyyyMMddHHmmss'Z'";
-            formatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
-            formatter.locale = NSLocale.currentLocale;
-            NSDate *expirationDate = [formatter dateFromString:fullDateString];
+            // notAfter is a time in UTC. OpenSSL reads it field by field, so
+            // the calendar and region set on the device can't change the date.
+            NSDate *expirationDate = nil;
+            struct tm expirationTime = {};
+            if (ASN1_TIME_to_tm(expirationDateAsn1, &expirationTime) == 1) {
+                expirationDate = [NSDate dateWithTimeIntervalSince1970:(NSTimeInterval)timegm(&expirationTime)];
+            }
 
             int status, reason;
             if (OCSP_resp_find_status(basic, cert_id, &status, &reason, NULL, NULL, NULL)) {
@@ -189,7 +189,7 @@ int checkCert(NSData *key,
 + (NSProgress*)signMachOPathArr:(NSArray<NSString*>*)machoPathArr bundleId:(NSString *)bundleId cert:(NSData *)key
                             pass:(NSString *)pass completionHandler:(void(^)(BOOL success, NSError *error))completionHandler {
     NSProgress* progress = [NSProgress progressWithTotalUnitCount:(int64_t)machoPathArr.count];
-    ZLog::logs.clear();
+    ZLog::ClearLogs();
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         ZSignAsset* pSignAsset = new ZSignAsset();
         const char* strPKeyFileData = (const char*)[key bytes];
@@ -285,7 +285,7 @@ int checkCert(NSData *key,
 }
 
 + (BOOL)adhocSignMachOAtPath:(NSString *)path bundleId:(NSString*)bundleId entitlementData:(NSData *)entitlementData {
-    ZLog::logs.clear();
+    ZLog::ClearLogs();
     
     ZSignAsset zSignAsset;
     zSignAsset.InitAdhoc([entitlementData bytes], (int)[entitlementData length]);
@@ -312,12 +312,12 @@ int checkCert(NSData *key,
 
     strPassword = [pass cStringUsingEncoding:NSUTF8StringEncoding];
     
-    ZLog::logs.clear();
+    ZLog::ClearLogs();
 
     __block ZSignAsset zSignAsset;
     
     if (!zSignAsset.InitSimple(strPKeyFileData, (int)[cert length], nil, 0, strPassword)) {
-        ZLog::logs.clear();
+        ZLog::ClearLogs();
         return nil;
     }
     NSString* teamId = [NSString stringWithUTF8String:zSignAsset.m_strTeamId.c_str()];

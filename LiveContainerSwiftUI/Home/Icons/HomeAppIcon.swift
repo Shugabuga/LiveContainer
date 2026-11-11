@@ -9,7 +9,8 @@ import SwiftUI
 /// the Home Screen, without its mask and border, clipped to the icon shape
 /// here, in its dark version when the icon style asks for it, with the app's
 /// name under it. While the app is being signed, the icon dims
-/// and fills with iOS's progress pie.
+/// and fills with iOS's progress pie. An app that always opens with JIT
+/// wears a JIT sash across its corner.
 struct HomeAppIcon: View {
     @ObservedObject var app: LCAppModel
     /// Where things go on this screen, for the icon's size.
@@ -24,14 +25,18 @@ struct HomeAppIcon: View {
     var body: some View {
         VStack(spacing: HomeDesign.labelSpacing) {
             // LCAppInfo keeps each icon in memory after drawing it once, and on
-            // disk after the first launch, so reading it here is cheap after
-            // the first time. Only the pages near the one showing build their
-            // icons, which keeps that first time short.
-            Image(uiImage: app.appInfo.homeScreenIconIsDarkIcon(darkModeIcon) ?? UIImage())
-                .resizable()
-                .scaledToFill()
+            // disk after the first launch, so it shows at once after the first
+            // time. That first time it's drawn off the main thread.
+            HomeAppIconImage(app: app, isDark: darkModeIcon)
                 .frame(width: metrics.iconSize, height: metrics.iconSize)
+                // Under the clip, so the icon's corner cuts the sash's ends.
+                .overlay {
+                    if app.uiIsJITNeeded || app.appInfo.is32bit {
+                        HomeJITRibbon(iconSize: metrics.iconSize)
+                    }
+                }
                 .clipShape(.rect(cornerRadius: metrics.iconCornerRadius))
+                .homeIconRim(cornerRadius: metrics.iconCornerRadius)
                 .overlay {
                     if app.isSigningInProgress {
                         HomeProgressPie(progress: app.signProgress, cornerRadius: metrics.iconCornerRadius)

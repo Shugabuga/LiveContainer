@@ -27,7 +27,11 @@ struct ZeusImportCertificateButton: View {
         Button(title, action: pickFile)
             .disabled(isImporting)
             .fileImporter(isPresented: $isPickingFile, allowedContentTypes: [.p12], onCompletion: filePicked)
-            .alert("zc.settings.zeus.passwordTitle".loc, item: $pickedCertificate) { certificate in
+            .alert(
+                "zc.settings.zeus.passwordTitle".loc,
+                isPresented: Binding<Bool>.isPresented(for: $pickedCertificate),
+                presenting: pickedCertificate
+            ) { certificate in
                 SecureField("zc.settings.zeus.password".loc, text: $password)
                 Button("zc.settings.zeus.import".loc) {
                     importCertificate(certificate)
@@ -36,7 +40,11 @@ struct ZeusImportCertificateButton: View {
             } message: { _ in
                 Text("zc.settings.zeus.passwordMessage".loc)
             }
-            .alert("lc.common.error".loc, item: $errorMessage) { _ in
+            .alert(
+                "lc.common.error".loc,
+                isPresented: Binding<Bool>.isPresented(for: $errorMessage),
+                presenting: errorMessage
+            ) { _ in
                 Button("lc.common.ok".loc) { }
             } message: { message in
                 Text(message)

@@ -15,7 +15,6 @@ class LCContainer : ObservableObject, Hashable {
     @Published var storageBookMark: Data?
     @Published var resolvedContainerURL: URL?
     @Published var bookmarkResolved = false
-    var bookmarkResolveContinuation: UnsafeContinuation<(), Never>? = nil
     
     @Published var isolateAppGroup : Bool
 

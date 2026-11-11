@@ -5,8 +5,8 @@
 
 import SwiftUI
 
-/// Zeus's icon as Settings shows it: the pink bolt on its near black tile,
-/// in the shape of an app icon. It grows with the text size; the places that
+/// Zeus's icon as Settings shows it: the white bolt on its pink tile, in the
+/// shape of an app icon. It grows with the text size; the places that
 /// show it stop that at the largest standard size, so large text gets the
 /// room beside it.
 struct ZeusMark: View {
@@ -19,7 +19,7 @@ struct ZeusMark: View {
 
     var body: some View {
         ZeusBoltShape()
-            .fill(SettingsDesign.zeusPink)
+            .fill(.white)
             .frame(width: size * SettingsDesign.boltRatio, height: size * SettingsDesign.boltRatio)
             .frame(width: size, height: size)
             .background(SettingsDesign.zeusTile, in: .rect(cornerRadius: size * SettingsDesign.iconCornerRatio))

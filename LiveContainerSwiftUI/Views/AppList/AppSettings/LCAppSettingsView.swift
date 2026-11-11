@@ -50,6 +50,10 @@ struct LCAppSettingsView: View {
     
     var body: some View {
         Form {
+            // The app's icon, name and what its page is for, as the Settings
+            // app's page for each app starts.
+            SettingsPageHeader(app: model)
+
             Section {
                 HStack {
                     Text("lc.appSettings.bundleId".loc)
@@ -79,7 +83,7 @@ struct LCAppSettingsView: View {
                             Text("lc.appSettings.tweakFolder".loc)
                                 .foregroundColor(.primary)
                             Spacer()
-                            Text(model.uiTweakFolder == nil ? "None" : model.uiTweakFolder!)
+                            Text(model.uiTweakFolder ?? "lc.common.none".loc)
                                 .multilineTextAlignment(.trailing)
                         }
                     }
@@ -109,6 +113,7 @@ struct LCAppSettingsView: View {
                 }
             } header: {
                 Text("lc.common.data".loc)
+                .settingsSectionHeader()
             }
             
             Section {
@@ -116,6 +121,7 @@ struct LCAppSettingsView: View {
                     ForEach(model.uiContainers.indices, id:\.self) { i in
                         NavigationLink {
                             LCContainerView(container: model.uiContainers[i], uiDefaultDataFolder: $model.uiDefaultDataFolder, delegate: self)
+                                .settingsPageMargins()
                         } label: {
                             Text(model.uiContainers[i].name)
                         }
@@ -143,6 +149,7 @@ struct LCAppSettingsView: View {
                 
             } header: {
                 Text("lc.common.container".loc)
+                .settingsSectionHeader()
             }
             
             
@@ -151,7 +158,9 @@ struct LCAppSettingsView: View {
                     Text("lc.appSettings.launchWithJit".loc)
                 }
                 .disabled(model.uiIs32bit)
-                if #available(iOS 26.0, *), model.uiIsJITNeeded, !model.uiIs32bit {
+                // Only the tools that run a script for the app take one. Zeus
+                // answers what an app asks for itself, so it needs none.
+                if #available(iOS 26.0, *), model.uiIsJITNeeded, !model.uiIs32bit, JITEnablerType.current != .Zeus {
                     HStack {
                         Text("lc.appSettings.jit26.script".loc)
                         Spacer()
@@ -170,7 +179,7 @@ struct LCAppSettingsView: View {
                             }
                             .buttonStyle(BorderlessButtonStyle())
                         } else {
-                            Text("No file selected")
+                            Text("lc.common.noFileSelected".loc)
                                 .foregroundColor(.gray)
                         }
                         Button(action: {
@@ -202,8 +211,8 @@ struct LCAppSettingsView: View {
                 }
                 if model.uiIs32bit {
                     Picker(selection: $model.uiSelected32BitEmulator) {
+                        Text("lc.common.default".loc).tag("")
                         ForEach(sharedModel.arm32EmuApps, id: \.self) { app in
-                            Text("lc.common.default".loc).tag("")
                             Text(app.appInfo.displayName()).tag(app.appInfo.relativeBundlePath!)
                         }
                     } label: {
@@ -212,7 +221,7 @@ struct LCAppSettingsView: View {
                 }
             } footer: {
 
-                    if #available(iOS 26.0, *), model.uiIsJITNeeded {
+                    if #available(iOS 26.0, *), model.uiIsJITNeeded, JITEnablerType.current != .Zeus {
                         Text("lc.appSettings.launchWithJitDesc".loc + "\n" + "lc.appSettings.jit26.scriptDesc".loc)
 
                     } else {
@@ -283,6 +292,7 @@ struct LCAppSettingsView: View {
                             }
                             .pickerStyle(.inline)
                         }
+                        .settingsPageMargins()
 
                     } else {
                         Text("lc.common.loading".loc)
@@ -318,6 +328,7 @@ struct LCAppSettingsView: View {
                 }
             } header: {
                 Text("lc.appSettings.fixes".loc)
+                .settingsSectionHeader()
             } footer: {
                 Text("lc.appSettings.useLCBundleIdDesc".loc)
             }
@@ -404,6 +415,7 @@ struct LCAppSettingsView: View {
                 }
             } header: {
                 Text("lc.common.statistics")
+                .settingsSectionHeader()
             }
 
         }
@@ -505,7 +517,11 @@ struct LCAppSettingsView: View {
             return
         }
         
-        sharedModel.appDataFolderNames.append(newName)
+        // Only private data folders are listed, and a shared app's is in the
+        // app group.
+        if !model.uiIsShared {
+            sharedModel.appDataFolderNames.append(newName)
+        }
         let newContainer = LCContainer(folderName: newName, name: displayName, isShared: model.uiIsShared)
         // assign keychain group
         var keychainGroupSet : Set<Int> = Set(minimumCapacity: 3)
@@ -565,7 +581,7 @@ struct LCAppSettingsView: View {
             if fm.fileExists(atPath: url.appendingPathComponent("LCContainerInfo.plist").path) {
                 let plistInfo = try PropertyListSerialization.propertyList(from: Data(contentsOf: url.appendingPathComponent("LCContainerInfo.plist")), format: nil)
                 if let plistInfo = plistInfo as? [String : Any] {
-                    let name = plistInfo["folderName"] as? String ?? url.lastPathComponent
+                    let name = plistInfo["name"] as? String ?? url.lastPathComponent
                     container = LCContainer(infoDict: ["folderName": url.lastPathComponent, "name": name, "bookmarkData":bookmark], isShared: false)
                 }
             }
@@ -609,7 +625,7 @@ struct LCAppSettingsView: View {
     }
 
     func moveToAppGroup() async {
-        for container in appInfo.containers {
+        for container in model.uiContainers {
             if let runningLC = LCSharedUtils.getContainerUsingLCScheme(withFolderName: container.folderName) {
                 errorInfo = "lc.appSettings.appOpenInOtherLc %@ %@".localizeWithFormat(runningLC, runningLC)
                 errorShow = true
@@ -675,7 +691,7 @@ struct LCAppSettingsView: View {
     }
     
     func movePrivateDoc() async {
-        for container in appInfo.containers {
+        for container in model.uiContainers {
             if let runningLC = LCSharedUtils.getContainerUsingLCScheme(withFolderName: container.folderName) {                
                 errorInfo = "lc.appSettings.appOpenInOtherLc %@ %@".localizeWithFormat(runningLC, runningLC)
                 errorShow = true
@@ -750,6 +766,15 @@ struct LCAppSettingsView: View {
     }
     
     func forceResign() async {
+        // An app open in a multitasking window runs from the files signing
+        // rewrites, which would end it.
+        for container in model.uiContainers {
+            if let usingLC = LCSharedUtils.getContainerUsingLCScheme(withFolderName: container.folderName) {
+                errorInfo = "lc.container.inUseBy %@".localizeWithFormat(usingLC)
+                errorShow = true
+                return
+            }
+        }
         if model.uiDontSign {
             guard let result = await signUnsignedAlert.open(), result else {
                 return

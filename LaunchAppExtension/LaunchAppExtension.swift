@@ -208,6 +208,7 @@ struct LaunchAppExtension: AppIntent {
             lcSharedDefaults.set(schemeToLaunch, forKey: "LCLaunchExtensionScheme")
             lcSharedDefaults.set(bundleId, forKey: "LCLaunchExtensionBundleID")
             lcSharedDefaults.set(containerName, forKey: "LCLaunchExtensionContainerName")
+            lcSharedDefaults.removeObject(forKey: "LCLaunchExtensionLaunchURL")
             lcSharedDefaults.set(Date.now, forKey: "LCLaunchExtensionLaunchDate")
         }
 

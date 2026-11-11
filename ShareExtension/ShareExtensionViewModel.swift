@@ -467,6 +467,8 @@ final class ShareExtensionViewModel: ObservableObject {
             sharedDefaults?.set(item.container.folderName, forKey: "LCLaunchExtensionContainerName")
             if let launchURLString {
                 sharedDefaults?.set(launchURLString, forKey: "LCLaunchExtensionLaunchURL")
+            } else {
+                sharedDefaults?.removeObject(forKey: "LCLaunchExtensionLaunchURL")
             }
             sharedDefaults?.set(Date(), forKey: "LCLaunchExtensionLaunchDate")
         }

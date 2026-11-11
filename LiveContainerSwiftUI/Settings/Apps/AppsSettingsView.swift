@@ -61,11 +61,16 @@ struct AppsSettingsView: View {
         }
         .navigationTitle("lc.tabView.apps".loc)
         .navigationBarTitleDisplayMode(.inline)
-        .searchable(text: $searchText)
+        .searchable(text: $searchText, prompt: "zc.settings.apps.search".loc)
+        .settingsBottomSearch()
         .navigationDestination(isPresented: $isShowingHiddenApps) {
             HiddenAppsSettingsView()
         }
-        .alert("lc.common.error".loc, item: $errorMessage) { _ in
+        .alert(
+            "lc.common.error".loc,
+            isPresented: Binding<Bool>.isPresented(for: $errorMessage),
+            presenting: errorMessage
+        ) { _ in
             Button("lc.common.ok".loc) { }
         } message: { message in
             Text(message)

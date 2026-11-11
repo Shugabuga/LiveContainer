@@ -4,10 +4,25 @@
 #import "../LiveContainer/utils.h"
 #import <LocalAuthentication/LocalAuthentication.h>
 #import "Localization.h"
+#include <notify.h>
 
 UIInterfaceOrientation LCOrientationLock = UIInterfaceOrientationUnknown;
 NSMutableArray<NSString*>* LCSupportedUrlSchemes = nil;
 BOOL launchURLProcessed = NO;
+
+/// Tells zContainer a touch began on this app, in its multitasking window,
+/// so the window comes to the front. The notification is named for the app's
+/// container: the last part of the home folder it was given.
+static void LCPostWindowTouched(void) {
+    static char name[256];
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        const char *home = getenv("HOME");
+        NSString *folder = home ? @(home).lastPathComponent : @"";
+        snprintf(name, sizeof(name), "%s%s", LC_WINDOW_TOUCHED_NOTIFICATION_PREFIX, folder.UTF8String);
+    });
+    notify_post(name);
+}
 
 __attribute__((constructor))
 static void UIKitGuestHooksInit() {
@@ -19,6 +34,10 @@ static void UIKitGuestHooksInit() {
     swizzle(UIApplication.class, @selector(setDelegate:), @selector(hook_setDelegate:));
     swizzle(UIScene.class, @selector(scene:didReceiveActions:fromTransitionContext:), @selector(hook_scene:didReceiveActions:fromTransitionContext:));
     swizzle(UIScene.class, @selector(openURL:options:completionHandler:), @selector(hook_openURL:options:completionHandler:));
+    // Only an app in a multitasking window has one to bring forward.
+    if (NSUserDefaults.isLiveProcess) {
+        swizzle(UIApplication.class, @selector(sendEvent:), @selector(hook_sendEvent:));
+    }
     NSInteger LCOrientationLockDirection = [NSUserDefaults.guestAppInfo[@"LCOrientationLock"] integerValue];
     if(LCOrientationLockDirection != 0 && [UIDevice.currentDevice userInterfaceIdiom] == UIUserInterfaceIdiomPhone) {
         switch (LCOrientationLockDirection) {
@@ -98,7 +117,9 @@ void LCShowSwitchAppConfirmation(NSURL *url, NSString* bundleId, bool isSharedAp
     }
     
     // if LCSwitchAppWithoutAsking is enabled we directly open the app in current lc
-    if ([NSUserDefaults.lcUserDefaults boolForKey:@"LCSwitchAppWithoutAsking"]) {
+    // In the app group, so apps in multitasking windows, which run in the
+    // LiveProcess extension, read it too.
+    if ([NSUserDefaults.lcSharedDefaults boolForKey:@"LCSwitchAppWithoutAsking"]) {
         [NSClassFromString(@"LCSharedUtils") launchToGuestAppWithURL:url];
         return;
     }
@@ -185,7 +206,7 @@ void openUniversalLink(NSString* decodedUrl) {
 }
 
 void LCOpenWebPage(NSString* webPageUrlString, NSString* originalUrl) {
-    if ([NSUserDefaults.lcUserDefaults boolForKey:@"LCOpenWebPageWithoutAsking"]) {
+    if ([NSUserDefaults.lcSharedDefaults boolForKey:@"LCOpenWebPageWithoutAsking"]) {
         openUniversalLink(webPageUrlString);
         return;
     }
@@ -335,6 +356,41 @@ BOOL canAppOpenItself(NSURL* url) {
     return [LCSupportedUrlSchemes containsObject:[url.scheme lowercaseString]];
 }
 
+// Whether a URL uses one of the schemes zContainer's own Info.plist declares:
+// its own and the one Zeus adds when it signs zContainer ("zeus-" and the
+// bundle ID), which is how Zeus opens it and sends it requests. Any app can
+// declare those schemes too, so Zeus's links carry nothing secret: they only
+// name what Zeus left in the app group. Links on those are for zContainer and
+// never reach the guest app.
+static BOOL LCIsHostOwnURL(NSURL *url) {
+    static NSSet<NSString *> *hostSchemes = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        NSBundle *bundle = NSUserDefaults.lcMainBundle;
+        if([bundle.bundlePath.pathExtension isEqualToString:@"appex"]) {
+            NSURL *appURL = bundle.bundleURL.URLByDeletingLastPathComponent.URLByDeletingLastPathComponent;
+            bundle = [NSBundle bundleWithURL:appURL] ?: bundle;
+        }
+        NSMutableSet<NSString *> *schemes = [NSMutableSet new];
+        id urlTypes = bundle.infoDictionary[@"CFBundleURLTypes"];
+        if([urlTypes isKindOfClass:NSArray.class]) {
+            for(id urlType in urlTypes) {
+                id list = [urlType isKindOfClass:NSDictionary.class] ? urlType[@"CFBundleURLSchemes"] : nil;
+                if(![list isKindOfClass:NSArray.class]) {
+                    continue;
+                }
+                for(id scheme in list) {
+                    if([scheme isKindOfClass:NSString.class]) {
+                        [schemes addObject:[scheme lowercaseString]];
+                    }
+                }
+            }
+        }
+        hostSchemes = schemes;
+    });
+    return url.scheme.length > 0 && [hostSchemes containsObject:url.scheme.lowercaseString];
+}
+
 typedef NS_ENUM(NSInteger, LCControlAppURLHandling) {
     LCControlAppURLHandlingPassThrough,
     LCControlAppURLHandlingReplaceURL,
@@ -389,7 +445,7 @@ static LCControlAppURLHandling LCHandleControlAppURL(NSURL *url, NSString** modi
 
     NSString *lcScheme = NSUserDefaults.lcAppUrlScheme;
     // pass through any url that should not be handled by current lc
-    if(![url.scheme isEqualToString:lcScheme]) {
+    if(![url.scheme isEqualToString:lcScheme] && !LCIsHostOwnURL(url)) {
         return LCControlAppURLHandlingPassThrough;
     }
     NSString* urlHost = url.host;
@@ -470,11 +526,40 @@ static LCControlAppURLHandling LCHandleControlAppURL(NSURL *url, NSString** modi
         return LCControlAppURLHandlingStop;
     }
 
+    // A certificate link holds a private key, so only zContainer's own
+    // screens take it, after asking.
+    if([urlHost isEqualToString:@"certificate"]) {
+        LCShowAlert(@"zc.guestTweak.restartToImportCertificate".loc);
+        return LCControlAppURLHandlingStop;
+    }
+
+    // What Zeus sent waits in the app group, and zContainer's Home Screen
+    // takes it once it is back, so the link itself has nothing left to do.
+    if([urlHost.lowercaseString isEqualToString:@"zeus-request"]) {
+        LCShowAlert(@"zc.guestTweak.restartToGetFromZeus".loc);
+        return LCControlAppURLHandlingStop;
+    }
+
     return LCControlAppURLHandlingStop;
 }
 
 // Handler for AppDelegate
 @implementation UIApplication(LiveContainerHook)
+/// A touch beginning on the app brings its multitasking window to the front,
+/// as a touch on the window's title bar does.
+- (void)hook_sendEvent:(UIEvent *)event {
+    [self hook_sendEvent:event];
+    if (event.type != UIEventTypeTouches) {
+        return;
+    }
+    for (UITouch *touch in event.allTouches) {
+        if (touch.phase == UITouchPhaseBegan) {
+            LCPostWindowTouched();
+            return;
+        }
+    }
+}
+
 - (void)hook__applicationOpenURLAction:(id)action payload:(NSDictionary *)payload origin:(id)origin {
     NSURL *url = [NSURL URLWithString:payload[UIApplicationLaunchOptionsURLKey]];
     NSString* replacementURLString = nil;
@@ -506,7 +591,7 @@ static LCControlAppURLHandling LCHandleControlAppURL(NSURL *url, NSString** modi
                 // Convert the base64 encoded url into String
                 NSData *decodedData = [[NSData alloc] initWithBase64EncodedString:realUrlEncoded options:0];
                 decodedUrlStr = [[NSString alloc] initWithData:decodedData encoding:NSUTF8StringEncoding];
-            } else if([urlStr hasPrefix:NSUserDefaults.lcAppUrlScheme]) {
+            } else if([urlStr hasPrefix:NSUserDefaults.lcAppUrlScheme] || LCIsHostOwnURL([NSURL URLWithString:urlStr])) {
                 context.payload = nil;
                 context.actions = nil;
             }

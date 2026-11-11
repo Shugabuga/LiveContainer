@@ -14,11 +14,12 @@ import SwiftUI
 struct AdvancedSettingsView: View {
     @EnvironmentObject private var sharedModel: SharedModel
 
-    @AppStorage("LCJITEnablerType", store: LCUtils.appGroupUserDefault) private var jitEnabler: JITEnablerType = .SideJITServer
+    @AppStorage("LCJITEnablerType", store: LCUtils.appGroupUserDefault) private var jitEnabler: JITEnablerType = .Zeus
     @AppStorage("LCSelected32BitEmulator", store: LCUtils.appGroupUserDefault) private var selected32BitEmulator = ""
     @AppStorage("LCDontSignApp", store: LCUtils.appGroupUserDefault) private var dontSignApp = false
-    @AppStorage("LCSwitchAppWithoutAsking") private var silentSwitchApp = false
-    @AppStorage("LCOpenWebPageWithoutAsking") private var silentOpenWebPage = false
+    // In the app group, where apps in multitasking windows read them too.
+    @AppStorage("LCSwitchAppWithoutAsking", store: LCUtils.appGroupUserDefault) private var silentSwitchApp = false
+    @AppStorage("LCOpenWebPageWithoutAsking", store: LCUtils.appGroupUserDefault) private var silentOpenWebPage = false
     @AppStorage("LCFrameShortcutIcons") private var frameShortcutIcons = false
 
     var body: some View {
@@ -28,6 +29,7 @@ struct AdvancedSettingsView: View {
                 Section {
                     NavigationLink {
                         LCTweakFolderView(baseUrl: LCPath.tweakPath, isRoot: true)
+                            .settingsPageMargins()
                     } label: {
                         Text("lc.tabView.tweaks".loc)
                     }
@@ -37,6 +39,7 @@ struct AdvancedSettingsView: View {
             Section {
                 NavigationLink {
                     LCMultitaskSettingView()
+                        .settingsPageMargins()
                 } label: {
                     Text("lc.appBanner.multitask".loc)
                 }
@@ -47,6 +50,7 @@ struct AdvancedSettingsView: View {
             Section {
                 NavigationLink {
                     JITSettingsView()
+                        .settingsPageMargins()
                 } label: {
                     LabeledContent("zc.settings.advanced.jit".loc, value: jitEnabler.displayName)
                 }
@@ -91,6 +95,7 @@ struct AdvancedSettingsView: View {
             Section {
                 NavigationLink {
                     LCJITLessDiagnoseView()
+                        .settingsPageMargins()
                 } label: {
                     Text("lc.settings.jitlessDiagnose".loc)
                 }
@@ -98,6 +103,7 @@ struct AdvancedSettingsView: View {
                 if sharedModel.developerMode {
                     NavigationLink {
                         DeveloperSettingsView()
+                            .settingsPageMargins()
                     } label: {
                         Text("zc.settings.developer".loc)
                     }

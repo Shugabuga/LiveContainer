@@ -15,7 +15,10 @@ public final class DownloadHelper : ObservableObject {
     @Published var cancelled = false
     private var downloadTask: URLSessionDownloadTask?
     private var continuation: UnsafeContinuation<(), Never>?
-    
+    /// The session of the download under way. A session keeps its delegate,
+    /// and with it this helper, until it is invalidated.
+    private var session: URLSession?
+
     func download(url: URL, to: URL) async throws {
         var ansError: Error? = nil
 
@@ -39,7 +42,11 @@ public final class DownloadHelper : ObservableObject {
                     self.downloadedSize = downloaded
                     self.totalSize = total
                 }}
-            }, completeCallback: {tempFileURL, error in
+            }, completeCallback: {endedSession, tempFileURL, error in
+                // Cancel already ended this download, or it already ended.
+                guard endedSession === self.session else {
+                    return
+                }
                 Task{ await MainActor.run {
                     self.isDownloading = false
                 }}
@@ -56,14 +63,18 @@ public final class DownloadHelper : ObservableObject {
                         ansError = error
                     }
                 }
-                if self.continuation != nil {
-                    c.resume()
-                }
+                self.session = nil
+                self.continuation = nil
+                c.resume()
 
             }), delegateQueue: .main)
 
+            self.session = session
             downloadTask = session.downloadTask(with: url)
             downloadTask?.resume()
+            // Lets the task finish and deliver its delegate calls, then
+            // releases the delegate.
+            session.finishTasksAndInvalidate()
         }
         if let ansError {
             throw ansError
@@ -77,6 +88,8 @@ public final class DownloadHelper : ObservableObject {
         cancelled = true
         continuation = nil
         downloadTask?.cancel()
+        session?.invalidateAndCancel()
+        session = nil
         isDownloading = false
     }
 }
@@ -149,10 +162,10 @@ public struct DownloadAlertModifier: ViewModifier {
 
 class DownloadDelegate: NSObject, URLSessionDownloadDelegate {
     let progressCallback: (Float, Int64, Int64) -> Void
-    let completeCallback: (URL?, Error?) -> Void
+    let completeCallback: (URLSession, URL?, Error?) -> Void
 
     init(progressCallback: @escaping (Float, Int64, Int64) -> Void,
-         completeCallback: @escaping (URL?, Error?) -> Void) {
+         completeCallback: @escaping (URLSession, URL?, Error?) -> Void) {
         self.progressCallback = progressCallback
         self.completeCallback = completeCallback
     }
@@ -168,12 +181,12 @@ class DownloadDelegate: NSObject, URLSessionDownloadDelegate {
 
             // Check if the status code is in the 2xx range
             if (200...299).contains(statusCode) {
-                completeCallback(location, nil)
+                completeCallback(session, location, nil)
             } else {
-                completeCallback(location, NSError(domain: "", code: statusCode, userInfo: [NSLocalizedDescriptionKey: "HTTP Error: \(statusCode)"]))
+                completeCallback(session, location, NSError(domain: "", code: statusCode, userInfo: [NSLocalizedDescriptionKey: "HTTP Error: \(statusCode)"]))
             }
         } else {
-            completeCallback(location, NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid response"]))
+            completeCallback(session, location, NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid response"]))
         }
         
 
@@ -181,7 +194,7 @@ class DownloadDelegate: NSObject, URLSessionDownloadDelegate {
     
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
         if let error {
-            completeCallback(nil, error)
+            completeCallback(session, nil, error)
         } else {
 
         }

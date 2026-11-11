@@ -10,7 +10,7 @@ import SwiftUI
 /// and later it's a safe area bar, which also fades the rows scrolling
 /// beneath it, as toolbars do.
 struct OnboardingBottomBar<Bar: View>: ViewModifier {
-    @ContentBuilder let bar: Bar
+    @ViewBuilder let bar: Bar
 
     func body(content: Content) -> some View {
         if #available(iOS 26.0, *) {
@@ -27,7 +27,7 @@ struct OnboardingBottomBar<Bar: View>: ViewModifier {
 
 extension View {
     /// Pins this onboarding page's footer to the bottom of the screen.
-    func onboardingBottomBar(@ContentBuilder _ bar: () -> some View) -> some View {
+    func onboardingBottomBar(@ViewBuilder _ bar: () -> some View) -> some View {
         modifier(OnboardingBottomBar(bar: bar))
     }
 }

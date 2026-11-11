@@ -7,7 +7,7 @@ import SwiftUI
 
 /// zContainer's stand-in for the iPhone's Home button: a round glass button
 /// with AssistiveTouch's rings that does what pressing Home does. It looks the
-/// same over the black wallpaper, over Settings in light or dark mode, and
+/// same over the wallpaper, over Settings in light or dark mode, and
 /// over apps, where TweakLoader draws the same button in UIKit.
 struct HomeButton: View {
     /// What pressing it does, which is HomeScreenModel's `goHome()`.

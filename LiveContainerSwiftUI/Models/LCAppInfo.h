@@ -65,10 +65,23 @@ typedef NS_ENUM(NSInteger, MultitaskSpecified){
 - (UIImage*)iconIsDarkIcon:(BOOL)isDarkIcon;
 // The icon without IconServices' mask and border, for views that clip it to
 // the Home Screen's icon shape themselves, so no light rim shows at its edges.
+// One that hasn't been drawn yet is drawn here, on the calling thread.
 - (UIImage*)homeScreenIconIsDarkIcon:(BOOL)isDarkIcon;
+// The same icon once it has been drawn, from memory or from the file it was
+// saved in, or nil before that. It never draws, so views can ask for it as
+// they draw. Call it on the main thread.
+- (UIImage*)cachedHomeScreenIconIsDarkIcon:(BOOL)isDarkIcon;
+// Draws the same icon off the main thread, on the one queue every app's icon
+// is drawn on, one at a time, and saves it. `completion` runs on the main
+// queue once it's in memory, or once IconServices failed to draw it. Call it
+// on the main thread.
+- (void)drawHomeScreenIconIsDarkIcon:(BOOL)isDarkIcon completion:(void (^)(void))completion NS_SWIFT_DISABLE_ASYNC;
 - (void)clearIconCache;
 - (NSString*)displayName;
 - (NSString*)bundlePath;
+// Why the app's executable can't run in zContainer, read without changing it:
+// it's missing, isn't a Mach-O, or is encrypted. Nil when it can run.
+- (nullable NSString *)executableProblem;
 - (NSString*)bundleIdentifier;
 - (NSString*)version;
 - (NSMutableArray<NSString *>*)urlSchemes;

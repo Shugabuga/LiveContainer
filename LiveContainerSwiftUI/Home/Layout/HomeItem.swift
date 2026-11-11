@@ -5,8 +5,9 @@
 
 import Foundation
 
-/// One icon on the Home Screen: an app inside zContainer, or zContainer's own
-/// Settings. The layout saves each item as its `id`.
+/// One thing on the Home Screen: an app inside zContainer, zContainer's own
+/// Settings, a folder of them, or a widget. The layout saves each item as its
+/// `id`.
 enum HomeItem: Hashable, Identifiable, Sendable {
     /// An installed app, by its key: its bundle ID and the folder it is
     /// installed in, as `bundleId:relativeBundlePath`. The key stays the same
@@ -17,6 +18,13 @@ enum HomeItem: Hashable, Identifiable, Sendable {
     /// zContainer's Settings. It can be moved but not removed.
     case settings
 
+    /// A folder, by the id of its entry in the layout's `folders`.
+    case folder(String)
+
+    /// A widget, or a stack of them, by the id of its entry in the layout's
+    /// `widgets`. It goes on the pages only, never in the dock or a folder.
+    case widget(String)
+
     /// The text the layout is saved as: `settings`, or `app:` and the app's key.
     var id: String {
         switch self {
@@ -24,16 +32,42 @@ enum HomeItem: Hashable, Identifiable, Sendable {
             "app:\(key)"
         case .settings:
             "settings"
+        case .folder(let id):
+            "folder:\(id)"
+        case .widget(let id):
+            "widget:\(id)"
+        }
+    }
+
+    /// Whether this is a widget, which stays on the pages.
+    var isWidget: Bool {
+        if case .widget = self {
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Whether this is a folder, which can't go into another folder.
+    var isFolder: Bool {
+        if case .folder = self {
+            true
+        } else {
+            false
         }
     }
 
     /// Reads an item from the text `id` makes. Returns nil for text that
-    /// names neither an app nor Settings.
+    /// names no app, Settings, folder or widget.
     init?(id: String) {
         if id == "settings" {
             self = .settings
         } else if id.hasPrefix("app:"), id.count > 4 {
             self = .app(String(id.dropFirst(4)))
+        } else if id.hasPrefix("folder:"), id.count > 7 {
+            self = .folder(String(id.dropFirst(7)))
+        } else if id.hasPrefix("widget:"), id.count > 7 {
+            self = .widget(String(id.dropFirst(7)))
         } else {
             return nil
         }

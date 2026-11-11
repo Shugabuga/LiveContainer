@@ -7,8 +7,9 @@ import SwiftUI
 
 /// Search over the Home Screen, which finds apps by name the way Spotlight does.
 extension HomeScreenModel {
-    /// The most apps search suggests before anything is typed.
-    private static let suggestionCount = 8
+    /// The most apps search suggests before anything is typed: two rows of
+    /// them after Show More, of six on the widest iPad.
+    private static let suggestionCount = 12
 
     /// Opens search, as tapping "Search" or pulling the Home Screen down do.
     func openSearch() {
@@ -18,6 +19,44 @@ extension HomeScreenModel {
         searchText = ""
         withAnimation(HomeDesign.modeChange) {
             isSearching = true
+        }
+    }
+
+    /// How much of search shows, from 0 to 1: all of it while it is open,
+    /// otherwise as much as a pull down on the pages has brought in.
+    var searchPresence: Double {
+        isSearching ? 1 : searchPull
+    }
+
+    /// How far search has blurred, dimmed and shrunk the Home Screen behind
+    /// it and faded its dock: as far as it has come in on iPhone. On iPad
+    /// none, as Spotlight's panel leaves the Home Screen as it is.
+    var searchBackdropPresence: Double {
+        SharedModel.isPhone ? searchPresence : 0
+    }
+
+    /// Follows a pull down on the pages, bringing search in as far as it went.
+    func searchPullChanged(_ progress: Double) {
+        guard !isEditing, !isSearching else {
+            return
+        }
+        searchPull = progress
+    }
+
+    /// Ends a pull down on the pages: search opens from where the pull left
+    /// it, or goes back away.
+    func searchPullEnded(opens: Bool) {
+        guard searchPull > 0 else {
+            return
+        }
+        if opens && !isEditing {
+            searchText = ""
+        }
+        withAnimation(HomeDesign.modeChange) {
+            if opens && !isEditing {
+                isSearching = true
+            }
+            searchPull = 0
         }
     }
 

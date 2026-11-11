@@ -17,14 +17,17 @@ enum SettingsPage: Hashable {
     case attention
     /// Settings > General.
     case general
-    /// Settings > Home Screen, which the list shows on iOS 18 and later.
-    case homeScreen
+    /// Settings > Appearance.
+    case appearance
     /// Settings > Wallpaper.
     case wallpaper
     /// Settings > Apps, which holds each app's settings.
     case apps
     /// Settings > Advanced.
     case advanced
+    /// An app's settings, by its Home Screen key, which search opens straight
+    /// from the app's name, as the Settings app's search does.
+    case app(String)
 
     /// The page that shows for this one: the attention row's is Zeus's.
     /// The iPad's detail column is rebuilt only when this changes, so moving

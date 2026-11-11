@@ -24,4 +24,7 @@ struct PendingInstallRecord: Codable {
     var fileName: String?
     /// The bookmark that finds an opened IPA again.
     var bookmark: Data?
+    /// For an app from Zeus, the id of the request Zeus left in the app
+    /// group, which finds the request again.
+    var zeusRequestID: UUID?
 }

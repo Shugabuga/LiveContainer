@@ -9,18 +9,30 @@ import LocalAuthentication
 
 extension LCUtils {
     public static let appGroupUserDefault = UserDefaults.init(suiteName: LCSharedUtils.appGroupID()) ?? UserDefaults.standard
-    
+
+    /// Resolves a security-scoped bookmark, like the ones `bookmark(for:)` and the
+    /// share extension make. 1 << 10 is NSURLBookmarkResolutionWithSecurityScope,
+    /// which Swift doesn't offer on iOS.
+    public static func resolveSecurityScopedBookmark(_ data: Data) throws -> URL {
+        var isStale = false
+        return try URL(
+            resolvingBookmarkData: data,
+            options: URL.BookmarkResolutionOptions(rawValue: 1 << 10),
+            relativeTo: nil,
+            bookmarkDataIsStale: &isStale
+        )
+    }
+
     public static func signTweaks(tweakFolderUrl: URL, force : Bool = false, progressHandler : ((Progress) -> Void)? = nil) async throws {
         guard LCSharedUtils.certificatePassword() != nil else {
             return
         }
         let fm = FileManager.default
-        // a disabled folder is renamed to .disabled; skip it, it gets signed again once re-enabled
-        if !fm.fileExists(atPath: tweakFolderUrl.path) {
-            let disabledUrl = tweakFolderUrl.deletingLastPathComponent().appendingPathComponent(tweakFolderUrl.lastPathComponent + ".disabled")
-            if fm.fileExists(atPath: disabledUrl.path) {
-                return
-            }
+        // Nothing to sign in a folder that isn't there: a disabled one, renamed
+        // to .disabled and signed again once it's back, or one renamed or
+        // deleted in Tweaks, which mustn't keep the apps set to it from opening.
+        guard fm.fileExists(atPath: tweakFolderUrl.path) else {
+            return
         }
         var isFolder :ObjCBool = false
         if(fm.fileExists(atPath: tweakFolderUrl.path, isDirectory: &isFolder) && !isFolder.boolValue) {
@@ -194,6 +206,44 @@ extension LCUtils {
         }
     }
     
+    /// Asks Zeus to start zContainer with JIT, as it starts its own apps:
+    /// Zeus relaunches it with the debugger attached, through the iPhone's own
+    /// services, and zContainer then opens the app waiting to launch. With
+    /// `pid`, Zeus attaches to that process instead, an app running in a
+    /// multitasking window. The link takes the form StikDebug's does, with the
+    /// app's JIT script as base64. Returns whether Zeus could be opened.
+    static func askZeusForJIT(withScript script: String?, pid: Int? = nil) async -> Bool {
+        guard let url = zeusJITURL(script: script, pid: pid) else {
+            return false
+        }
+        return await UIApplication.shared.open(url)
+    }
+
+    /// The link that asks Zeus for JIT, every value percent-encoded, as a
+    /// script's base64 holds characters a query would otherwise misread.
+    static func zeusJITURL(script: String?, pid: Int?) -> URL? {
+        var allowed = CharacterSet.alphanumerics
+        allowed.insert(charactersIn: "-._~")
+        func item(_ name: String, _ value: String) -> URLQueryItem {
+            URLQueryItem(name: name, value: value.addingPercentEncoding(withAllowedCharacters: allowed))
+        }
+        var items = [item("bundle-id", Bundle.main.bundleIdentifier ?? "")]
+        if let pid {
+            items.append(item("pid", String(pid)))
+        }
+        if let script, !script.isEmpty {
+            items.append(item("script-data", script))
+        }
+        var components = URLComponents()
+        components.scheme = "zeus"
+        components.host = "enable-jit"
+        components.percentEncodedQueryItems = items
+        return components.url
+    }
+
+    /// What zContainer says when Zeus, set to enable JIT, isn't there.
+    static let zeusMissingForJIT = "Zeus isn't on this iPhone. Install Zeus, or choose another way to enable JIT in Settings > Advanced > JIT."
+
     public static func askForJIT(withScript script: String? = nil, appName: String? = nil, classicMode: UInt = 0, onServerMessage: ((String) -> Void)? = nil) async -> Bool {
         // if LiveContainer is installed by TrollStore
         let tsPath = "\(Bundle.main.bundlePath)/../_TrollStore"
@@ -203,11 +253,15 @@ extension LCUtils {
         }
         
         let groupUserDefaults = LCUtils.appGroupUserDefault
-        guard let jitEnabler = JITEnablerType(rawValue: groupUserDefaults.integer(forKey: "LCJITEnablerType")) else {
+        let jitEnabler = JITEnablerType.current
+
+        if jitEnabler == .Zeus {
+            onServerMessage?("JIT acquisition will continue in Zeus.")
+            if !(await askZeusForJIT(withScript: script)) {
+                onServerMessage?(zeusMissingForJIT)
+            }
             return false
-        }
-        
-        if(jitEnabler == .SideJITServer){
+        } else if(jitEnabler == .SideJITServer){
             guard
                   let sideJITServerAddress = groupUserDefaults.string(forKey: "LCSideJITServerAddress"),
                   let deviceUDID = groupUserDefaults.string(forKey: "LCDeviceUDID"),
@@ -331,6 +385,8 @@ extension LCUtils {
                 let launchURL = URL(string: "\(freeScheme)://open-url?url=\(encodedStr)")!
                 LCUtils.appGroupUserDefault.set(freeScheme, forKey: "LCLaunchExtensionScheme")
                 LCUtils.appGroupUserDefault.set(appToLaunch.appInfo.relativeBundlePath, forKey: "LCLaunchExtensionBundleID")
+                LCUtils.appGroupUserDefault.removeObject(forKey: "LCLaunchExtensionContainerName")
+                LCUtils.appGroupUserDefault.removeObject(forKey: "LCLaunchExtensionLaunchURL")
                 LCUtils.appGroupUserDefault.set(Date.now, forKey: "LCLaunchExtensionLaunchDate")
                 onServerMessage?("JIT acquisition will continue in another zContainer.")
                 
@@ -392,6 +448,8 @@ extension LCUtils {
                 launchURL = URL(string: "\(freeScheme)://open-url?url=\(encodedStr)")!
                 LCUtils.appGroupUserDefault.set(freeScheme, forKey: "LCLaunchExtensionScheme")
                 LCUtils.appGroupUserDefault.set(appToLaunch.appInfo.relativeBundlePath, forKey: "LCLaunchExtensionBundleID")
+                LCUtils.appGroupUserDefault.removeObject(forKey: "LCLaunchExtensionContainerName")
+                LCUtils.appGroupUserDefault.removeObject(forKey: "LCLaunchExtensionLaunchURL")
                 LCUtils.appGroupUserDefault.set(Date.now, forKey: "LCLaunchExtensionLaunchDate")
                 onServerMessage?("JIT acquisition will continue in another zContainer.")
                 

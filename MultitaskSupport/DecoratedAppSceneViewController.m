@@ -5,99 +5,561 @@
 #import "UIKitPrivate+MultitaskSupport.h"
 #import "PiPManager.h"
 #import "VirtualWindowsHostView.h"
+#import "LCWindowSnapManager.h"
 #import "../LiveContainer/Localization.h"
 #import "utils.h"
+#include <notify.h>
 
-@interface DecoratedAppSceneViewController()
+/// A window's look, as iPadOS 26.5's SpringBoard draws its windows:
+/// continuous corners of 32 points, and in place of a border a faint rim and
+/// a wide, soft shadow below, SBAppSwitcherPageShadowView's.
+static const CGFloat LCWindowCornerRadius = 32.0;
+/// A maximized window fills the screen edge to edge, so the screen's own
+/// corners round it.
+static const CGFloat LCMaximizedWindowCornerRadius = 0.0;
+static const CGFloat LCWindowShadowOpacity = 0.35;
+static const CGFloat LCWindowShadowRadius = 70.0;
+static const CGFloat LCWindowShadowOffsetY = 35.0;
+static const CGFloat LCWindowRimShadowOpacity = 0.15;
+static const CGFloat LCWindowRimShadowRadius = 0.5;
+/// In dark mode, SpringBoard also outlines a window's content with a point
+/// of white at 15%; in light mode it doesn't.
+static const CGFloat LCWindowDarkBorderWidth = 1.0;
+static const CGFloat LCWindowDarkBorderAlpha = 0.15;
+/// How much less than the status bar's height the window controls move
+/// down over a window at the top of the screen: SpringBoard puts them 22
+/// points lower under its 24-point status bar.
+static const CGFloat LCControlsStatusBarClearance = 2.0;
+/// The smallest window iPadOS 26.5 makes in its windowed mode
+/// (SBSwitcherWindowingSettings' minimum window width and height). Smaller
+/// where the screen is: on iPhone, or turned.
+static const CGSize LCWindowMinimumSize = {375.0, 486.0};
+/// The size a window opens at: the app gets an iPhone 8's screen under the
+/// strip along the window's top.
+static const CGSize LCWindowDefaultSize = {375.0, 711.0};
+/// The strip along the top of a window, which drags it and holds iPadOS's
+/// window controls, and which the app is told to keep clear. iPadOS drags a
+/// window by its app's own toolbar, whose buttons it knows; zContainer can't
+/// tell where an app's buttons are, so the app keeps this strip clear.
+static const CGFloat LCWindowTopStripHeight = 44.0;
+/// The window controls' measurements, closed and open: where the capsule
+/// goes from the window's top-leading corner, its size, and its dots' size,
+/// spacing and inset from its leading end.
+typedef struct {
+    CGPoint closedOrigin;
+    CGSize closedSize;
+    CGFloat closedDot, closedPitch, closedInset;
+    CGPoint openOrigin;
+    CGSize openSize;
+    CGFloat openDot, openPitch, openInset;
+} LCControlsMetrics;
+/// iPadOS 26.5's window controls (SystemUIWindowingKit's WindowControlsView):
+/// a capsule 41 by 22 points, 21 points in from the window's top-leading
+/// corner, with dots of 6 points 10.25 apart from 7.25 in; tapped, 116 by
+/// 44, 10 points in, with buttons of 26 points 35.5 apart from 9.5 in. Both
+/// are concentric with the window's 32-point corner.
+static const LCControlsMetrics LCControlsPadMetrics = {
+    {21.0, 21.0}, {41.0, 22.0}, 6.0, 10.25, 7.25,
+    {10.0, 10.0}, {116.0, 44.0}, 26.0, 35.5, 9.5,
+};
+/// On iPhone, over an app filling its small screen or half of it, iPadOS's
+/// open controls would take a third of the width. Open, they're 80 by 32
+/// points there, with buttons of 18 points 24 apart from 7 in; closed, they
+/// keep iPadOS's size. Both share a middle, 52 points in and 26 down.
+static const LCControlsMetrics LCControlsPhoneMetrics = {
+    {31.5, 15.0}, {41.0, 22.0}, 6.0, 10.25, 7.25,
+    {12.0, 10.0}, {80.0, 32.0}, 18.0, 24.0, 7.0,
+};
+
+/// The window controls' measurements on this device.
+static LCControlsMetrics LCControlsCurrentMetrics(void) {
+    return UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPhone ? LCControlsPhoneMetrics : LCControlsPadMetrics;
+}
+/// The close, minimize and maximize dots in the title bar's leading corner.
+static const CGFloat LCWindowControlDiameter = 14.0;
+/// Each dot's share of the row: close together, as on iPadOS, but the full
+/// height of the title bar.
+static const CGSize LCWindowControlSize = {26.0, 44.0};
+/// How far beyond the row a touch still counts.
+static const CGFloat LCWindowControlTouchSlop = 12.0;
+/// How far past the window's bottom-right corner a touch still grabs the
+/// resize handle. Fingers often land just outside the corner, where nothing
+/// would take them.
+static const CGFloat LCResizeHandleOuterSlop = 24.0;
+/// How much of a tucked-away window stays on screen, as the tab that brings
+/// it back.
+static const CGFloat LCStashTabWidth = 30.0;
+/// How fast a fling toward the side has to be to tuck the window away.
+static const CGFloat LCStashFlingVelocity = 1100.0;
+/// How much of a window has to be past the side, when it's let go, to tuck
+/// it away.
+static const CGFloat LCStashOffscreenShare = 0.45;
+/// Space between a window brought back out and the side it comes from.
+static const CGFloat LCStashReturnMargin = 6.0;
+/// How long a window takes to go into the multitask dock or come back out.
+static const NSTimeInterval LCDockAnimationDuration = 0.45;
+/// How far into going into the dock a window starts to fade, and how far
+/// into coming back out it has faded in.
+static const CGFloat LCDockFadeShare = 0.35;
+/// Posted with a window's controller as it's touched, so the other windows
+/// close their window controls, as iPadOS's close when something else is
+/// touched.
+static NSNotificationName const LCWindowTouchedNotification = @"LCWindowTouchedNotification";
+
+/// A window's outer view. It doesn't clip, so its shadow can show; the title
+/// bar and the app clip themselves to the corners instead
+/// (`updateCornerMasks`). It keeps the shadow's path in step with its size,
+/// so the shadow isn't worked out from the app's pixels on every frame.
+@interface LCWindowView : UIStackView
+/// The resize handle, which also takes touches just past the window's
+/// bottom-right corner.
+@property(nonatomic, weak) UIView *resizeHandle;
+/// The faint rim around the window, a shadow of half a point.
+@property(nonatomic) CALayer *rimLayer;
+@end
+
+@implementation LCWindowView
+- (void)layoutSubviews {
+    [super layoutSubviews];
+    CGPathRef outline = [UIBezierPath bezierPathWithRoundedRect:self.bounds cornerRadius:self.layer.cornerRadius].CGPath;
+    self.layer.shadowPath = outline;
+    if (!self.rimLayer) {
+        CALayer *rim = [CALayer layer];
+        rim.shadowColor = UIColor.blackColor.CGColor;
+        rim.shadowOffset = CGSizeZero;
+        rim.shadowRadius = LCWindowRimShadowRadius;
+        [self.layer insertSublayer:rim atIndex:0];
+        self.rimLayer = rim;
+    }
+    self.rimLayer.frame = self.bounds;
+    self.rimLayer.shadowPath = outline;
+    // The rim goes with the shadow: none while the window fills the screen.
+    self.rimLayer.shadowOpacity = self.layer.shadowOpacity > 0 ? LCWindowRimShadowOpacity : 0;
+}
+
+/// The frame the window has without its transform, as it grows out of the
+/// multitask dock or bounces as it comes to the front. UIKit leaves a
+/// transformed view's frame undefined, and setting it then would size the
+/// window for the transform, so it would end up the wrong size.
+- (CGRect)frame {
+    if (CGAffineTransformIsIdentity(self.transform)) {
+        return super.frame;
+    }
+    CGSize size = self.bounds.size;
+    CGPoint center = self.center;
+    return CGRectMake(center.x - size.width / 2, center.y - size.height / 2, size.width, size.height);
+}
+
+- (void)setFrame:(CGRect)frame {
+    if (CGAffineTransformIsIdentity(self.transform)) {
+        super.frame = frame;
+        return;
+    }
+    self.bounds = (CGRect){self.bounds.origin, frame.size};
+    self.center = CGPointMake(CGRectGetMidX(frame), CGRectGetMidY(frame));
+}
+
+/// Where a touch grabs the resize handle: the handle itself, and as far
+/// again past the window's right and bottom edges. Nowhere while the handle
+/// doesn't show, as when the window fills the screen or a half of it.
+- (CGRect)resizeGrabArea {
+    UIView *handle = self.resizeHandle;
+    if (!handle || handle.hidden || handle.alpha < 0.01 || !handle.userInteractionEnabled) {
+        return CGRectNull;
+    }
+    CGRect area = handle.frame;
+    area.size.width += LCResizeHandleOuterSlop;
+    area.size.height += LCResizeHandleOuterSlop;
+    return area;
+}
+
+- (BOOL)pointInside:(CGPoint)point withEvent:(UIEvent *)event {
+    return [super pointInside:point withEvent:event] || CGRectContainsPoint([self resizeGrabArea], point);
+}
+
+- (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
+    if (!self.hidden && self.alpha >= 0.01 && self.userInteractionEnabled && CGRectContainsPoint([self resizeGrabArea], point)) {
+        return self.resizeHandle;
+    }
+    return [super hitTest:point withEvent:event];
+}
+
+/// The divider between two snapped windows shows only while both do, and
+/// the multitask dock marks which windows show.
+- (void)setHidden:(BOOL)hidden {
+    BOOL changed = hidden != self.hidden;
+    [super setHidden:hidden];
+    if (changed) {
+        [LCWindowSnapManager.shared windowVisibilityDidChange];
+        [MultitaskDockManager.shared refreshWindowVisibility];
+    }
+}
+@end
+
+/// The outline SpringBoard draws over a window's content in dark mode, along
+/// its rounded corners. Touches go through it.
+@interface LCWindowBorderView : UIView
+@end
+
+@implementation LCWindowBorderView
+- (instancetype)initWithFrame:(CGRect)frame {
+    self = [super initWithFrame:frame];
+    self.userInteractionEnabled = NO;
+    self.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    self.layer.cornerCurve = kCACornerCurveContinuous;
+    self.layer.borderColor = [UIColor colorWithWhite:1 alpha:LCWindowDarkBorderAlpha].CGColor;
+    [self updateBorder];
+    if (@available(iOS 17.0, *)) {
+        [self registerForTraitChanges:@[UITraitUserInterfaceStyle.class] withAction:@selector(updateBorder)];
+    }
+    return self;
+}
+
+- (void)updateBorder {
+    self.layer.borderWidth = self.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark ? LCWindowDarkBorderWidth : 0;
+}
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-implementations"
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+- (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
+    [super traitCollectionDidChange:previousTraitCollection];
+    // Before iOS 17, which has trait change registration instead.
+    if (@available(iOS 17.0, *)) {
+        return;
+    }
+    [self updateBorder];
+}
+#pragma clang diagnostic pop
+@end
+
+/// The row of window controls. The dots are small and close together, so
+/// the row takes any touch on or near it and gives it to the closest dot,
+/// rather than leaving each its own small square.
+@interface LCWindowControlsView : UIStackView
+@end
+
+@implementation LCWindowControlsView
+- (BOOL)pointInside:(CGPoint)point withEvent:(UIEvent *)event {
+    return CGRectContainsPoint(CGRectInset(self.bounds, -LCWindowControlTouchSlop, -LCWindowControlTouchSlop), point);
+}
+
+- (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
+    if (self.hidden || self.alpha < 0.01 || !self.userInteractionEnabled || ![self pointInside:point withEvent:event]) {
+        return nil;
+    }
+    UIView *nearest = nil;
+    CGFloat nearestDistance = CGFLOAT_MAX;
+    for (UIView *control in self.arrangedSubviews) {
+        CGFloat distance = hypot(point.x - control.center.x, point.y - control.center.y);
+        if (distance < nearestDistance) {
+            nearestDistance = distance;
+            nearest = control;
+        }
+    }
+    return nearest;
+}
+@end
+
+/// iPadOS 26's window controls, as SystemUIWindowingKit's WindowControlsView
+/// draws them over a window's top-leading corner: a small Liquid Glass
+/// capsule holding three muted dots, which a tap opens into a bigger one with
+/// three bright buttons, close, minimize and full screen. It stays open until
+/// something else is touched, as iPadOS's does. The controller places it.
+@interface LCWindowControlsCapsule : UIView
+@property(nonatomic, readonly, getter=isExpanded) BOOL expanded;
+@property(nonatomic, copy) void (^closeAction)(void);
+@property(nonatomic, copy) void (^minimizeAction)(void);
+@property(nonatomic, copy) void (^maximizeAction)(void);
+/// Places the capsule for being open or closed, in the same animation.
+@property(nonatomic, copy) void (^placement)(void);
+- (void)setExpanded:(BOOL)expanded animated:(BOOL)animated;
+/// Names one of the buttons for VoiceOver: 0 close, 1 minimize, 2 full
+/// screen.
+- (void)setLabel:(NSString *)label ofButtonAtIndex:(NSInteger)index;
+@end
+
+@implementation LCWindowControlsCapsule {
+    UIVisualEffectView *_glass;
+    NSArray<UIButton *> *_dots;
+    NSArray<UIColor *> *_closedColors;
+    NSArray<UIColor *> *_openColors;
+}
+
+- (instancetype)initWithFrame:(CGRect)frame {
+    self = [super initWithFrame:frame];
+    UIVisualEffect *effect;
+    if (@available(iOS 26.0, *)) {
+        effect = [UIGlassEffect effectWithStyle:UIGlassEffectStyleRegular];
+    } else {
+        effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemThinMaterial];
+    }
+    _glass = [[UIVisualEffectView alloc] initWithEffect:effect];
+    _glass.userInteractionEnabled = NO;
+    if (@available(iOS 26.0, *)) {
+        _glass.cornerConfiguration = [UICornerConfiguration capsuleConfiguration];
+    } else {
+        _glass.clipsToBounds = YES;
+        _glass.layer.cornerCurve = kCACornerCurveContinuous;
+    }
+    [self addSubview:_glass];
+
+    // Muted while closed and bright open, iPadOS's own colors.
+    _closedColors = @[
+        [UIColor colorWithRed:0.878 green:0.451 blue:0.400 alpha:1],
+        [UIColor colorWithRed:0.933 green:0.761 blue:0.380 alpha:1],
+        [UIColor colorWithRed:0.478 green:0.765 blue:0.380 alpha:1],
+    ];
+    _openColors = @[
+        [UIColor colorWithRed:1.000 green:0.045 blue:0.096 alpha:1],
+        [UIColor colorWithRed:1.000 green:0.790 blue:0.000 alpha:1],
+        [UIColor colorWithRed:0.000 green:0.794 blue:0.281 alpha:1],
+    ];
+    NSArray *labels = @[@"Close", @"Minimize", @"Full Screen"];
+    NSMutableArray *dots = [NSMutableArray array];
+    for (NSInteger index = 0; index < 3; index++) {
+        UIButton *dot = [UIButton buttonWithType:UIButtonTypeCustom];
+        dot.tag = index;
+        dot.accessibilityLabel = labels[index];
+        dot.layer.cornerCurve = kCACornerCurveContinuous;
+        dot.userInteractionEnabled = NO;
+        [dot addTarget:self action:@selector(dotTapped:) forControlEvents:UIControlEventTouchUpInside];
+        [self addSubview:dot];
+        [dots addObject:dot];
+    }
+    _dots = dots;
+    // While closed, a tap anywhere on it opens it; open, the buttons take
+    // their own taps.
+    [self addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(capsuleTapped)]];
+    self.accessibilityLabel = @"Window Controls";
+    self.accessibilityHint = @"Shows the window's buttons.";
+    [self updateDotColors];
+    return self;
+}
+
+- (void)setLabel:(NSString *)label ofButtonAtIndex:(NSInteger)index {
+    _dots[index].accessibilityLabel = label;
+}
+
+// Closed, it's one button to VoiceOver, which opens it; open, its three.
+- (BOOL)isAccessibilityElement {
+    return !_expanded;
+}
+
+- (UIAccessibilityTraits)accessibilityTraits {
+    return UIAccessibilityTraitButton;
+}
+
+- (NSArray *)accessibilityElements {
+    return _expanded ? _dots : nil;
+}
+
+- (BOOL)accessibilityActivate {
+    [self setExpanded:YES animated:YES];
+    return YES;
+}
+
+- (void)layoutSubviews {
+    [super layoutSubviews];
+    _glass.frame = self.bounds;
+    if (@available(iOS 26.0, *)) {
+    } else {
+        _glass.layer.cornerRadius = self.bounds.size.height / 2;
+    }
+    LCControlsMetrics metrics = LCControlsCurrentMetrics();
+    CGFloat side = _expanded ? metrics.openDot : metrics.closedDot;
+    CGFloat pitch = _expanded ? metrics.openPitch : metrics.closedPitch;
+    CGFloat inset = _expanded ? metrics.openInset : metrics.closedInset;
+    BOOL rightToLeft = self.effectiveUserInterfaceLayoutDirection == UIUserInterfaceLayoutDirectionRightToLeft;
+    for (UIButton *dot in _dots) {
+        CGFloat x = inset + dot.tag * pitch;
+        if (rightToLeft) {
+            x = self.bounds.size.width - x - side;
+        }
+        dot.frame = CGRectMake(x, (self.bounds.size.height - side) / 2, side, side);
+        dot.layer.cornerRadius = side / 2;
+    }
+}
+
+- (void)updateDotColors {
+    for (UIButton *dot in _dots) {
+        dot.backgroundColor = (_expanded ? _openColors : _closedColors)[dot.tag];
+    }
+}
+
+/// Takes touches a little past its edges, as the dots are small.
+- (BOOL)pointInside:(CGPoint)point withEvent:(UIEvent *)event {
+    return CGRectContainsPoint(CGRectInset(self.bounds, -LCWindowControlTouchSlop, -LCWindowControlTouchSlop), point);
+}
+
+/// Open, a touch anywhere on or near it goes to the nearest button, as the
+/// buttons are small and close together, iPhone's smaller still.
+- (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
+    if (!_expanded || self.hidden || self.alpha < 0.01 || !self.userInteractionEnabled || ![self pointInside:point withEvent:event]) {
+        return [super hitTest:point withEvent:event];
+    }
+    UIButton *nearest = nil;
+    CGFloat nearestDistance = CGFLOAT_MAX;
+    for (UIButton *dot in _dots) {
+        CGFloat distance = hypot(point.x - dot.center.x, point.y - dot.center.y);
+        if (distance < nearestDistance) {
+            nearestDistance = distance;
+            nearest = dot;
+        }
+    }
+    return nearest ?: [super hitTest:point withEvent:event];
+}
+
+- (void)capsuleTapped {
+    if (!_expanded) {
+        [self setExpanded:YES animated:YES];
+    }
+}
+
+- (void)dotTapped:(UIButton *)dot {
+    void (^action)(void) = dot.tag == 0 ? self.closeAction : dot.tag == 1 ? self.minimizeAction : self.maximizeAction;
+    [self setExpanded:NO animated:YES];
+    if (action) {
+        action();
+    }
+}
+
+- (void)setExpanded:(BOOL)expanded animated:(BOOL)animated {
+    if (_expanded == expanded) {
+        return;
+    }
+    _expanded = expanded;
+    for (UIButton *dot in _dots) {
+        dot.userInteractionEnabled = expanded;
+    }
+    UIAccessibilityPostNotification(UIAccessibilityLayoutChangedNotification, expanded ? _dots.firstObject : self);
+    void (^changes)(void) = ^{
+        [self updateDotColors];
+        if (self.placement) {
+            self.placement();
+        }
+        [self setNeedsLayout];
+        [self layoutIfNeeded];
+    };
+    if (!animated || UIAccessibilityIsReduceMotionEnabled()) {
+        changes();
+        return;
+    }
+    [UIView animateWithDuration:0.45 delay:0 usingSpringWithDamping:0.82 initialSpringVelocity:0 options:UIViewAnimationOptionBeginFromCurrentState | UIViewAnimationOptionAllowUserInteraction animations:changes completion:nil];
+}
+@end
+
+@interface DecoratedAppSceneViewController() <UIContextMenuInteractionDelegate>
+/// iPadOS 26's window controls over the window's top-leading corner, and
+/// the strip along its top that drags it.
+@property(nonatomic) LCWindowControlsCapsule *capsule;
+@property(nonatomic) UIView *topStrip;
+/// The outline over the app in dark mode.
+@property(nonatomic) LCWindowBorderView *borderView;
+/// Whether the window fills a half of an iPhone's split screen.
+@property(nonatomic, readonly) BOOL isPhoneSplit;
+/// What the window's menu offers: the PID, picture in picture and scale.
+@property(nonatomic) NSArray<UIMenuElement *> *windowMenuItems;
 @property(nonatomic) NSArray* activatedVerticalConstraints;
 @property(nonatomic) NSString* dataUUID;
 @property(nonatomic) int pid;
 @property(nonatomic) CGRect originalFrame;
-@property(nonatomic) UIBarButtonItem *maximizeButton;
+/// The title bar's green dot, for a window bar at the bottom.
+@property(nonatomic) NSMutableArray<UIButton *> *maximizeControls;
+/// Counts reveals of the window controls of a window filling the screen, so
+/// only the latest one's timer hides them. Those are hidden until asked for:
+/// by a tap on the leading half of the status bar, or on the multitask dock
+/// (`revealWindowControls`). The app doesn't know to leave room for them, as
+/// iPadOS's apps do, and touches on the app itself go to its own scene, so
+/// the window can't watch for a gesture there.
+@property(nonatomic) NSUInteger floatingControlsReveal;
 @property(nonatomic) bool isAppTerminationRequested;
+@property(nonatomic) bool isObservingWindowBar;
+@property(nonatomic, readwrite) NSInteger snapSlot;
+/// The window's frame before it snapped, which it goes back to when another
+/// window takes its half, and whose size it gets back when dragged out.
+@property(nonatomic) CGRect frameBeforeSnap;
+/// Where the window was as the drag that moves it began.
+@property(nonatomic) CGRect frameAtDragStart;
+/// The window's frame as the drag that resizes it began.
+@property(nonatomic) CGRect frameAtResizeStart;
+@property(nonatomic, readwrite) BOOL isStashed;
+/// Whether a tucked-away window is tucked into the left side, rather than
+/// the right.
+@property(nonatomic) BOOL stashesLeft;
+/// The tab a tucked-away window shows over the sliver of it left on screen.
+/// A tap brings the window back; a drag pulls it out.
+@property(nonatomic) UIVisualEffectView *stashTab;
+/// Whether the window is being dragged by its title bar or tab, which
+/// places it until the drag ends.
+@property(nonatomic) BOOL isBeingDragged;
+/// The registration for the notification the app posts as it's touched.
+@property(nonatomic) int touchNotifyToken;
+@property(nonatomic) BOOL isListeningForAppTouches;
+/// The picture of the window on its way into the multitask dock, while it
+/// goes.
+@property(nonatomic, weak) UIView *dockFlyer;
 @end
 
 @implementation DecoratedAppSceneViewController
 - (instancetype)initWindowName:(NSString*)windowName bundleId:(NSString*)bundleId dataUUID:(NSString*)dataUUID rootVC:(UIViewController*)rootVC {
     self = [super initWithNibName:nil bundle:nil];
-    self.view = [[UIStackView alloc] initWithFrame:self.view.frame];
+    self.view = [[LCWindowView alloc] initWithFrame:self.view.frame];
     [MultitaskDockManager.shared.windowHostingView addSubview:self.view];
     [rootVC addChildViewController:self];
     
     _dataUUID = dataUUID;
     _scaleRatio = 1.0;
-    _isMaximized = [NSUserDefaults.lcUserDefaults boolForKey:@"LCLaunchMultitaskMaximized"];
+    [self listenForAppTouches];
+    // On iPhone an app fills the screen, or a half of the split screen;
+    // windows don't float there.
+    _isMaximized = [NSUserDefaults.lcUserDefaults boolForKey:@"LCLaunchMultitaskMaximized"] || LCWindowSnapManager.usesPhoneLayout;
     _appSceneVC = [[AppSceneViewController alloc] initWithBundleId:bundleId dataUUID:dataUUID delegate:self];
     self.title = windowName;
     [self setupDecoratedView];
     
     [MultitaskDockManager.shared addRunningApp:windowName appUUID:dataUUID view:self.view];
     
-    NSArray *menuItems = @[
+    // The window's menus keep these, so they hold the window weakly
+    __weak typeof(self) weakSelf = self;
+    self.windowMenuItems = @[
         [UIAction actionWithTitle:@"lc.multitask.copyPid".loc image:[UIImage systemImageNamed:@"doc.on.doc"] identifier:nil handler:^(UIAction * _Nonnull action) {
-            UIPasteboard.generalPasteboard.string = @(self.appSceneVC.pid).stringValue;
+            UIPasteboard.generalPasteboard.string = @(weakSelf.appSceneVC.pid).stringValue;
         }],
         [UIAction actionWithTitle:@"lc.multitask.enablePip".loc image:[UIImage systemImageNamed:@"pip.enter"] identifier:nil handler:^(UIAction * _Nonnull action) {
-            if ([PiPManager.shared isPiPWithVC:self.appSceneVC]) {
+            AppSceneViewController *appSceneVC = weakSelf.appSceneVC;
+            if ([PiPManager.shared isPiPWithVC:appSceneVC]) {
                 [PiPManager.shared stopPiP];
             } else {
-                [PiPManager.shared startPiPWithVC:self.appSceneVC];
+                [PiPManager.shared startPiPWithVC:appSceneVC];
             }
         }],
         [UICustomViewMenuElement elementWithViewProvider:^UIView *(UICustomViewMenuElement *element) {
-            return [self scaleSliderViewWithTitle:@"lc.multitask.scale".loc min:0.5 max:2.0 value:self.scaleRatio stepInterval:0.01];
+            return [weakSelf scaleSliderViewWithTitle:@"lc.multitask.scale".loc min:0.5 max:2.0 value:weakSelf.scaleRatio stepInterval:0.01];
         }]
     ];
     
 
-    __weak typeof(self) weakSelf = self;
     [self.navigationItem setTitleMenuProvider:^UIMenu *(NSArray<UIMenuElement *> *suggestedActions){
-        if(!weakSelf.appSceneVC.isAppRunning) {
-            return [UIMenu menuWithTitle:NSLocalizedString(@"lc.multitaskAppWindow.appTerminated", nil) children:@[]];
-        } else {
-            NSString *pidText = [NSString stringWithFormat:@"PID: %d", weakSelf.pid];
-            return [UIMenu menuWithTitle:pidText children:menuItems];
-        }
+        return [weakSelf windowMenuTitled:[NSString stringWithFormat:@"PID: %d", weakSelf.pid]];
     }];
     
-    UIImage *minimizeImage = [UIImage systemImageNamed:@"minus.circle"];
-    UIImageConfiguration *minimizeConfig = [UIImageSymbolConfiguration configurationWithPointSize:16.0 weight:UIImageSymbolWeightMedium];
-    minimizeImage = [minimizeImage imageWithConfiguration:minimizeConfig];
-    UIBarButtonItem *minimizeButton = [[UIBarButtonItem alloc] initWithImage:minimizeImage style:UIBarButtonItemStylePlain target:self action:@selector(minimizeWindow)];
-    minimizeButton.tintColor = [UIColor systemYellowColor];
-    
-    NSString *maximizeImageName = _isMaximized ? @"arrow.down.right.and.arrow.up.left.circle" : @"arrow.up.left.and.arrow.down.right.circle";
-    UIImage *maximizeImage = [UIImage systemImageNamed:maximizeImageName];
-    UIImageConfiguration *maximizeConfig = [UIImageSymbolConfiguration configurationWithPointSize:16.0 weight:UIImageSymbolWeightMedium];
-    maximizeImage = [maximizeImage imageWithConfiguration:maximizeConfig];
-    self.maximizeButton = [[UIBarButtonItem alloc] initWithImage:maximizeImage style:UIBarButtonItemStylePlain target:self action:@selector(maximizeWindow)];
-    self.maximizeButton.tintColor = [UIColor systemGreenColor];
-    
-    UIImage *closeImage = [UIImage systemImageNamed:@"xmark.circle"];
-    UIImageConfiguration *closeConfig = [UIImageSymbolConfiguration configurationWithPointSize:16.0 weight:UIImageSymbolWeightMedium];
-    closeImage = [closeImage imageWithConfiguration:closeConfig];
-    UIBarButtonItem *closeButton = [[UIBarButtonItem alloc] initWithImage:closeImage style:UIBarButtonItemStylePlain target:self action:@selector(closeWindow)];
-    closeButton.tintColor = [UIColor systemRedColor];
-    
-    NSArray *barButtonItems = @[closeButton, self.maximizeButton, minimizeButton];
-    if([NSUserDefaults.lcSharedDefaults boolForKey:@"LCMultitaskBottomWindowBar"]) {
-        // resize handle overlaps the close button, so put the buttons on the left
-        self.navigationItem.leftBarButtonItems = barButtonItems;
-    } else {
-        self.navigationItem.rightBarButtonItems = barButtonItems;
+    // iPadOS's window controls: close, minimize and maximize as colored dots
+    // in the leading corner, wherever the bar is. On their own, without the
+    // glass capsule iOS 26 puts behind a navigation bar's items.
+    UIBarButtonItem *controlsItem = [[UIBarButtonItem alloc] initWithCustomView:[self windowControlsView]];
+    if (@available(iOS 26.0, *)) {
+        controlsItem.hidesSharedBackground = YES;
     }
-
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        [self adjustNavigationBarButtonSpacingWithNegativeSpacing:-8.0 rightMargin:-4.0];
-    });
+    self.navigationItem.leftBarButtonItem = controlsItem;
 
     return self;
 }
 
 - (void)setupDecoratedView {
     CGFloat navBarHeight = 44;
-    BOOL isLandscape = UIInterfaceOrientationIsLandscape(UIApp.statusBarOrientation);
-    CGRect frame = CGRectMake(0, 0, isLandscape ? 480 : 320, (isLandscape ? 320 : 480) + navBarHeight);
+    CGRect area = [self screenSafeArea];
+    CGRect frame = CGRectMake(0, 0, MIN(LCWindowDefaultSize.width, area.size.width), MIN(LCWindowDefaultSize.height, area.size.height));
     CGPoint rootViewCenter = self.view.superview.center;
     frame.origin = CGPointMake(rootViewCenter.x - frame.size.width / 2, rootViewCenter.y - frame.size.height / 2);
     
@@ -116,11 +578,26 @@
     navigationBar.autoresizingMask = UIViewAutoresizingFlexibleWidth;
     UINavigationItem *navigationItem = [[UINavigationItem alloc] initWithTitle:self.title];
     navigationBar.items = @[navigationItem];
+    // A quiet title bar, as on iPadOS: material, no hairline, a smaller title.
+    UINavigationBarAppearance *barAppearance = [UINavigationBarAppearance new];
+    [barAppearance configureWithDefaultBackground];
+    barAppearance.backgroundEffect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemChromeMaterial];
+    barAppearance.shadowColor = nil;
+    barAppearance.titleTextAttributes = @{
+        NSFontAttributeName: [UIFont systemFontOfSize:15 weight:UIFontWeightSemibold],
+        NSForegroundColorAttributeName: UIColor.secondaryLabelColor,
+    };
+    navigationBar.standardAppearance = barAppearance;
+    navigationBar.compactAppearance = barAppearance;
+    navigationBar.scrollEdgeAppearance = barAppearance;
     
     self.view.axis = UILayoutConstraintAxisVertical;
     self.view.backgroundColor = UIColor.systemBackgroundColor;
-    self.view.layer.cornerRadius = 10;
-    self.view.layer.masksToBounds = YES;
+    self.view.layer.cornerCurve = kCACornerCurveContinuous;
+    self.view.layer.masksToBounds = NO;
+    self.view.layer.shadowColor = UIColor.blackColor.CGColor;
+    self.view.layer.shadowOffset = CGSizeMake(0, LCWindowShadowOffsetY);
+    self.view.layer.shadowRadius = LCWindowShadowRadius;
 
     self.navigationBar = navigationBar;
     self.navigationItem = navigationBar.items.firstObject;
@@ -156,12 +633,47 @@
     self.resizeHandle.alpha = _isMaximized ? 0.0 : 1.0;
     [self.resizeHandle addGestureRecognizer:resizeGesture];
     [self.view addSubview:self.resizeHandle];
-    
-    self.view.layer.borderWidth = _isMaximized ? 0.0 : 1.0;
-    self.view.layer.borderColor = UIColor.secondarySystemBackgroundColor.CGColor;
+    ((LCWindowView *)self.view).resizeHandle = self.resizeHandle;
     
     [self addChildViewController:_appSceneVC];
     [self.view insertSubview:_appSceneVC.view atIndex:0];
+
+    LCWindowBorderView *borderView = [[LCWindowBorderView alloc] initWithFrame:self.view.bounds];
+    [self.view insertSubview:borderView aboveSubview:_appSceneVC.view];
+    self.borderView = borderView;
+
+    // Along the top, over the strip the app keeps clear, the window drags
+    // as iPadOS's windows drag by their tops.
+    UIView *topStrip = [[UIView alloc] init];
+    topStrip.backgroundColor = UIColor.clearColor;
+    UIPanGestureRecognizer *stripMove = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(moveWindow:)];
+    stripMove.maximumNumberOfTouches = 1;
+    [topStrip addGestureRecognizer:stripMove];
+    [self.view addSubview:topStrip];
+    self.topStrip = topStrip;
+
+    CGSize closedSize = LCControlsCurrentMetrics().closedSize;
+    LCWindowControlsCapsule *capsule = [[LCWindowControlsCapsule alloc] initWithFrame:CGRectMake(0, 0, closedSize.width, closedSize.height)];
+    __weak typeof(self) weakSelf = self;
+    capsule.closeAction = ^{
+        [weakSelf closeWindow];
+    };
+    capsule.minimizeAction = ^{
+        [weakSelf minimizeWindow];
+    };
+    capsule.maximizeAction = ^{
+        [weakSelf maximizeWindow];
+    };
+    capsule.placement = ^{
+        [weakSelf placeWindowControls];
+    };
+    // A long press shows the window's menu, as on iPadOS.
+    [capsule addInteraction:[[UIContextMenuInteraction alloc] initWithDelegate:self]];
+    [self.view addSubview:capsule];
+    self.capsule = capsule;
+    [self.view bringSubviewToFront:self.resizeHandle];
+
+    [self applyWindowStyleMaximized:_isMaximized];
     _appSceneVC.view.translatesAutoresizingMaskIntoConstraints = NO;
     
     [self updateVerticalConstraints];
@@ -174,7 +686,15 @@
     NSUserDefaults *defaults = NSUserDefaults.lcSharedDefaults;
 
     [defaults addObserver:self forKeyPath:@"LCMultitaskBottomWindowBar" options:NSKeyValueObservingOptionNew context:NULL];
+    self.isObservingWindowBar = true;
+    [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(anotherWindowWasTouched:) name:LCWindowTouchedNotification object:nil];
+    [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(dismissWindowControls) name:LCVirtualWindowsTouchedOutsideNotification object:nil];
     [self updateOriginalFrame];
+}
+
+- (void)viewDidLayoutSubviews {
+    [super viewDidLayoutSubviews];
+    [self placeWindowControls];
 }
 
 
@@ -232,9 +752,7 @@
         if(weakSelf.isMaximized) {
             [weakSelf updateMaximizedSafeAreaWithSettings:settings];
         } else {
-            // it seems some apps don't honor these settings so we don't cover the top of the app
-            settings.peripheryInsets = UIEdgeInsetsZero;
-            settings.safeAreaInsetsPortrait = UIEdgeInsetsZero;
+            [weakSelf applyWindowedInsetsToSettings:settings];
         }
     }];
 }
@@ -250,15 +768,132 @@
 
 - (void)minimizeWindow {
     if (self.view.hidden) return;
-    [UIView animateWithDuration:0.3 delay:0 options:UIViewAnimationOptionCurveEaseInOut animations:^{
+    // A picture of the window goes into the dock in its place, and the
+    // window itself hides at once, untouched: nothing that moves or resizes
+    // the window meanwhile can throw the animation off, and the app isn't
+    // scaled on the way.
+    [self.view.layer removeAllAnimations];
+    self.view.transform = CGAffineTransformIdentity;
+    UIView *hostView = self.view.superview;
+    UIView *flyer = hostView ? [self pictureOfWindow] : nil;
+    if (flyer) {
+        // Over the other windows, under the dock it goes into.
+        [hostView addSubview:flyer];
+    }
+    [self hideInDock];
+    if (!flyer) return;
+    self.dockFlyer = flyer;
+
+    void (^landed)(BOOL) = ^(BOOL finished) {
+        [flyer removeFromSuperview];
+    };
+    CGRect icon = [MultitaskDockManager.shared iconFrameForAppUUID:self.dataUUID in:hostView];
+    BOOL reduceMotion = UIAccessibilityIsReduceMotionEnabled();
+    if (CGRectIsNull(icon) || reduceMotion) {
+        // With no dock showing, or with Reduce Motion on, it fades away
+        // where it is.
+        [UIView animateWithDuration:0.25 delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^{
+            flyer.alpha = 0;
+            if (!reduceMotion) {
+                flyer.transform = CGAffineTransformMakeScale(0.85, 0.85);
+            }
+        } completion:landed];
+        return;
+    }
+    // Into its app's icon, as a Mac window goes into the Dock: it shrinks
+    // as it sets off, follows into the icon, and fades there.
+    CGFloat scale = [self scaleIntoRect:icon];
+    [UIView animateWithDuration:LCDockAnimationDuration delay:0 options:UIViewAnimationOptionCurveEaseInOut animations:^{
+        flyer.center = CGPointMake(CGRectGetMidX(icon), CGRectGetMidY(icon));
+    } completion:landed];
+    [UIView animateWithDuration:LCDockAnimationDuration delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^{
+        flyer.transform = CGAffineTransformMakeScale(scale, scale);
+    } completion:nil];
+    [UIView animateWithDuration:LCDockAnimationDuration * LCDockFadeShare delay:LCDockAnimationDuration * (1 - LCDockFadeShare) options:UIViewAnimationOptionCurveEaseIn animations:^{
+        flyer.alpha = 0;
+    } completion:nil];
+}
+
+/// A picture of the window where it is, with its corners and shadow, to go
+/// into the dock in its place. Nil when there's nothing to picture.
+- (UIView *)pictureOfWindow {
+    if (CGRectIsEmpty(self.view.bounds)) return nil;
+    UIView *picture = [self.view snapshotViewAfterScreenUpdates:NO];
+    if (!picture) return nil;
+    UIView *flyer = [[UIView alloc] initWithFrame:self.view.frame];
+    flyer.userInteractionEnabled = NO;
+    picture.frame = flyer.bounds;
+    [flyer addSubview:picture];
+    // The picture stops at the window's edges, so its shadow goes around it.
+    CALayer *windowLayer = self.view.layer;
+    flyer.layer.shadowColor = windowLayer.shadowColor;
+    flyer.layer.shadowOpacity = windowLayer.shadowOpacity;
+    flyer.layer.shadowRadius = windowLayer.shadowRadius;
+    flyer.layer.shadowOffset = windowLayer.shadowOffset;
+    flyer.layer.shadowPath = [UIBezierPath bezierPathWithRoundedRect:flyer.bounds cornerRadius:windowLayer.cornerRadius].CGPath;
+    return flyer;
+}
+
+/// Hides the window as it goes into the dock, and sends it behind the
+/// others, so the dock brings it back in front.
+- (void)hideInDock {
+    self.view.hidden = YES;
+    [self.view.superview sendSubviewToBack:self.view];
+    // A tucked-away window comes back out while it's hidden, so it shows on
+    // screen when the multitask dock brings it back.
+    if (self.isStashed) {
+        [self unstashAnimated:NO];
+    }
+}
+
+- (void)restoreFromDock {
+    // A window brought back before its picture reached the dock comes
+    // straight back out.
+    [self.dockFlyer removeFromSuperview];
+    [self.view.layer removeAllAnimations];
+    self.view.transform = CGAffineTransformIdentity;
+    UIView *hostView = self.view.superview;
+    CGRect icon = hostView ? [MultitaskDockManager.shared iconFrameForAppUUID:self.dataUUID in:hostView] : CGRectNull;
+    BOOL reduceMotion = UIAccessibilityIsReduceMotionEnabled();
+    UIViewAnimationOptions options = UIViewAnimationOptionAllowUserInteraction;
+    if (CGRectIsNull(icon) || reduceMotion) {
+        // With no dock showing, or with Reduce Motion on, it fades in where
+        // it is.
         self.view.alpha = 0;
-        self.view.transform = CGAffineTransformMakeScale(0.1, 0.1);
-    } completion:^(BOOL finished) {
-        if (!finished) return;
-        self.view.hidden = YES;
+        if (!reduceMotion) {
+            self.view.transform = CGAffineTransformMakeScale(0.85, 0.85);
+        }
+        self.view.hidden = NO;
+        [UIView animateWithDuration:0.25 delay:0 options:options | UIViewAnimationOptionCurveEaseOut animations:^{
+            self.view.alpha = 1;
+            self.view.transform = CGAffineTransformIdentity;
+        } completion:nil];
+        return;
+    }
+    // Out of its app's icon, the way it went in: it leaves the icon small
+    // and grows as it gets back to where it was. Its size stays as it is, so
+    // the app isn't resized on the way.
+    CGPoint center = self.view.center;
+    self.view.center = CGPointMake(CGRectGetMidX(icon), CGRectGetMidY(icon));
+    CGFloat scale = [self scaleIntoRect:icon];
+    self.view.transform = CGAffineTransformMakeScale(scale, scale);
+    self.view.alpha = 0;
+    self.view.hidden = NO;
+    [UIView animateWithDuration:LCDockAnimationDuration delay:0 options:options | UIViewAnimationOptionCurveEaseInOut animations:^{
+        self.view.center = center;
+    } completion:nil];
+    [UIView animateWithDuration:LCDockAnimationDuration delay:0 options:options | UIViewAnimationOptionCurveEaseIn animations:^{
         self.view.transform = CGAffineTransformIdentity;
-        [self.view.superview sendSubviewToBack:self.view];
-    }];
+    } completion:nil];
+    [UIView animateWithDuration:LCDockAnimationDuration * LCDockFadeShare delay:0 options:options | UIViewAnimationOptionCurveEaseOut animations:^{
+        self.view.alpha = 1;
+    } completion:nil];
+}
+
+/// How much to shrink the window for it to fit in `rect`.
+- (CGFloat)scaleIntoRect:(CGRect)rect {
+    CGSize size = self.view.bounds.size;
+    return MIN(rect.size.width, rect.size.height) / MAX(MAX(size.width, size.height), 1);
 }
 
 - (void)minimizeWindowPiP {
@@ -277,6 +912,16 @@
 }
 
 - (void)maximizeWindow {
+    // On iPhone it goes into the split screen's first half, to wait for an
+    // app beside it, or out of the split screen to fill the screen.
+    if (LCWindowSnapManager.usesPhoneLayout) {
+        if (self.isPhoneSplit) {
+            [LCWindowSnapManager.shared makeFullScreenFromPhoneSplit:self];
+        } else {
+            [LCWindowSnapManager.shared startPhoneSplitWithWindow:self];
+        }
+        return;
+    }
     void (^updateSettingsBlock)(UIMutableApplicationSceneSettings *settings);
     
     [self.view layoutIfNeeded];
@@ -286,39 +931,50 @@
         };
         CGRect maxFrame = UIEdgeInsetsInsetRect(self.view.window.frame, self.view.window.safeAreaInsets);
         CGRect newFrame = CGRectMake(self.originalFrame.origin.x * maxFrame.size.width, self.originalFrame.origin.y * maxFrame.size.height, self.originalFrame.size.width, self.originalFrame.size.height);
+        // The title bar comes back as the window shrinks, not after.
+        self.isMaximized = NO;
+        [self updateVerticalConstraints];
         [UIView animateWithDuration:0.3 delay:0 options:UIViewAnimationOptionCurveEaseInOut animations:^{
             self.view.frame = newFrame;
-            self.view.layer.borderWidth = 1;
+            [self applyWindowStyleMaximized:NO];
             self.resizeHandle.alpha = 1;
             
             [self.appSceneVC updateSettingsWithBlock:updateSettingsBlock];
             
             [self.view layoutIfNeeded];
         } completion:^(BOOL finished) {
-            self.isMaximized = NO;
-            UIImage *maximizeImage = [UIImage systemImageNamed:@"arrow.up.left.and.arrow.down.right.circle"];
-            UIImageConfiguration *maximizeConfig = [UIImageSymbolConfiguration configurationWithPointSize:16.0 weight:UIImageSymbolWeightMedium];
-            self.maximizeButton.image = [maximizeImage imageWithConfiguration:maximizeConfig];
+            [self updateMaximizeControl];
         }];
     } else {
         updateSettingsBlock = ^(UIMutableApplicationSceneSettings *settings) {
             [self updateMaximizedFrameWithSettings:settings];
         };
-        [self updateOriginalFrame];
+        if (self.isStashed) {
+            [self unstashAnimated:NO];
+        }
+        if (self.snapSlot != LCWindowSnapSlotNone) {
+            // Full screen takes the window out of its half. Leaving full
+            // screen brings it back as it was before it snapped.
+            CGRect before = self.frameBeforeSnap;
+            [LCWindowSnapManager.shared releaseWindow:self];
+            if (!CGRectIsEmpty(before)) {
+                [self updateOriginalFrameFromFrame:before];
+            }
+        } else {
+            [self updateOriginalFrame];
+        }
         [UIView animateWithDuration:0.3 delay:0 options:UIViewAnimationOptionCurveEaseInOut animations:^{
             self.isMaximized = YES;
             [self updateVerticalConstraints];
             
-            self.view.layer.borderWidth = 0;
+            [self applyWindowStyleMaximized:YES];
             self.resizeHandle.alpha = 0;
             
             [self.appSceneVC updateSettingsWithBlock:updateSettingsBlock];
             
             [self.view layoutIfNeeded];
         } completion:^(BOOL finished) {
-            UIImage *restoreImage = [UIImage systemImageNamed:@"arrow.down.right.and.arrow.up.left.circle"];
-            UIImageConfiguration *restoreConfig = [UIImageSymbolConfiguration configurationWithPointSize:16.0 weight:UIImageSymbolWeightMedium];
-            self.maximizeButton.image = [restoreImage imageWithConfiguration:restoreConfig];
+            [self updateMaximizeControl];
         }];
     }
 }
@@ -330,12 +986,19 @@
         
         MultitaskDockManager *dock = [MultitaskDockManager shared];
         [dock removeRunningApp:self.dataUUID];
+        [LCWindowSnapManager.shared releaseWindow:self];
+        [self stopListeningForAppTouches];
         
-        self.view.layer.masksToBounds = NO;
-        [UIView transitionWithView:self.view duration:0.4 options:UIViewAnimationOptionTransitionCurlUp animations:^{
-            self.view.hidden = YES;
+        // Closing shrinks and fades the window away, as iPadOS does.
+        [UIView animateWithDuration:0.25 delay:0 options:UIViewAnimationOptionCurveEaseIn animations:^{
+            self.view.transform = CGAffineTransformMakeScale(0.85, 0.85);
+            self.view.alpha = 0;
         } completion:^(BOOL b){
             [self.view removeFromSuperview];
+            // Let the closed window go: nothing else lays it out or holds it
+            [self stopObservingWindowBar];
+            [self willMoveToParentViewController:nil];
+            [self removeFromParentViewController];
         }];
         
         if(skipTerminationScreen) {
@@ -356,6 +1019,14 @@
     dispatch_async(dispatch_get_main_queue(), ^{
         if(error) {
             [vc appTerminationCleanUp];
+            // The launch waiting on this window ends with the error, rather
+            // than waiting forever and leaving the app marked as running.
+            if (self.pidAvailableHandler) {
+                self.pidAvailableHandler(nil, error);
+                self.pidAvailableHandler = nil;
+                // The launch shows the error itself.
+                return;
+            }
             UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"lc.common.error".loc message:error.localizedDescription preferredStyle:UIAlertControllerStyleAlert];
             [alert addAction:[UIAlertAction actionWithTitle:@"lc.common.ok".loc style:UIAlertActionStyleCancel handler:nil]];
             [alert addAction:[UIAlertAction actionWithTitle:@"lc.common.copy".loc style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
@@ -367,6 +1038,7 @@
             [self updateOriginalFrame];
             if (self.pidAvailableHandler) {
                 self.pidAvailableHandler(@(self.pid), nil);
+                self.pidAvailableHandler = nil;
             }
         }
     });
@@ -399,102 +1071,224 @@
     }];
 }
 
-- (void)adjustNavigationBarButtonSpacingWithNegativeSpacing:(CGFloat)spacing rightMargin:(CGFloat)margin {
-    if (!self.navigationBar) return;
-    [self findAndAdjustButtonBarStackView:self.navigationBar withSpacing:spacing rightMargin:margin];
-}
-
-- (void)findAndAdjustButtonBarStackView:(UIView *)view withSpacing:(CGFloat)spacing rightMargin:(CGFloat)margin {
-    for (UIView *subview in view.subviews) {
-        if ([subview isKindOfClass:NSClassFromString(@"_UIButtonBarStackView")]) {
-            if ([subview respondsToSelector:@selector(setSpacing:)]) {
-                [(_UIButtonBarStackView *)subview setSpacing:spacing];
-            }
-            
-            if (subview.superview) {
-                for (NSLayoutConstraint *constraint in subview.superview.constraints) {
-                    if ((constraint.firstItem == subview && constraint.firstAttribute == NSLayoutAttributeTrailing) ||
-                        (constraint.secondItem == subview && constraint.secondAttribute == NSLayoutAttributeTrailing)) {
-                        constraint.constant = (constraint.firstItem == subview) ? -margin : margin;
-                        break;
-                    }
-                }
-                
-                [subview setNeedsLayout];
-                [subview.superview setNeedsLayout];
-            }
-            
-            return;
-        }
-        
-        [self findAndAdjustButtonBarStackView:subview withSpacing:spacing rightMargin:margin];
-    }
-}
-
-
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context {
     [self.view layoutIfNeeded];
     [UIView animateWithDuration:0.3 animations:^{
         BOOL bottomWindowBar = [change[NSKeyValueChangeNewKey] boolValue];
+        // The window controls stay in the leading corner either way.
         if(bottomWindowBar) {
-            self.navigationItem.leftBarButtonItems = self.navigationItem.rightBarButtonItems;
-            self.navigationItem.rightBarButtonItems = nil;
             [self.view addArrangedSubview:self.navigationBar];
         } else {
-            self.navigationItem.rightBarButtonItems = self.navigationItem.leftBarButtonItems;
-            self.navigationItem.leftBarButtonItems = nil;
             [self.view insertArrangedSubview:self.navigationBar atIndex:0];
         }
         
         [self updateVerticalConstraints];
-        [self adjustNavigationBarButtonSpacingWithNegativeSpacing:-8.0 rightMargin:-4.0];
         
         if(_isMaximized) {
             [self.appSceneVC updateSettingsWithBlock:^(UIMutableApplicationSceneSettings *settings) {
                 [self updateMaximizedFrameWithSettings:settings];
+            }];
+        } else {
+            [self.appSceneVC updateSettingsWithBlock:^(UIMutableApplicationSceneSettings *settings) {
+                [self applyWindowedInsetsToSettings:settings];
             }];
         }
         [self.view layoutIfNeeded];
     }];
 }
 
+- (void)stopObservingWindowBar {
+    // The exit callback can run twice for one window
+    if(!self.isObservingWindowBar) return;
+    self.isObservingWindowBar = false;
+    [NSUserDefaults.lcSharedDefaults removeObserver:self forKeyPath:@"LCMultitaskBottomWindowBar"];
+}
+
+- (void)dealloc {
+    [self stopObservingWindowBar];
+    [self stopListeningForAppTouches];
+    [NSNotificationCenter.defaultCenter removeObserver:self];
+}
+
+/// A touch on the app itself goes straight to it, past this window, so the
+/// app says so with a notification named for its container (see
+/// UIKit+GuestHooks.m), and the window comes to the front for it.
+- (void)listenForAppTouches {
+    NSString *name = [NSString stringWithFormat:@"%s%@", LC_WINDOW_TOUCHED_NOTIFICATION_PREFIX, self.dataUUID];
+    __weak typeof(self) weakSelf = self;
+    int token = 0;
+    uint32_t status = notify_register_dispatch(name.UTF8String, &token, dispatch_get_main_queue(), ^(int receivedToken) {
+        [weakSelf appWasTouched];
+    });
+    if (status == NOTIFY_STATUS_OK) {
+        self.touchNotifyToken = token;
+        self.isListeningForAppTouches = YES;
+    }
+}
+
+- (void)stopListeningForAppTouches {
+    if (!self.isListeningForAppTouches) {
+        return;
+    }
+    self.isListeningForAppTouches = NO;
+    notify_cancel(self.touchNotifyToken);
+}
+
 - (void)moveWindow:(UIPanGestureRecognizer*)sender {
-    if(_isMaximized) return;
-    
+    if(_isMaximized || LCWindowSnapManager.usesPhoneLayout) return;
+    UIView *hostView = self.view.superview;
+    if (!hostView) return;
+    LCWindowSnapManager *snapManager = LCWindowSnapManager.shared;
+    CGPoint finger = [sender locationInView:hostView];
+
+    self.isBeingDragged = sender.state == UIGestureRecognizerStateBegan || sender.state == UIGestureRecognizerStateChanged;
+    if (sender.state == UIGestureRecognizerStateBegan) {
+        [self.capsule setExpanded:NO animated:YES];
+        CGRect start = self.view.frame;
+        if (self.isStashed) {
+            start = [self frameOutOfStash:self.view.frame];
+            [self leaveStashForDrag];
+        }
+        if (self.snapSlot != LCWindowSnapSlotNone) {
+            [self leaveSnapUnderFinger:finger];
+            start = self.view.frame;
+        }
+        self.frameAtDragStart = start;
+    }
+
     CGPoint point = [sender translationInView:self.view];
     [sender setTranslation:CGPointZero inView:self.view];
-
     self.view.center = CGPointMake(self.view.center.x + point.x, self.view.center.y + point.y);
+
+    switch (sender.state) {
+        case UIGestureRecognizerStateBegan:
+        case UIGestureRecognizerStateChanged:
+            [snapManager showPreviewForWindow:self fingerLocation:finger];
+            [self updateOriginalFrame];
+            break;
+        case UIGestureRecognizerStateEnded:
+            [snapManager hidePreview];
+            [self finishMoveWithFinger:finger velocity:[sender velocityInView:hostView]];
+            break;
+        default:
+            [snapManager hidePreview];
+            [self updateOriginalFrame];
+            break;
+    }
+}
+
+/// Where a window goes as the drag that moves it ends: into a half when the
+/// finger is at an edge that snaps, into the side when it's flung there or
+/// is mostly past it, or it stays where it was let go.
+- (void)finishMoveWithFinger:(CGPoint)finger velocity:(CGPoint)velocity {
+    LCWindowSnapManager *snapManager = LCWindowSnapManager.shared;
+    BOOL isFlungSideways = fabs(velocity.x) > LCStashFlingVelocity && fabs(velocity.x) > fabs(velocity.y) * 1.5;
+    LCWindowSnapSlot slot = [snapManager slotForFingerLocation:finger inView:self.view.superview];
+    if (slot != LCWindowSnapSlotNone && !isFlungSideways) {
+        self.frameBeforeSnap = self.frameAtDragStart;
+        [snapManager snapWindow:self toSlot:slot];
+        return;
+    }
+    NSInteger side = [self stashSideForVelocity:velocity flung:isFlungSideways];
+    if (side != 0) {
+        [self stashIntoLeftSide:side < 0];
+        return;
+    }
     [self updateOriginalFrame];
 }
 
-- (void)resizeWindow:(UIPanGestureRecognizer*)sender {
-    if(_isMaximized) return;
-    
-    CGPoint point = [sender translationInView:self.view];
-    [sender setTranslation:CGPointZero inView:self.view];
+/// Takes a snapped window out of its half as a drag begins: back at the size
+/// it had, under the finger at the same point along its title bar.
+- (void)leaveSnapUnderFinger:(CGPoint)finger {
+    CGRect snapped = self.view.frame;
+    CGSize size = CGRectIsEmpty(self.frameBeforeSnap) ? snapped.size : self.frameBeforeSnap.size;
+    [LCWindowSnapManager.shared releaseWindow:self];
+    CGFloat along = snapped.size.width > 0 ? (finger.x - CGRectGetMinX(snapped)) / snapped.size.width : 0.5;
+    BOOL bottomWindowBar = [NSUserDefaults.lcSharedDefaults boolForKey:@"LCMultitaskBottomWindowBar"];
+    CGFloat y = bottomWindowBar ? CGRectGetMaxY(snapped) - size.height : CGRectGetMinY(snapped);
+    self.view.frame = CGRectMake(finger.x - along * size.width, y, size.width, size.height);
+}
 
-    CGRect frame = self.view.frame;
-    frame.size.width = MAX(50, frame.size.width + point.x);
-    frame.size.height = MAX(50, frame.size.height + point.y);
+/// Resizes the window from its bottom-right corner, which stays under the
+/// finger, down to iPadOS's smallest window and out to the screen's safe
+/// area. The top-left corner stays where it is.
+- (void)resizeWindow:(UIPanGestureRecognizer*)sender {
+    if(_isMaximized || self.snapSlot != LCWindowSnapSlotNone || LCWindowSnapManager.usesPhoneLayout) return;
+    UIView *hostView = self.view.superview;
+    if (!hostView) return;
+    if (sender.state == UIGestureRecognizerStateBegan) {
+        [self.capsule setExpanded:NO animated:YES];
+        self.frameAtResizeStart = self.view.frame;
+    }
+
+    CGPoint translation = [sender translationInView:hostView];
+    CGRect start = self.frameAtResizeStart;
+    CGRect area = [self screenSafeArea];
+    CGSize minimum = [self minimumWindowSize];
+    // A window already past the edge doesn't shrink as it's grabbed.
+    CGFloat maximumWidth = MAX(MAX(CGRectGetMaxX(area) - CGRectGetMinX(start), start.size.width), minimum.width);
+    CGFloat maximumHeight = MAX(MAX(CGRectGetMaxY(area) - CGRectGetMinY(start), start.size.height), minimum.height);
+    CGRect frame = start;
+    frame.size.width = MIN(MAX(start.size.width + translation.x, minimum.width), maximumWidth);
+    frame.size.height = MIN(MAX(start.size.height + translation.y, minimum.height), maximumHeight);
     self.view.frame = frame;
     [self updateOriginalFrame];
 }
 
+/// iPadOS's smallest window, or the screen's safe area where that's smaller.
+- (CGSize)minimumWindowSize {
+    CGRect area = [self screenSafeArea];
+    return CGSizeMake(MIN(LCWindowMinimumSize.width, area.size.width), MIN(LCWindowMinimumSize.height, area.size.height));
+}
+
 - (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
     [super touchesBegan:touches withEvent:event];
-    // FIXME: how to bring view to front when touching the passthrough view?
-    [self.view.superview bringSubviewToFront:self.view];
+    // A touch anywhere on the window but its controls closes them, as a
+    // touch on the app does.
+    LCWindowControlsCapsule *capsule = self.capsule;
+    for (UITouch *touch in touches) {
+        if (capsule.hidden || ![capsule pointInside:[touch locationInView:capsule] withEvent:event]) {
+            [self dismissWindowControls];
+            break;
+        }
+    }
+    [self raiseForTouch];
+}
+
+/// Brings the window to the front for a touch on it, on its title bar or on
+/// the app itself, without bringing a tucked-away window back out: its tab's
+/// own tap and drag do that.
+- (void)raiseForTouch {
+    if (self.view.hidden || !self.view.superview) {
+        return;
+    }
+    [NSNotificationCenter.defaultCenter postNotificationName:LCWindowTouchedNotification object:self];
+    // Reading the host view brings it back above the Home Screen first, in
+    // case something the Home Screen drew since covered the windows.
+    [MultitaskDockManager.shared windowHostingView];
+    UIView *hostView = self.view.superview;
+    if ([hostView isKindOfClass:VirtualWindowsHostView.class]) {
+        [(VirtualWindowsHostView *)hostView raiseSubview:self.view];
+    } else {
+        [hostView bringSubviewToFront:self.view];
+    }
 }
 
 - (void)updateVerticalConstraints {
     [self.view layoutIfNeeded];
     [UIView animateWithDuration:0.3 animations:^{
         BOOL bottomWindowBar = [NSUserDefaults.lcSharedDefaults boolForKey:@"LCMultitaskBottomWindowBar"];
-        BOOL hideWindowBar = MultitaskDockManager.shared.isCollapsed && self.isMaximized;
+        // As iPadOS 26's windows, a window has no title bar: the app fills
+        // it to its rounded corners, under the window controls floating over
+        // its top-leading corner, and it drags by its top. Full screen, the
+        // app goes edge to edge with the screen's safe area passed on to it.
+        // Only a window bar at the bottom of the window keeps a title bar.
+        BOOL hideWindowBar = self.isMaximized || !bottomWindowBar || LCWindowSnapManager.usesPhoneLayout;
         CGFloat navBarHeight = hideWindowBar ? 0 : 44;
         self.navigationBar.alpha = hideWindowBar ? 0 : 1;
         self.navigationBar.hidden = hideWindowBar;
+        [self updateWindowControlsVisibility];
+        [self updateAppSafeArea];
         
         // Update safe area insets
         if(self.isMaximized) {
@@ -520,9 +1314,586 @@
             ];
         }
         [NSLayoutConstraint activateConstraints:self.activatedVerticalConstraints];
+        [self updateCornerMasks];
 
         [self.view layoutIfNeeded];
     }];
+}
+
+#pragma mark - Snapping
+
+- (void)didSnapToSlot:(NSInteger)slot frame:(CGRect)frame {
+    if (CGRectIsEmpty(self.frameBeforeSnap)) {
+        self.frameBeforeSnap = self.view.frame;
+    }
+    self.snapSlot = slot;
+    [UIView animateWithDuration:0.4 delay:0 usingSpringWithDamping:0.86 initialSpringVelocity:0 options:UIViewAnimationOptionBeginFromCurrentState animations:^{
+        self.view.frame = frame;
+        // The divider resizes a snapped window instead.
+        self.resizeHandle.alpha = 0;
+        [self.view layoutIfNeeded];
+    } completion:nil];
+}
+
+- (void)didLeaveSnapRestoringFrame:(BOOL)restoresFrame {
+    self.snapSlot = LCWindowSnapSlotNone;
+    if (!self.isMaximized) {
+        self.resizeHandle.alpha = 1;
+    }
+    if (!restoresFrame || CGRectIsEmpty(self.frameBeforeSnap)) {
+        return;
+    }
+    CGRect frame = self.frameBeforeSnap;
+    [UIView animateWithDuration:0.4 delay:0 usingSpringWithDamping:0.86 initialSpringVelocity:0 options:UIViewAnimationOptionBeginFromCurrentState animations:^{
+        self.view.frame = frame;
+        [self.view layoutIfNeeded];
+    } completion:nil];
+    [self updateOriginalFrame];
+}
+
+#pragma mark - Tucking away
+
+/// The screen's safe area, in the view the windows are in.
+- (CGRect)screenSafeArea {
+    UIView *hostView = self.view.superview;
+    CGRect bounds = hostView ? hostView.bounds : self.view.window.bounds;
+    if (CGRectIsEmpty(bounds)) {
+        bounds = UIScreen.mainScreen.bounds;
+    }
+    return UIEdgeInsetsInsetRect(bounds, self.view.window.safeAreaInsets);
+}
+
+/// The part of the screen a window tucks against: its safe area.
+- (CGRect)stashArea {
+    return [self screenSafeArea];
+}
+
+/// Which side to tuck the window into as it's let go: the side it's flung
+/// toward, or the one it's mostly past. -1 for the left, 1 for the right, 0
+/// for neither.
+- (NSInteger)stashSideForVelocity:(CGPoint)velocity flung:(BOOL)flung {
+    if (flung) {
+        return velocity.x < 0 ? -1 : 1;
+    }
+    CGRect area = [self stashArea];
+    CGRect frame = self.view.frame;
+    if (frame.size.width <= 0) {
+        return 0;
+    }
+    if ((CGRectGetMinX(area) - CGRectGetMinX(frame)) / frame.size.width >= LCStashOffscreenShare) {
+        return -1;
+    }
+    if ((CGRectGetMaxX(frame) - CGRectGetMaxX(area)) / frame.size.width >= LCStashOffscreenShare) {
+        return 1;
+    }
+    return 0;
+}
+
+/// Where a window tucked into a side sits: past it, all but the tab, at the
+/// same height, kept where a thumb reaches the tab.
+- (CGRect)stashedFrameIntoLeftSide:(BOOL)left fromFrame:(CGRect)frame {
+    CGRect area = [self stashArea];
+    frame.origin.x = left ? CGRectGetMinX(area) - frame.size.width + LCStashTabWidth : CGRectGetMaxX(area) - LCStashTabWidth;
+    frame.origin.y = MAX(CGRectGetMinY(area), MIN(frame.origin.y, CGRectGetMaxY(area) - frame.size.height));
+    return frame;
+}
+
+/// Where a window brought back out of a side sits: fully on screen, against
+/// that side, at the same height.
+- (CGRect)frameOutOfStash:(CGRect)frame {
+    CGRect area = [self stashArea];
+    if (frame.size.width >= area.size.width - LCStashReturnMargin * 2) {
+        frame.origin.x = CGRectGetMinX(area);
+    } else {
+        frame.origin.x = self.stashesLeft ? CGRectGetMinX(area) + LCStashReturnMargin : CGRectGetMaxX(area) - frame.size.width - LCStashReturnMargin;
+    }
+    frame.origin.y = MAX(CGRectGetMinY(area), MIN(frame.origin.y, CGRectGetMaxY(area) - frame.size.height));
+    return frame;
+}
+
+/// Tucks the window into a side, as macOS tucks away Picture in Picture.
+- (void)stashIntoLeftSide:(BOOL)left {
+    self.isStashed = YES;
+    self.stashesLeft = left;
+    [self showStashTab];
+    CGRect frame = [self stashedFrameIntoLeftSide:left fromFrame:self.view.frame];
+    [[[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleLight] impactOccurred];
+    [UIView animateWithDuration:0.45 delay:0 usingSpringWithDamping:0.85 initialSpringVelocity:0 options:UIViewAnimationOptionBeginFromCurrentState | UIViewAnimationOptionAllowUserInteraction animations:^{
+        self.view.frame = frame;
+        self.stashTab.alpha = 1;
+        // The tab covers the corner the handle would be in.
+        self.resizeHandle.alpha = 0;
+    } completion:nil];
+}
+
+- (void)unstashAnimated:(BOOL)animated {
+    if (!self.isStashed) {
+        return;
+    }
+    self.isStashed = NO;
+    CGRect frame = [self frameOutOfStash:self.view.frame];
+    UIView *tab = self.stashTab;
+    void (^changes)(void) = ^{
+        self.view.frame = frame;
+        tab.alpha = 0;
+        self.resizeHandle.alpha = self.isMaximized ? 0 : 1;
+    };
+    void (^completion)(BOOL) = ^(BOOL finished) {
+        if (!self.isStashed) {
+            [tab removeFromSuperview];
+        }
+    };
+    if (animated) {
+        [UIView animateWithDuration:0.45 delay:0 usingSpringWithDamping:0.85 initialSpringVelocity:0 options:UIViewAnimationOptionBeginFromCurrentState | UIViewAnimationOptionAllowUserInteraction animations:changes completion:completion];
+    } else {
+        changes();
+        completion(YES);
+    }
+    [self updateOriginalFrame];
+}
+
+- (void)restash {
+    if (self.isStashed) {
+        self.view.frame = [self stashedFrameIntoLeftSide:self.stashesLeft fromFrame:self.view.frame];
+    }
+}
+
+/// A drag on the tab pulls the window out wherever the finger takes it.
+- (void)leaveStashForDrag {
+    self.isStashed = NO;
+    UIView *tab = self.stashTab;
+    [UIView animateWithDuration:0.2 delay:0 options:UIViewAnimationOptionBeginFromCurrentState | UIViewAnimationOptionAllowUserInteraction animations:^{
+        tab.alpha = 0;
+        self.resizeHandle.alpha = 1;
+    } completion:^(BOOL finished) {
+        if (!self.isStashed) {
+            [tab removeFromSuperview];
+        }
+    }];
+}
+
+- (void)stashTabTapped {
+    [self unstashAnimated:YES];
+}
+
+/// The tab over the sliver of a tucked-away window left on screen: glass,
+/// with a chevron pointing back onto the screen.
+- (void)showStashTab {
+    if (!self.stashTab) {
+        UIVisualEffectView *tab = [[UIVisualEffectView alloc] initWithEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemThinMaterialDark]];
+        tab.clipsToBounds = YES;
+        tab.layer.cornerRadius = LCWindowCornerRadius;
+        tab.layer.cornerCurve = kCACornerCurveContinuous;
+        tab.alpha = 0;
+
+        UIImageView *chevron = [[UIImageView alloc] init];
+        chevron.translatesAutoresizingMaskIntoConstraints = NO;
+        chevron.tintColor = [UIColor colorWithWhite:1.0 alpha:0.9];
+        chevron.tag = 1;
+        [tab.contentView addSubview:chevron];
+        [NSLayoutConstraint activateConstraints:@[
+            [chevron.centerXAnchor constraintEqualToAnchor:tab.contentView.centerXAnchor],
+            [chevron.centerYAnchor constraintEqualToAnchor:tab.contentView.centerYAnchor],
+        ]];
+
+        [tab addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(stashTabTapped)]];
+        UIPanGestureRecognizer *pull = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(moveWindow:)];
+        pull.maximumNumberOfTouches = 1;
+        [tab addGestureRecognizer:pull];
+
+        tab.isAccessibilityElement = YES;
+        tab.accessibilityTraits = UIAccessibilityTraitButton;
+        self.stashTab = tab;
+    }
+    UIVisualEffectView *tab = self.stashTab;
+    BOOL left = self.stashesLeft;
+    CGRect bounds = self.view.bounds;
+    // Over the part left on screen, rounded on that side as the window is.
+    tab.frame = left ? CGRectMake(bounds.size.width - LCStashTabWidth, 0, LCStashTabWidth, bounds.size.height) : CGRectMake(0, 0, LCStashTabWidth, bounds.size.height);
+    tab.autoresizingMask = UIViewAutoresizingFlexibleHeight | (left ? UIViewAutoresizingFlexibleLeftMargin : UIViewAutoresizingFlexibleRightMargin);
+    tab.layer.maskedCorners = left ? (kCALayerMaxXMinYCorner | kCALayerMaxXMaxYCorner) : (kCALayerMinXMinYCorner | kCALayerMinXMaxYCorner);
+    UIImageView *chevron = (UIImageView *)[tab.contentView viewWithTag:1];
+    UIImageSymbolConfiguration *configuration = [UIImageSymbolConfiguration configurationWithPointSize:22 weight:UIImageSymbolWeightSemibold];
+    chevron.image = [[UIImage systemImageNamed:left ? @"chevron.compact.right" : @"chevron.compact.left"] imageWithConfiguration:configuration];
+    tab.accessibilityLabel = [NSString stringWithFormat:@"Show %@", self.title ?: @"Window"];
+    if (tab.superview != self.view) {
+        [self.view addSubview:tab];
+    }
+    [self.view bringSubviewToFront:tab];
+}
+
+#pragma mark - Floating controls
+
+/// Shows the floating window controls, then hides them again after
+/// `duration` seconds, unless another reveal came in meanwhile.
+- (void)revealFloatingControlsFor:(NSTimeInterval)duration {
+    NSUInteger reveal = ++self.floatingControlsReveal;
+    LCWindowControlsCapsule *capsule = self.capsule;
+    [self.view bringSubviewToFront:capsule];
+    // Open, so one tap acts: asking for them was the tap that opens them.
+    [capsule setExpanded:YES animated:NO];
+    capsule.hidden = NO;
+    [UIView animateWithDuration:0.2 animations:^{
+        capsule.alpha = 1;
+    }];
+    __weak typeof(self) weakSelf = self;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(duration * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        typeof(self) self = weakSelf;
+        if (!self || reveal != self.floatingControlsReveal || !(self.isMaximized || self.isPhoneSplit)) return;
+        [self hideRevealedWindowControls];
+    });
+}
+
+/// Hides the window controls of a window filling the screen again.
+- (void)hideRevealedWindowControls {
+    NSUInteger reveal = ++self.floatingControlsReveal;
+    LCWindowControlsCapsule *capsule = self.capsule;
+    [UIView animateWithDuration:0.3 animations:^{
+        capsule.alpha = 0;
+    } completion:^(BOOL finished) {
+        if (reveal == self.floatingControlsReveal && capsule.alpha == 0) {
+            capsule.hidden = YES;
+            [capsule setExpanded:NO animated:NO];
+        }
+    }];
+}
+
+/// The window controls show over a window's top-leading corner, except over
+/// one with its window bar at the bottom, which has its own, and over one
+/// filling the screen, which shows them when asked for.
+- (void)updateWindowControlsVisibility {
+    BOOL bottomWindowBar = [NSUserDefaults.lcSharedDefaults boolForKey:@"LCMultitaskBottomWindowBar"];
+    LCWindowControlsCapsule *capsule = self.capsule;
+    self.floatingControlsReveal++;
+    [capsule setExpanded:NO animated:NO];
+    BOOL shows = !self.isMaximized && !bottomWindowBar && !LCWindowSnapManager.usesPhoneLayout;
+    capsule.alpha = shows ? 1 : 0;
+    capsule.hidden = !shows;
+    [self.view insertSubview:self.borderView aboveSubview:self.appSceneVC.view];
+    [self.view bringSubviewToFront:self.topStrip];
+    [self.view bringSubviewToFront:capsule];
+    [self.view bringSubviewToFront:self.resizeHandle];
+    [self placeWindowControls];
+}
+
+/// Puts the window controls in the window's top-leading corner, where
+/// LCControlsCurrentMetrics says: on iPad 21 points in, or 10 points in while
+/// open, both concentric with the corner, as iPadOS puts them. Over a window
+/// filling the screen they go as far in from the screen's leading safe area,
+/// and 2 points less than the status bar's height lower, as SpringBoard moves
+/// them for a window at the top of the screen. The strip along the top that
+/// drags the window goes with them.
+- (void)placeWindowControls {
+    LCWindowControlsCapsule *capsule = self.capsule;
+    if (!capsule) {
+        return;
+    }
+    LCControlsMetrics metrics = LCControlsCurrentMetrics();
+    BOOL isOpen = capsule.isExpanded;
+    CGSize size = isOpen ? metrics.openSize : metrics.closedSize;
+    CGPoint offset = isOpen ? metrics.openOrigin : metrics.closedOrigin;
+    BOOL rightToLeft = self.view.effectiveUserInterfaceLayoutDirection == UIUserInterfaceLayoutDirectionRightToLeft;
+    CGFloat width = self.view.bounds.size.width;
+    // A window filling the screen, or a half of an iPhone's, keeps them
+    // clear of the parts of the screen it covers.
+    BOOL fillsArea = self.isMaximized || self.isPhoneSplit;
+    UIEdgeInsets safeArea = fillsArea ? self.view.safeAreaInsets : UIEdgeInsetsZero;
+    CGFloat x = (rightToLeft ? safeArea.right : safeArea.left) + offset.x;
+    if (rightToLeft) {
+        x = width - x - size.width;
+    }
+    CGFloat statusBarClearance = 0;
+    UIStatusBarManager *statusBar = self.view.window.windowScene.statusBarManager;
+    BOOL reachesTop = CGRectGetMinY([self.view convertRect:self.view.bounds toView:nil]) < 1;
+    if (fillsArea && reachesTop && statusBar && !statusBar.isStatusBarHidden) {
+        statusBarClearance = MAX(CGRectGetHeight(statusBar.statusBarFrame) - LCControlsStatusBarClearance, 0);
+    }
+    capsule.frame = CGRectMake(x, statusBarClearance + offset.y, size.width, size.height);
+
+    BOOL bottomWindowBar = [NSUserDefaults.lcSharedDefaults boolForKey:@"LCMultitaskBottomWindowBar"];
+    self.topStrip.frame = CGRectMake(0, 0, width, LCWindowTopStripHeight);
+    self.topStrip.hidden = self.isMaximized || bottomWindowBar || LCWindowSnapManager.usesPhoneLayout;
+}
+
+/// Closes the window controls.
+- (void)collapseWindowControls {
+    [self.capsule setExpanded:NO animated:YES];
+}
+
+/// Closes the window controls as something else is touched: the app, the
+/// rest of the window, another window or what's under the windows. Over a
+/// window filling the screen it hides them again.
+- (void)dismissWindowControls {
+    if ((self.isMaximized || self.isPhoneSplit) && !self.capsule.hidden) {
+        [self hideRevealedWindowControls];
+        return;
+    }
+    [self collapseWindowControls];
+}
+
+/// A touch on the app closes the window controls, as on iPadOS, and brings
+/// the window to the front.
+- (void)appWasTouched {
+    [self dismissWindowControls];
+    [self raiseForTouch];
+}
+
+- (void)anotherWindowWasTouched:(NSNotification *)notification {
+    if (notification.object != self) {
+        [self dismissWindowControls];
+    }
+}
+
+- (void)revealWindowControls {
+    if (!self.isMaximized && !self.isPhoneSplit) return;
+    [self revealFloatingControlsFor:4.0];
+}
+
+- (BOOL)revealWindowControlsForStatusBarTap:(UIAction *)action {
+    if (!self.isMaximized && !self.isPhoneSplit) return NO;
+    // UIStatusBarTapAction says where along the bar the tap was; a tap on
+    // the leading half, the clock's, shows the controls, and one on the
+    // other half still scrolls the app to the top. Without a position, any
+    // tap shows them.
+    SEL xPosition = NSSelectorFromString(@"xPosition");
+    if ([action respondsToSelector:xPosition]) {
+        CGFloat x = [[action valueForKey:@"xPosition"] doubleValue];
+        CGFloat width = self.view.bounds.size.width;
+        BOOL leading = self.view.effectiveUserInterfaceLayoutDirection == UIUserInterfaceLayoutDirectionRightToLeft ? x > width / 2 : x < width / 2;
+        if (!leading) return NO;
+    }
+    [self revealFloatingControlsFor:4.0];
+    return YES;
+}
+
+#pragma mark - Window style
+
+/// Rounds the window's corners and gives it its shadow: smaller corners and
+/// no shadow while it fills the screen, as an iPadOS window has.
+- (void)applyWindowStyleMaximized:(BOOL)maximized {
+    // A half of an iPhone's split screen goes edge to edge, over black, with
+    // its corners rounded toward the divider, and no shadow or outline.
+    BOOL phoneSplit = !maximized && self.isPhoneSplit;
+    CGFloat radius = maximized ? LCMaximizedWindowCornerRadius : (phoneSplit ? LCPhoneSplitCornerRadius : LCWindowCornerRadius);
+    self.view.layer.cornerRadius = radius;
+    self.view.layer.shadowOpacity = (maximized || phoneSplit) ? 0 : LCWindowShadowOpacity;
+    self.borderView.layer.cornerRadius = radius;
+    self.borderView.hidden = maximized || phoneSplit;
+    if (!maximized && [self.resizeHandle isKindOfClass:ResizeHandleView.class]) {
+        ((ResizeHandleView *)self.resizeHandle).windowCornerRadius = radius;
+    }
+    [self updateCornerMasks];
+    [self.view setNeedsLayout];
+}
+
+/// Clips the title bar and the app to the window's rounded corners: the bar
+/// takes the corners on its side, the app the others, or all four when the
+/// bar is hidden. The window view itself can't clip, or it would cut off its
+/// own shadow.
+- (void)updateCornerMasks {
+    CGFloat radius = self.view.layer.cornerRadius;
+    CACornerMask top = kCALayerMinXMinYCorner | kCALayerMaxXMinYCorner;
+    CACornerMask bottom = kCALayerMinXMaxYCorner | kCALayerMaxXMaxYCorner;
+    BOOL bottomWindowBar = [NSUserDefaults.lcSharedDefaults boolForKey:@"LCMultitaskBottomWindowBar"];
+    CACornerMask barCorners = bottomWindowBar ? bottom : top;
+    CACornerMask appCorners = self.navigationBar.hidden ? (top | bottom) : (bottomWindowBar ? top : bottom);
+    CACornerMask windowCorners = top | bottom;
+    if (self.isPhoneSplit) {
+        appCorners = windowCorners = [self phoneSplitInnerCorners];
+    }
+    for (UIView *view in @[self.navigationBar, self.appSceneVC.view]) {
+        view.layer.cornerRadius = radius;
+        view.layer.cornerCurve = kCACornerCurveContinuous;
+        view.layer.masksToBounds = YES;
+    }
+    self.navigationBar.layer.maskedCorners = barCorners;
+    self.appSceneVC.view.layer.maskedCorners = appCorners;
+    self.view.layer.maskedCorners = windowCorners;
+}
+
+/// Whether the window fills a half of an iPhone's split screen.
+- (BOOL)isPhoneSplit {
+    return LCWindowSnapManager.usesPhoneLayout && self.snapSlot != LCWindowSnapSlotNone;
+}
+
+/// The corners of a half of an iPhone's split screen that face the divider:
+/// the first half's bottom, or right in landscape, and the second's top, or
+/// left.
+- (CACornerMask)phoneSplitInnerCorners {
+    UIView *hostView = self.view.superview;
+    BOOL stacksVertically = hostView ? [LCWindowSnapManager.shared stacksVerticallyInView:hostView] : YES;
+    BOOL isFirst = self.snapSlot == LCWindowSnapSlotFirst;
+    if (stacksVertically) {
+        return isFirst ? (kCALayerMinXMaxYCorner | kCALayerMaxXMaxYCorner) : (kCALayerMinXMinYCorner | kCALayerMaxXMinYCorner);
+    }
+    return isFirst ? (kCALayerMaxXMinYCorner | kCALayerMaxXMaxYCorner) : (kCALayerMinXMinYCorner | kCALayerMinXMaxYCorner);
+}
+
+#pragma mark - iPhone split screen
+
+- (void)didMoveToSnapSlot:(NSInteger)slot {
+    self.snapSlot = slot;
+    [self updateCornerMasks];
+}
+
+- (void)didEnterPhoneSplitSlot:(NSInteger)slot frame:(CGRect)frame {
+    BOOL wasHidden = self.view.hidden;
+    [self.dockFlyer removeFromSuperview];
+    [self.view.layer removeAllAnimations];
+    self.view.transform = CGAffineTransformIdentity;
+    self.snapSlot = slot;
+    self.isMaximized = NO;
+    [self updateVerticalConstraints];
+    [self applyWindowStyleMaximized:NO];
+    self.resizeHandle.alpha = 0;
+    if (wasHidden) {
+        // Out of the dock, it fades in where it goes.
+        self.view.frame = frame;
+        [self.view layoutIfNeeded];
+        self.view.alpha = 0;
+        self.view.hidden = NO;
+        [UIView animateWithDuration:0.3 delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^{
+            self.view.alpha = 1;
+        } completion:nil];
+    } else {
+        self.view.alpha = 1;
+        [UIView animateWithDuration:0.4 delay:0 usingSpringWithDamping:0.86 initialSpringVelocity:0 options:UIViewAnimationOptionBeginFromCurrentState animations:^{
+            self.view.frame = frame;
+            [self.view layoutIfNeeded];
+        } completion:nil];
+    }
+    __weak typeof(self) weakSelf = self;
+    [self.appSceneVC updateSettingsWithBlock:^(UIMutableApplicationSceneSettings *settings) {
+        [weakSelf applyWindowedInsetsToSettings:settings];
+    }];
+    [self updateMaximizeControl];
+}
+
+- (void)didLeavePhoneSplitAnimated:(BOOL)animated {
+    self.snapSlot = LCWindowSnapSlotNone;
+    self.isMaximized = YES;
+    // Undoes the dimming of a divider about to close it.
+    self.view.alpha = 1;
+    void (^changes)(void) = ^{
+        [self applyWindowStyleMaximized:YES];
+        [self.appSceneVC updateSettingsWithBlock:^(UIMutableApplicationSceneSettings *settings) {
+            [self updateMaximizedFrameWithSettings:settings];
+        }];
+        [self.view layoutIfNeeded];
+    };
+    if (animated && !self.view.hidden) {
+        [self updateVerticalConstraints];
+        [UIView animateWithDuration:0.4 delay:0 usingSpringWithDamping:0.86 initialSpringVelocity:0 options:UIViewAnimationOptionBeginFromCurrentState animations:changes completion:nil];
+    } else {
+        [UIView performWithoutAnimation:^{
+            [self updateVerticalConstraints];
+            changes();
+        }];
+    }
+    [self updateMaximizeControl];
+}
+
+/// The close, minimize and maximize dots, in a row for the title bar.
+- (UIView *)windowControlsView {
+    UIButton *close = [self windowControlWithColor:UIColor.systemRedColor symbol:@"xmark" action:@selector(closeWindow)];
+    close.accessibilityLabel = @"Close";
+    UIButton *minimize = [self windowControlWithColor:UIColor.systemYellowColor symbol:@"minus" action:@selector(minimizeWindow)];
+    minimize.accessibilityLabel = @"Minimize";
+    UIButton *maximize = [self windowControlWithColor:UIColor.systemGreenColor symbol:nil action:@selector(maximizeWindow)];
+    if (!self.maximizeControls) {
+        self.maximizeControls = [NSMutableArray array];
+    }
+    [self.maximizeControls addObject:maximize];
+    [self updateMaximizeControl];
+
+    LCWindowControlsView *controls = [[LCWindowControlsView alloc] initWithArrangedSubviews:@[close, minimize, maximize]];
+    controls.axis = UILayoutConstraintAxisHorizontal;
+    controls.spacing = 0;
+    controls.frame = CGRectMake(0, 0, LCWindowControlSize.width * 3, LCWindowControlSize.height);
+    return controls;
+}
+
+/// One of the dots: a colored circle with a small dark glyph, in a touch
+/// area larger than it.
+- (UIButton *)windowControlWithColor:(UIColor *)color symbol:(NSString *)symbol action:(SEL)action {
+    UIButtonConfiguration *configuration = [UIButtonConfiguration plainButtonConfiguration];
+    configuration.contentInsets = NSDirectionalEdgeInsetsZero;
+    UIButton *button = [UIButton buttonWithConfiguration:configuration primaryAction:nil];
+    [button addTarget:self action:action forControlEvents:UIControlEventTouchUpInside];
+    [button.widthAnchor constraintEqualToConstant:LCWindowControlSize.width].active = YES;
+    [button.heightAnchor constraintEqualToConstant:LCWindowControlSize.height].active = YES;
+
+    UIView *dot = [[UIView alloc] init];
+    dot.translatesAutoresizingMaskIntoConstraints = NO;
+    dot.userInteractionEnabled = NO;
+    dot.backgroundColor = color;
+    dot.layer.cornerRadius = LCWindowControlDiameter / 2;
+    dot.tag = 1;
+    [button addSubview:dot];
+
+    UIImageView *glyph = [[UIImageView alloc] init];
+    glyph.translatesAutoresizingMaskIntoConstraints = NO;
+    glyph.contentMode = UIViewContentModeCenter;
+    glyph.tintColor = [UIColor colorWithWhite:0 alpha:0.55];
+    glyph.tag = 2;
+    [dot addSubview:glyph];
+    [self setGlyph:symbol ofWindowControl:button];
+
+    [NSLayoutConstraint activateConstraints:@[
+        [dot.widthAnchor constraintEqualToConstant:LCWindowControlDiameter],
+        [dot.heightAnchor constraintEqualToConstant:LCWindowControlDiameter],
+        [dot.centerXAnchor constraintEqualToAnchor:button.centerXAnchor],
+        [dot.centerYAnchor constraintEqualToAnchor:button.centerYAnchor],
+        [glyph.centerXAnchor constraintEqualToAnchor:dot.centerXAnchor],
+        [glyph.centerYAnchor constraintEqualToAnchor:dot.centerYAnchor],
+    ]];
+    return button;
+}
+
+- (void)setGlyph:(NSString *)symbol ofWindowControl:(UIButton *)button {
+    UIImageView *glyph = (UIImageView *)[[button viewWithTag:1] viewWithTag:2];
+    UIImageSymbolConfiguration *configuration = [UIImageSymbolConfiguration configurationWithPointSize:7 weight:UIImageSymbolWeightBlack];
+    glyph.image = symbol ? [[UIImage systemImageNamed:symbol] imageWithConfiguration:configuration] : nil;
+}
+
+/// The green dot's glyph and label follow whether the window fills the screen.
+- (void)updateMaximizeControl {
+    NSString *symbol = self.isMaximized ? @"arrow.down.right.and.arrow.up.left" : @"arrow.up.left.and.arrow.down.right";
+    NSString *label = self.isMaximized ? @"Exit Full Screen" : @"Full Screen";
+    if (LCWindowSnapManager.usesPhoneLayout) {
+        label = self.isPhoneSplit ? @"Full Screen" : @"Split Screen";
+    }
+    for (UIButton *control in self.maximizeControls) {
+        [self setGlyph:symbol ofWindowControl:control];
+        control.accessibilityLabel = label;
+    }
+    [self.capsule setLabel:label ofButtonAtIndex:2];
+}
+
+#pragma mark - Window menu
+
+/// The window's menu: its app's PID, and picture in picture and scale.
+- (UIMenu *)windowMenuTitled:(NSString *)title {
+    if (!self.appSceneVC.isAppRunning) {
+        return [UIMenu menuWithTitle:NSLocalizedString(@"lc.multitaskAppWindow.appTerminated", nil) children:@[]];
+    }
+    return [UIMenu menuWithTitle:title children:self.windowMenuItems];
+}
+
+- (UIContextMenuConfiguration *)contextMenuInteraction:(UIContextMenuInteraction *)interaction configurationForMenuAtLocation:(CGPoint)location {
+    __weak typeof(self) weakSelf = self;
+    return [UIContextMenuConfiguration configurationWithIdentifier:nil previewProvider:nil actionProvider:^UIMenu *(NSArray<UIMenuElement *> *suggestedActions) {
+        typeof(self) self = weakSelf;
+        return [self windowMenuTitled:[NSString stringWithFormat:@"%@ (PID: %d)", self.title, self.pid]];
+    }];
+}
+
+/// The window controls lift as their own capsule as the menu opens.
+- (UITargetedPreview *)contextMenuInteraction:(UIContextMenuInteraction *)interaction configuration:(UIContextMenuConfiguration *)configuration highlightPreviewForItemWithIdentifier:(id<NSCopying>)identifier {
+    UIView *capsule = interaction.view;
+    UIPreviewParameters *parameters = [UIPreviewParameters new];
+    parameters.visiblePath = [UIBezierPath bezierPathWithRoundedRect:capsule.bounds cornerRadius:capsule.bounds.size.height / 2];
+    return [[UITargetedPreview alloc] initWithView:capsule parameters:parameters];
 }
 
 - (UIEdgeInsets)updateMaximizedSafeAreaWithSettings:(UIMutableApplicationSceneSettings *)settings {
@@ -563,17 +1934,67 @@
     self.view.frame = maxFrame;
 }
 
+/// Tells a windowed app to keep the strip along the window's top clear,
+/// where the window controls are and the window drags. With the window bar
+/// at the bottom nothing covers the app. The screen's own safe area stays
+/// outside a window.
+- (void)applyWindowedInsetsToSettings:(UIMutableApplicationSceneSettings *)settings {
+    BOOL bottomWindowBar = [NSUserDefaults.lcSharedDefaults boolForKey:@"LCMultitaskBottomWindowBar"];
+    UIEdgeInsets insets = UIEdgeInsetsMake(bottomWindowBar ? 0 : LCWindowTopStripHeight / _scaleRatio, 0, 0, 0);
+    // A half of an iPhone's split screen has no strip: its app keeps clear
+    // of the parts of the screen the half covers, as the status bar.
+    if (LCWindowSnapManager.usesPhoneLayout) {
+        UIEdgeInsets covered = self.view.safeAreaInsets;
+        insets = UIEdgeInsetsMake(covered.top / _scaleRatio, covered.left / _scaleRatio, covered.bottom / _scaleRatio, covered.right / _scaleRatio);
+    }
+    settings.peripheryInsets = insets;
+    UIWindowScene *scene = self.view.window.windowScene;
+    if (UIDevice.currentDevice.userInterfaceIdiom != UIUserInterfaceIdiomPad && scene) {
+        settings.safeAreaInsetsPortrait = LCUIEdgeInsetsRotateToOrientation(insets, scene.interfaceOrientation);
+    } else {
+        settings.safeAreaInsetsPortrait = insets;
+    }
+}
+
+/// The same for apps hosted with UIKit's scene hosting, which takes the
+/// app's safe area from its view's: the strip adds to it.
+- (void)updateAppSafeArea {
+    BOOL bottomWindowBar = [NSUserDefaults.lcSharedDefaults boolForKey:@"LCMultitaskBottomWindowBar"];
+    CGFloat top = !self.isMaximized && !bottomWindowBar && !LCWindowSnapManager.usesPhoneLayout ? LCWindowTopStripHeight : 0;
+    self.appSceneVC.additionalSafeAreaInsets = UIEdgeInsetsMake(top, 0, 0, 0);
+}
+
 - (void)updateWindowedFrameWithSettings:(UIMutableApplicationSceneSettings *)settings {
     UIEdgeInsets safeAreaInsets = self.view.window.safeAreaInsets;
     CGRect maxFrame = UIEdgeInsetsInsetRect(self.view.window.frame, safeAreaInsets);
-    settings.peripheryInsets = UIEdgeInsetsZero;
-    settings.safeAreaInsetsPortrait = UIEdgeInsetsZero;
+    [self applyWindowedInsetsToSettings:settings];
+
+    // A window being dragged goes where the finger takes it, however tall,
+    // rather than back on screen.
+    if (self.isBeingDragged) {
+        return;
+    }
+
+    // A snapped window keeps to its half, and a tucked-away one to its side.
+    CGRect placed = CGRectNull;
+    if (self.snapSlot != LCWindowSnapSlotNone) {
+        placed = [LCWindowSnapManager.shared frameForWindow:self];
+    } else if (self.isStashed) {
+        placed = [self stashedFrameIntoLeftSide:self.stashesLeft fromFrame:self.view.frame];
+    }
+    if (!CGRectIsNull(placed)) {
+        [UIView animateWithDuration:0.3 animations:^{
+            self.view.frame = placed;
+        }];
+        return;
+    }
     
     CGRect newFrame = CGRectMake(self.originalFrame.origin.x * maxFrame.size.width, self.originalFrame.origin.y * maxFrame.size.height, self.originalFrame.size.width, self.originalFrame.size.height);
     CGPoint center = self.view.center;
+    CGSize minimum = [self minimumWindowSize];
     CGRect frame = CGRectZero;
-    frame.size.width = MIN(newFrame.size.width, maxFrame.size.width);
-    frame.size.height = MIN(newFrame.size.height, maxFrame.size.height);
+    frame.size.width = MIN(MAX(newFrame.size.width, minimum.width), maxFrame.size.width);
+    frame.size.height = MIN(MAX(newFrame.size.height, minimum.height), maxFrame.size.height);
     CGFloat oobOffset = MAX(30, frame.size.width - 30);
     frame.origin.x = MAX(maxFrame.origin.x - oobOffset, MIN(CGRectGetMaxX(maxFrame) - frame.size.width + oobOffset, center.x - frame.size.width / 2));
     frame.origin.y = MAX(maxFrame.origin.y, MIN(center.y - frame.size.height / 2, CGRectGetMaxY(maxFrame) - frame.size.height));
@@ -583,10 +2004,15 @@
 }
 
 - (void)updateOriginalFrame {
-    if(_isMaximized) return;
+    // A window in a half or tucked into a side keeps where it last floated.
+    if(_isMaximized || self.snapSlot != LCWindowSnapSlotNone || self.isStashed) return;
+    [self updateOriginalFrameFromFrame:self.view.frame];
+}
+
+- (void)updateOriginalFrameFromFrame:(CGRect)frame {
     CGRect maxFrame = UIEdgeInsetsInsetRect(self.view.window.frame, self.view.window.safeAreaInsets);
     // save origin as normalized coordinates
-    self.originalFrame = CGRectMake(self.view.frame.origin.x / maxFrame.size.width, self.view.frame.origin.y / maxFrame.size.height, self.view.frame.size.width, self.view.frame.size.height);
+    self.originalFrame = CGRectMake(frame.origin.x / maxFrame.size.width, frame.origin.y / maxFrame.size.height, frame.size.width, frame.size.height);
 }
 
 @end

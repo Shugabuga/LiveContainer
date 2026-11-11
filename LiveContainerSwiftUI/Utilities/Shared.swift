@@ -55,8 +55,6 @@ class SharedModel: ObservableObject {
     // 2 = current liveContainer is not the primary one
     @Published var multiLCStatus = 0
     @Published var isJITModalOpen = false
-    
-    @Published var enableMultipleWindow = false
 
     @Published var appDataFolderNames: [String] = []
     @Published var tweakFolderNames: [String] = []
@@ -185,61 +183,9 @@ extension UTType {
     static let ipa = UTType(filenameExtension: "ipa")!
     static let tipa = UTType(filenameExtension: "tipa")!
     static let dylib = UTType(filenameExtension: "dylib")!
-    static let deb = UTType(filenameExtension: "deb")!
     static let lcFramework = UTType(filenameExtension: "framework", conformingTo: .package)!
     static let p12 = UTType(filenameExtension: "p12")!
 }
-
-extension Color {
-    func readableTextColor() -> Color {
-        let color = Color(.systemBackground)
-        let percentage = 0.5
-        
-        // https://stackoverflow.com/a/78649412
-        let components1 = UIColor(self).cgColor.components!
-        var bgR: CGFloat = 0, bgG: CGFloat = 0, bgB: CGFloat = 0, bgA: CGFloat = 0
-        UIColor(color).getRed(&bgR, green: &bgG, blue: &bgB, alpha: &bgA)
-        var red = (1.0 - percentage) * components1[0] + percentage * bgR
-        var green = (1.0 - percentage) * components1[1] + percentage * bgG
-        var blue = (1.0 - percentage) * components1[2] + percentage * bgB
-        //var alpha = (1.0 - percentage) * components1[3] + percentage * bgA
-        //UIColor(mix(with: Color(.systemBackground), by: 0.5)).getRed(&red, green: &green, blue: &blue, alpha: &alpha)
-        
-        let brightness = (0.2126*red + 0.7152*green + 0.0722*blue);
-        let brightnessOffset = brightness < 0.5 ? 0.4 : -0.4
-        red = min(Double(red) + brightnessOffset, 1.0)
-        green = min(Double(green) + brightnessOffset, 1.0)
-        blue = min(Double(blue) + brightnessOffset, 1.0)
-        return Color(red: red, green: green, blue: blue)
-    }
-}
-
-struct ImageDocument: FileDocument {
-    var data: Data
-    
-    static var readableContentTypes: [UTType] {
-        [UTType.image] // Specify that the document supports image files
-    }
-    
-    // Initialize with data
-    init(uiImage: UIImage) {
-        self.data = uiImage.pngData()!
-    }
-    
-    // Function to read the data from the file
-    init(configuration: ReadConfiguration) throws {
-        guard let data = configuration.file.regularFileContents else {
-            throw CocoaError(.fileReadCorruptFile)
-        }
-        self.data = data
-    }
-    
-    // Write data to the file
-    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
-        return FileWrapper(regularFileWithContents: data)
-    }
-}
-
 
 struct SiteAssociationDetailItem : Codable {
     var appID: String?
@@ -274,20 +220,6 @@ struct SiteAssociation : Codable {
     var applinks: AppLinks?
 }
 
-
-struct JITStreamerEBLaunchAppResponse : Codable {
-    let ok: Bool
-    let launching: Bool
-    let position: Int?
-    let error: String?
-}
-
-struct JITStreamerEBStatusResponse : Codable {
-    let ok: Bool
-    let done: Bool
-    let position: Int?
-    let error: String?
-}
 
 struct JITStreamerEBMountResponse : Codable {
     let ok: Bool

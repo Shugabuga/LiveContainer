@@ -38,7 +38,7 @@ bool isSharedBundle = false;
     return lcUserDefaults;
 }
 + (instancetype)lcSharedDefaults {
-    if(!lcUserDefaults) {
+    if(!lcSharedDefaults) {
         lcSharedDefaults = [[NSUserDefaults alloc] initWithSuiteName: [LCSharedUtils appGroupID]];
     }
     return lcSharedDefaults;
@@ -288,11 +288,15 @@ static NSString* invokeAppMain(NSString *selectedApp, NSString *selectedContaine
         NSMutableDictionary* infoPlist = [NSMutableDictionary dictionaryWithContentsOfFile:[NSString stringWithFormat:@"%@/Info.plist", bundlePath]];
         CFErrorRef error = NULL;
         void* taskSelf = SecTaskCreateFromSelf(NULL);
-        CFTypeRef value = SecTaskCopyValueForEntitlement(taskSelf, CFSTR("application-identifier"), &error);
-        CFRelease(taskSelf);
-        if (value) {
-            NSString *entStr = (__bridge NSString *)value;
+        CFTypeRef value = taskSelf ? SecTaskCopyValueForEntitlement(taskSelf, CFSTR("application-identifier"), &error) : NULL;
+        if (taskSelf) CFRelease(taskSelf);
+        if (error) CFRelease(error);
+        if (value && CFGetTypeID(value) != CFStringGetTypeID()) {
             CFRelease(value);
+            value = NULL;
+        }
+        if (value) {
+            NSString *entStr = (__bridge_transfer NSString *)value;
             NSRange dotRange = [entStr rangeOfString:@"."];
             if (dotRange.location != NSNotFound) {
                 NSString *expectedBundleId = [entStr substringFromIndex:dotRange.location + 1];
@@ -355,6 +359,11 @@ static NSString* invokeAppMain(NSString *selectedApp, NSString *selectedContaine
         init_bypassDyldLibValidation();
     }
 
+    // The executable path is used right below, so check it first
+    if(!appBundle.executablePath) {
+        return @"App's executable path not found. Please try force re-signing or reinstalling this app.";
+    }
+
     // Locate dyld image name address
     const char **path = _CFGetProcessPath();
     const char *oldPath = *path;
@@ -393,7 +402,9 @@ static NSString* invokeAppMain(NSString *selectedApp, NSString *selectedContaine
                     bookmarkURL = [NSURL URLByResolvingBookmarkData:bookmarkData options:0 relativeToURL:nil bookmarkDataIsStale:&isStale error:&err];
                     bool access = [bookmarkURL startAccessingSecurityScopedResource];
                     if(!bookmarkURL || !access) {
-                        return [@"Bookmark resolution failed or unable to access the container. You might need to readd the data storage. %@" stringByAppendingString:err.localizedDescription];
+                        NSString* reason = err.localizedDescription;
+                        NSString* message = @"Bookmark resolution failed or unable to access the container. You might need to readd the data storage.";
+                        return reason ? [NSString stringWithFormat:@"%@ %@", message, reason] : message;
                     }
                     [lcUserDefaults removeObjectForKey:@"error"];
                 }
@@ -471,10 +482,6 @@ static NSString* invokeAppMain(NSString *selectedApp, NSString *selectedContaine
     overwriteMainCFBundle();
 
     // Overwrite executable info
-    if(!appBundle.executablePath) {
-        return @"App's executable path not found. Please try force re-signing or reinstalling this app.";
-    }
-
     NSMutableArray<NSString *> *objcArgv = NSProcessInfo.processInfo.arguments.mutableCopy;
     objcArgv[0] = appBundle.executablePath;
     [NSProcessInfo.processInfo performSelector:@selector(setArguments:) withObject:objcArgv];
@@ -526,8 +533,8 @@ static NSString* invokeAppMain(NSString *selectedApp, NSString *selectedContaine
             return appError;
         }
         NSBundle *selected32bitLayerBundle = [NSBundle bundleWithPath:[NSString stringWithFormat:@"%@/Applications/%@", docPath, selected32BitLayer]];
-        if(!selected32bitLayerBundle) {
-            selected32bitLayerBundle = [NSBundle bundleWithPath:[NSString stringWithFormat:@"%@/Applications/%@", appGroupFolder.path, selected32BitLayer]];
+        if(!selected32bitLayerBundle && LCSharedUtils.appGroupPath) {
+            selected32bitLayerBundle = [NSBundle bundleWithPath:[NSString stringWithFormat:@"%@/LiveContainer/Applications/%@", LCSharedUtils.appGroupPath.path, selected32BitLayer]];
         }
         if(!selected32bitLayerBundle) {
             appError = @"The specified 32-bit emulator app is not found";
@@ -633,6 +640,12 @@ int LiveContainerMain(int argc, char *argv[]) {
     lcAppUrlScheme = NSBundle.mainBundle.infoDictionary[@"CFBundleURLTypes"][0][@"CFBundleURLSchemes"][0];
     lcAppGroupPath = [[NSFileManager.defaultManager containerURLForSecurityApplicationGroupIdentifier:[NSClassFromString(@"LCSharedUtils") appGroupID]] path];
     isLiveProcess = [lcAppUrlScheme isEqualToString:@"liveprocess"];
+    // Settings and the app groups of apps inside, kept before zContainer had its
+    // app group, move into the group before anything below, the UI or a guest app
+    // reads them.
+    if(!isLiveProcess) {
+        [LCSharedUtils migrateSharedDefaultsIfNeeded];
+    }
     setenv("LC_HOME_PATH", getenv("HOME"), 0);
 
     NSString *selectedApp = [lcUserDefaults stringForKey:@"selected"];

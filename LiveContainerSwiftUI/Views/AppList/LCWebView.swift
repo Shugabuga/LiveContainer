@@ -17,10 +17,10 @@ struct LCWebView: View {
     @State private var uiLoadStatus = 0.0
     @State private var pageTitle = ""
     
-    @State private var runAppAlert = YesNoHelper()
+    @StateObject private var runAppAlert = YesNoHelper()
     @State private var runAppAlertMsg = ""
     
-    @State private var installAppAlert = YesNoHelper()
+    @StateObject private var installAppAlert = YesNoHelper()
     @State private var installAppAlertMsg = ""
     
     @State private var errorShow = false
@@ -162,7 +162,7 @@ struct LCWebView: View {
         var appListsToConsider = [sharedModel.apps]
         
         if url.scheme == "itms-services", let handler = itmsServicesHandler {
-            installAppAlertMsg = "lc.webView.installAppDesc"
+            installAppAlertMsg = "lc.webView.installAppDesc".loc
             
             if let doInstall = await installAppAlert.open(), !doInstall {
                 return

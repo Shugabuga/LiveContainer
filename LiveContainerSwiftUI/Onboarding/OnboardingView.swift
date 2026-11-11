@@ -12,6 +12,7 @@ import SwiftUI
 /// OnboardingModel, which fades the Home Screen in.
 struct OnboardingView: View {
     @Environment(OnboardingModel.self) private var onboarding
+    @Environment(HomeRouter.self) private var router
 
     @State private var flow: OnboardingFlow
     /// The certificate and setup state the steps share, read afresh each
@@ -34,6 +35,11 @@ struct OnboardingView: View {
         // zContainer's pink, as Zeus's onboarding has Zeus's.
         .tint(OnboardingDesign.accent)
         .onChange(of: flow.isFinished, finish)
+        // A certificate Zeus sent, or a .p12 opened with zContainer, was
+        // stored over onboarding.
+        .onChange(of: router.certificatesStored) {
+            connection.certificateChanged()
+        }
     }
 
     private func finish() {

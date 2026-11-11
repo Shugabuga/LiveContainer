@@ -5,6 +5,10 @@ import Foundation
 /// AppLaunchCoordinator is the delegate of every app.
 @MainActor
 protocol LCAppModelDelegate: AnyObject {
+    /// Whether an install is running, which an app can't start during:
+    /// zContainer would quit into it, cutting the install short, or sign it
+    /// alongside the install.
+    var isInstalling: Bool { get }
     func closeNavigationView()
     func changeAppVisibility(app : LCAppModel)
     func jitLaunch(appName: String, classicMode: UInt) async
@@ -18,6 +22,9 @@ class LCAppModel: ObservableObject, Hashable {
     @Published var appInfo : LCAppInfo
     
     @Published var isAppRunning = false
+    /// Goes up when the app's icons are cleared from the cache, so the views
+    /// showing them draw them again.
+    @Published var iconGeneration = 0
     @Published var isSigningInProgress = false
     @Published var signProgress = 0.0
     private var observer : NSKeyValueObservation?
@@ -227,32 +234,40 @@ class LCAppModel: ObservableObject, Hashable {
             return
         }
         
-        if uiContainers.isEmpty {
-            let newName = NSUUID().uuidString
-            let newContainer = LCContainer(folderName: newName, name: newName, isShared: uiIsShared)
-            uiContainers.append(newContainer)
-            if uiSelectedContainer == nil {
-                uiSelectedContainer = newContainer;
+        await MainActor.run {
+            if uiContainers.isEmpty {
+                let newName = NSUUID().uuidString
+                let newContainer = LCContainer(folderName: newName, name: newName, isShared: uiIsShared)
+                uiContainers.append(newContainer)
+                if uiSelectedContainer == nil {
+                    uiSelectedContainer = newContainer;
+                }
+                appInfo.containers = uiContainers;
+                newContainer.makeLCContainerInfoPlist(appIdentifier: appInfo.bundleIdentifier()!, keychainGroupId: Int.random(in: 0..<SharedModel.keychainAccessGroupCount))
+                appInfo.dataUUID = newName
+                uiDefaultDataFolder = newName
             }
-            appInfo.containers = uiContainers;
-            newContainer.makeLCContainerInfoPlist(appIdentifier: appInfo.bundleIdentifier()!, keychainGroupId: Int.random(in: 0..<SharedModel.keychainAccessGroupCount))
-            appInfo.dataUUID = newName
-            uiDefaultDataFolder = newName
-        }
-        if let containerFolderName {
-            uiSelectedContainer = uiContainers.first { $0.folderName == containerFolderName } ?? uiSelectedContainer
+            if let containerFolderName {
+                uiSelectedContainer = uiContainers.first { $0.folderName == containerFolderName } ?? uiSelectedContainer
+            }
         }
         let currentDataFolder = containerFolderName ?? uiSelectedContainer?.folderName
         
         let classicMode = appInfo.defaultClassicMode
         let multitask = classicMode == 0 ? (multitask ?? shouldLaunchInMultitaskMode) : false
-        
-        if MultitaskManager.isMultitasking() || multitask,
+
+        // MultitaskManager is changed only on the main thread, so read it there
+        let isMultitasking = await MainActor.run { MultitaskManager.isMultitasking() }
+        if isMultitasking || multitask,
            let currentDataFolder {
             if await bringExistingMultitaskWindowIfNeeded(dataUUID: currentDataFolder, urlScheme: urlStr) {
                 return
             }
             
+        }
+
+        if await MainActor.run(body: { delegate?.isInstalling ?? false }) {
+            throw "zc.install.busy".loc
         }
         
         // this is rerouted to bringing app to front, so not needed here?
@@ -282,7 +297,9 @@ class LCAppModel: ObservableObject, Hashable {
         }
         
         // find a free lc to run non-multitasking shared app. If none, ask user if they want to terminate all multitasking apps
-        if MultitaskManager.isMultitasking() && !multitask {
+        // read again on the main thread: a multitasking app may have closed during the awaits above
+        let isStillMultitasking = await MainActor.run { MultitaskManager.isMultitasking() }
+        if isStillMultitasking && !multitask {
             if self.uiIsShared {
                 var freeScheme: String? = nil
                 LCUtils.forEachInstalledLC(isFree: true) { scheme, shouldBreak in
@@ -295,6 +312,8 @@ class LCAppModel: ObservableObject, Hashable {
                     LCUtils.appGroupUserDefault.set(uiSelectedContainer?.folderName, forKey: "LCLaunchExtensionContainerName")
                     if let urlStr {
                         LCUtils.appGroupUserDefault.set(urlStr, forKey: "LCLaunchExtensionLaunchURL")
+                    } else {
+                        LCUtils.appGroupUserDefault.removeObject(forKey: "LCLaunchExtensionLaunchURL")
                     }
                     LCUtils.appGroupUserDefault.set(Date.now, forKey: "LCLaunchExtensionLaunchDate")
                     var launchURLComp = URLComponents()
@@ -393,10 +412,9 @@ class LCAppModel: ObservableObject, Hashable {
             LCSharedUtils.launchToGuestApp(withClassicMode: classicMode)
         }
         
-        // Record the launch time
-        appInfo.lastLaunched = Date()
-
         await MainActor.run {
+            // Record the launch time
+            appInfo.lastLaunched = Date()
             isAppRunning = false
         }
     }
@@ -405,7 +423,9 @@ class LCAppModel: ObservableObject, Hashable {
         if isAppRunning {
             return
         }
-        isAppRunning = true
+        await MainActor.run {
+            isAppRunning = true
+        }
         defer {
             Task{ await MainActor.run {
                 self.isAppRunning = false
@@ -429,14 +449,17 @@ class LCAppModel: ObservableObject, Hashable {
                 signError = error;
                 signSuccess = success;
                 c.resume()
-            }, progressHandler: { signProgress in
+            }, progressHandler: { [self] signProgress in
                 guard let signProgress else {
                     return
                 }
-                self.isSigningInProgress = true
-                self.observer = signProgress.observe(\.fractionCompleted) { p, v in
+                DispatchQueue.main.async {
+                    self.isSigningInProgress = true
+                }
+                self.observer = signProgress.observe(\.fractionCompleted) { [weak self] progress, _ in
+                    let fraction = progress.fractionCompleted
                     DispatchQueue.main.async {
-                        self.signProgress = signProgress.fractionCompleted
+                        self?.signProgress = fraction
                     }
                 }
             }, forceSign: force)
@@ -472,6 +495,7 @@ class LCAppModel: ObservableObject, Hashable {
         }
     }
 
+    @MainActor
     func setLocked(newLockState: Bool) async {
         // if locked state in appinfo already match with the new state, we just the change
         if appInfo.isLocked == newLockState {
@@ -501,8 +525,9 @@ class LCAppModel: ObservableObject, Hashable {
         }
     }
     
+    @MainActor
     func toggleHidden() async {
-        await delegate?.closeNavigationView()
+        delegate?.closeNavigationView()
         if appInfo.isHidden {
             appInfo.isHidden = false
             uiIsHidden = false
@@ -510,7 +535,7 @@ class LCAppModel: ObservableObject, Hashable {
             appInfo.isHidden = true
             uiIsHidden = true
         }
-        await delegate?.changeAppVisibility(app: self)
+        delegate?.changeAppVisibility(app: self)
     }
     
     func loadSupportedLanguages() throws {

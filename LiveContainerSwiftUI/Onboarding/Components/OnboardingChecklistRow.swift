@@ -17,8 +17,8 @@ struct OnboardingChecklistRow<Detail: View, Accessory: View>: View {
     /// The row's name, already localized.
     let title: String
     let isDone: Bool
-    @ContentBuilder let detail: Detail
-    @ContentBuilder let accessory: Accessory
+    @ViewBuilder let detail: Detail
+    @ViewBuilder let accessory: Accessory
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -54,7 +54,7 @@ struct OnboardingChecklistRow<Detail: View, Accessory: View>: View {
 
 extension OnboardingChecklistRow where Accessory == EmptyView {
     /// A row with nothing beside it, for a part that's done somewhere else.
-    init(systemImage: String, title: String, isDone: Bool, @ContentBuilder detail: () -> Detail) {
+    init(systemImage: String, title: String, isDone: Bool, @ViewBuilder detail: () -> Detail) {
         self.init(systemImage: systemImage, title: title, isDone: isDone, detail: detail) {
             EmptyView()
         }

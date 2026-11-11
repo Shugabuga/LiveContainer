@@ -15,9 +15,7 @@ extension LCAppModel {
     @MainActor
     @discardableResult
     func makeNewContainer(sharedModel: SharedModel) throws -> LCContainer {
-        guard let bundleIdentifier = appInfo.bundleIdentifier() else {
-            throw "lc.appList.infoPlistCannotReadError".loc
-        }
+        let bundleIdentifier: String = appInfo.bundleIdentifier()
         var freeKeychainGroups = Set(0..<SharedModel.keychainAccessGroupCount)
         for container in uiContainers {
             freeKeychainGroups.remove(container.keychainGroupId)
@@ -29,7 +27,11 @@ extension LCAppModel {
         let folderName = UUID().uuidString
         let dataFolder = uiIsShared ? LCPath.lcGroupDataPath : LCPath.dataPath
         try FileManager.default.createDirectory(at: dataFolder.appending(path: folderName), withIntermediateDirectories: true)
-        sharedModel.appDataFolderNames.append(folderName)
+        // Only private data folders are listed, and a shared app's is in the
+        // app group.
+        if !uiIsShared {
+            sharedModel.appDataFolderNames.append(folderName)
+        }
 
         let name = "zc.home.containerName %lld".localizeWithFormat(uiContainers.count + 1)
         let container = LCContainer(folderName: folderName, name: name, isShared: uiIsShared)

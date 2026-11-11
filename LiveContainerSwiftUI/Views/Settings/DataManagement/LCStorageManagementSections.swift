@@ -253,7 +253,7 @@ struct LCInstalledAppsSection: View {
             LCAppStorageDetailView(appItem: appItem)
         } label: {
             HStack(spacing: 12) {
-                IconImageView(icon: appItem.appModel.appInfo.iconIsDarkIcon(darkModeIcon))
+                IconImageView(icon: appItem.appModel.appInfo.homeScreenIconIsDarkIcon(darkModeIcon) ?? UIImage())
                     .frame(width: 28, height: 28)
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -290,7 +290,7 @@ private struct LCAppStorageSummaryHeaderView: View {
     
     var body: some View {
         HStack(alignment: .center, spacing: 10) {
-            IconImageView(icon: appItem.appModel.appInfo.iconIsDarkIcon(darkModeIcon))
+            IconImageView(icon: appItem.appModel.appInfo.homeScreenIconIsDarkIcon(darkModeIcon) ?? UIImage())
                 .frame(width: iconSize, height: iconSize)
 
             VStack(alignment: .leading) {

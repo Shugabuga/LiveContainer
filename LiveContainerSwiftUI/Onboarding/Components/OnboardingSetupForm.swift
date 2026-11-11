@@ -10,8 +10,8 @@ import SwiftUI
 /// place. On iPad the header and the rows keep to one readable column, as
 /// wide as the footer's buttons under them.
 struct OnboardingSetupForm<Header: View, Content: View>: View {
-    @ContentBuilder let header: Header
-    @ContentBuilder let content: Content
+    @ViewBuilder let header: Header
+    @ViewBuilder let content: Content
 
     var body: some View {
         Form {

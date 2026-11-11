@@ -57,13 +57,56 @@ final class HomeScreenModel {
     /// Where the dragged icon's center is, on screen. Only the dragged icon's
     /// copy reads it, so moving the finger doesn't redraw the other icons.
     var liftedIconCenter: CGPoint = .zero
+    /// Whether the dragged icon has been let go and is flying to its place,
+    /// settling back to the size and look of the icon it is about to become.
+    var isDropping = false
+    /// Whether the dragged icon has been let go over another icon and is
+    /// shrinking into the folder it makes or joins there.
+    var isDroppingIntoFolder = false
+    @ObservationIgnored var pendingMerge: HomeItem?
+    @ObservationIgnored var mergeTask: Task<Void, Never>?
+    @ObservationIgnored var folderLeaveTask: Task<Void, Never>?
+    /// A folder that has just let the dragged icon out, which the icon goes
+    /// into again only once it has moved off the folder's icon, so the folder
+    /// doesn't open again at once under a finger still over it.
+    @ObservationIgnored var blockedMerge: HomeItem?
+
+    /// The folder open over the Home Screen, by its id, or nil.
+    var openFolderID: String?
+    /// Whether the open folder shows, out of its icon. It goes back into its
+    /// icon before `openFolderID` clears, and while an icon dragged out of it
+    /// is still being moved, when the folder's view stays, hidden, holding
+    /// the drag.
+    var isFolderShown = false
+    /// Whether the open folder has finished zooming out of its icon, when its
+    /// panel's own icons, which can be tapped and dragged, take over from
+    /// the ones that zoom.
+    var isFolderSettled = false
+    /// Whether the open folder has gone back into its icon for an icon dragged
+    /// out of it. Its view stays to hold that drag, but draws nothing, rather
+    /// than a copy of the folder's icon where it was as the Home Screen moves.
+    var isFolderLetOut = false
+    /// The page of the open folder that shows, as its paging scroll view
+    /// reports it.
+    var folderPage: Int? = 0
+    /// Whether the open folder's name is being typed.
+    var isEditingFolderName = false
     @ObservationIgnored var pendingTarget: HomeSlot?
+    /// The icon whose menu last opened, which UIKit offers for dragging out of
+    /// the menu.
+    @ObservationIgnored var menuDragItem: HomeItem?
+    /// Whether an icon dragged out of its menu is moving across the Home
+    /// Screen. Icon menus keep their actions until it is dropped.
+    var isMenuDragging = false
     @ObservationIgnored var reflowTask: Task<Void, Never>?
     @ObservationIgnored var pageTurnDirection = 0
     @ObservationIgnored var pageTurnTask: Task<Void, Never>?
 
     /// Whether search is open over the Home Screen.
     var isSearching = false
+    /// How far a pull down on the pages has brought search in, from 0 to 1,
+    /// while the finger is still down. Search follows it until the pull ends.
+    var searchPull = 0.0
     /// What the person typed into search.
     var searchText = ""
 
@@ -71,21 +114,64 @@ final class HomeScreenModel {
     var presentedScreen: HomePresentedScreen?
     /// Whether a screen covers the Home Screen completely, from the moment it
     /// opens until it has closed. The status bar then follows that screen's
-    /// appearance instead of the black wallpaper's.
+    /// appearance instead of the Home Screen's dark one.
     var isCoveredByScreen = false
 
     /// The app the person asked to remove, while the question shows.
     var pendingRemoval: LCAppModel?
+    /// The widget the person asked to remove, while the question shows.
+    var pendingWidgetRemoval: HomeItem?
+    /// The widget being resized by its handle in edit mode, or settling at
+    /// its size once let go, or nil.
+    var widgetResize: HomeWidgetResize?
+    /// The layout with that widget at the size the other icons make room
+    /// for. It's apart from the resize, which follows the finger with a
+    /// quicker spring than the icons make room with.
+    var widgetResizePreview: HomeLayout?
+    /// Whether the widget gallery is open, from edit mode's Edit menu.
+    var isAddingWidget = false
+    /// Whether Customize is open, from edit mode's Edit menu.
+    var isCustomizing = false
     /// Whether Files is open to pick an IPA to install.
     var isChoosingIPA = false
+    /// How to add an app once the screen over the Home Screen has closed,
+    /// as Settings' Add App row asks.
+    @ObservationIgnored var pendingAddition: HomeAddition?
     /// Whether the question asking for an install link shows.
     var isEnteringInstallURL = false
     /// The install link being typed.
     var installURL = ""
+    /// An app asked to go on the iPhone's own Home Screen from its long-press
+    /// menu, for AppShortcutPresenter to put there.
+    var shortcutRequest: AppShortcutRequest?
 
     /// The app zooming open from its icon, just before zContainer turns into it.
     var launchZoom: HomeLaunchZoom?
+    /// On iPhone, whether the split screen's first half holds an app and the
+    /// second waits for one, which the Home Screen then offers there.
+    var isPickingSplitApp = false
+    /// The container of the app in the split screen's first half, which the
+    /// apps offered for the second leave out.
+    var splitFirstDataUUID: String?
+    /// Whether an app picked for the split screen is on its way.
+    var isOpeningSplitApp = false
+    /// Whether the apps the multitask dock's plus offers show.
+    var isAddingMultitaskApp = false
     @ObservationIgnored var launchZoomContinuation: CheckedContinuation<Void, Never>?
+
+    /// The recent apps the iPad's dock keeps, as saved, including any that
+    /// went into the dock since and don't show; `dockRecents` are those that do.
+    var dockRecentsStore = HomeDockRecents()
+    /// Whether the iPad's dock shows recent apps, as Settings > Appearance
+    /// says. The Home Screen view keeps it up to date.
+    var showsDockRecents = HomeDockRecents.isEnabled
+    /// How many times the iPad's dock has bounced, for being full when an
+    /// icon was held over it. The dock bounces each time it goes up.
+    var dockBounces = 0
+    /// The icon whose screen, Settings or an app's settings, zooms out of its
+    /// place among the dock's recent apps rather than out of its own icon,
+    /// while the screen it was opened with shows.
+    var zoomsFromRecent: HomeItem?
 
     /// Loads the saved layout, or makes the first one from LiveContainer's
     /// custom order or the install order, and brings it in line with the apps.
@@ -105,6 +191,7 @@ final class HomeScreenModel {
         page = returnPage
         builtPages = (returnPage - 1)...(returnPage + 1)
         syncApps(apps)
+        loadDockRecents()
     }
 
     /// Reports every change to the list of apps the Home Screen shows. The
@@ -116,7 +203,13 @@ final class HomeScreenModel {
     /// The layout on screen: the saved one, or while an icon is dragged, the
     /// one with the icon where it would drop.
     var displayedLayout: HomeLayout {
-        drag?.preview ?? layout
+        widgetResizePreview ?? drag?.preview ?? layout
+    }
+
+    /// Whether an icon joined the one being dragged. Its place where the
+    /// stack would land stays empty, its view hidden there, until it lands.
+    private func isJoined(_ item: HomeItem) -> Bool {
+        drag?.extras.contains(item) == true
     }
 
     /// The icons on the pages and where each one shows.
@@ -125,11 +218,26 @@ final class HomeScreenModel {
         var placements: [HomePlacement] = []
         for (page, items) in shown.pages.enumerated() {
             for (index, item) in items.enumerated() where item != drag?.item {
-                placements.append(HomePlacement(item: item, slot: .page(page, index: index), isLifted: false))
+                placements.append(HomePlacement(item: item, slot: .page(page, index: index), isLifted: isJoined(item)))
             }
         }
-        if let drag, !drag.origin.isInDock {
-            let slot = drag.target.isInDock ? drag.origin : drag.target
+        if let drag, drag.origin.page != nil {
+            let slot = drag.target.page != nil ? drag.target : drag.origin
+            placements.append(HomePlacement(item: drag.item, slot: slot, isLifted: true))
+        }
+        return placements
+    }
+
+    /// The icons in a folder and where each one shows. An icon dragged out of
+    /// the folder keeps its view here, hidden, so its drag goes on.
+    func folderPlacements(_ id: String) -> [HomePlacement] {
+        let items = displayedLayout.folders[id]?.items ?? []
+        var placements: [HomePlacement] = []
+        for (index, item) in items.enumerated() where item != drag?.item {
+            placements.append(HomePlacement(item: item, slot: .folder(id, index: index), isLifted: isJoined(item)))
+        }
+        if let drag, drag.origin.folder == id {
+            let slot = drag.target.folder == id ? drag.target : drag.origin
             placements.append(HomePlacement(item: drag.item, slot: slot, isLifted: true))
         }
         return placements
@@ -152,7 +260,7 @@ final class HomeScreenModel {
         let shown = displayedLayout
         var placements: [HomePlacement] = []
         for (index, item) in shown.dock.enumerated() where item != drag?.item {
-            placements.append(HomePlacement(item: item, slot: .dock(index), isLifted: false))
+            placements.append(HomePlacement(item: item, slot: .dock(index), isLifted: isJoined(item)))
         }
         if let drag, drag.origin.isInDock {
             let slot = drag.target.isInDock ? drag.target : drag.origin
@@ -198,6 +306,14 @@ final class HomeScreenModel {
             }
             HomeLayoutStorage.save(updated)
         }
+        // A folder whose last app went away closes with it, and one that lost
+        // its last page shows the page now last.
+        if let openFolderID, updated.folders[openFolderID] == nil, drag == nil {
+            self.openFolderID = nil
+            isFolderShown = false
+        } else if let openFolderID, let folder = updated.folders[openFolderID], let folderPage, folderPage >= folder.pageCount {
+            self.folderPage = folder.pageCount - 1
+        }
 
         guard var drag else {
             return
@@ -205,7 +321,9 @@ final class HomeScreenModel {
         if updated.slot(of: drag.item) == nil {
             cancelDrag()
         } else {
-            drag.preview = updated.moving(drag.item, to: drag.target)
+            // An icon that joined and has gone since stays gone.
+            drag.extras.removeAll { updated.slot(of: $0) == nil }
+            drag.preview = updated.moving(drag.item, with: drag.extras, to: drag.target)
             self.drag = drag
         }
     }
@@ -223,13 +341,13 @@ final class HomeScreenModel {
     }
 
     /// Follows a link zContainer was opened with: links that do something in
-    /// an app, or bring up zContainer, show the Home Screen.
+    /// an app, or bring up zContainer, show the Home Screen, as do
+    /// certificates sent to zContainer and requests from Zeus, whose
+    /// questions show over it.
     func handle(_ route: HomeRoute) {
         switch route {
-        case .home, .app:
+        case .home, .app, .certificate, .certificateFile, .zeusRequests:
             showHomeScreen()
-        case .certificate:
-            break
         }
     }
 }

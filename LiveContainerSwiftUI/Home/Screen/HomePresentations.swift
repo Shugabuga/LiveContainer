@@ -6,7 +6,8 @@
 import SwiftUI
 
 /// What opens over the Home Screen: Settings and an app's settings, the
-/// question before an app is deleted, the install link question and Files.
+/// question before an app is deleted, the install link question, Files, and
+/// Add to Home Screen's sheet, from an app's long-press menu.
 /// The Home Screen view applies it once, through `homePresentations(zoomNamespace:)`.
 struct HomePresentations: ViewModifier {
     /// The namespace Settings and app settings zoom out of icons in.
@@ -19,12 +20,33 @@ struct HomePresentations: ViewModifier {
 
         content
             .modifier(HomeScreenPresentation(model: model, zoomNamespace: zoomNamespace))
-            .alert(model.removalTitle, item: $model.pendingRemoval) { app in
+            .alert(
+                model.removalTitle,
+                isPresented: Binding<Bool>.isPresented(for: $model.pendingRemoval),
+                presenting: model.pendingRemoval
+            ) { app in
                 HomeRemovalActions(app: app)
             } message: { app in
                 if !app.uiContainers.isEmpty {
                     Text("zc.home.deleteKeepDataMessage".loc)
                 }
+            }
+            .alert(
+                "zc.widget.removeTitle %@".localizeWithFormat(model.pendingWidgetRemoval.map(model.title(of:)) ?? ""),
+                isPresented: Binding<Bool>.isPresented(for: $model.pendingWidgetRemoval),
+                presenting: model.pendingWidgetRemoval
+            ) { _ in
+                Button("zc.widget.removeConfirm".loc, role: .destructive, action: model.removePendingWidget)
+                Button("lc.common.cancel".loc, role: .cancel) { }
+            } message: { _ in
+                Text("zc.widget.removeMessage".loc)
+            }
+            .modifier(HomeWidgetGalleryPresentation(isPresented: $model.isAddingWidget))
+            .sheet(isPresented: $model.isCustomizing) {
+                HomeCustomizeSheet()
+            }
+            .sheet(isPresented: $model.isAddingMultitaskApp) {
+                HomeAddAppSheet()
             }
             .alert("lc.appList.installFromUrl".loc, isPresented: $model.isEnteringInstallURL) {
                 TextField(text: $model.installURL, prompt: Text(verbatim: "https://")) {
@@ -43,6 +65,7 @@ struct HomePresentations: ViewModifier {
                 callback: model.installPickedFiles,
                 onDismiss: model.filePickerDidClose
             )
+            .appShortcutPresenter($model.shortcutRequest)
     }
 }
 
